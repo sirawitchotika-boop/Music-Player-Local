@@ -19,6 +19,21 @@ export class MediaSessionManager {
     this.onNextTrack = onNext;
     this.onPrevTrack = onPrev;
     
+    // รับ Action สั่งงานจากแผง Lock Screen และ Notification Bar ของ Android
+    window.mediaControlAction = (action) => {
+      if (action === 'playpause') {
+        this.audioEl.paused ? this.audio.play() : this.audio.pause();
+      } else if (action === 'play') {
+        this.audio.play();
+      } else if (action === 'pause') {
+        this.audio.pause();
+      } else if (action === 'next') {
+        if (typeof this.onNextTrack === 'function') this.onNextTrack();
+      } else if (action === 'prev') {
+        if (typeof this.onPrevTrack === 'function') this.onPrevTrack();
+      }
+    };
+    
     if (!this.isSupported) return;
     this._setupActionHandlers();
   }
@@ -108,33 +123,47 @@ export class MediaSessionManager {
   }
   
   updateMetadata(track) {
-    if (!this.isSupported || !track) return;
+    if (!track) return;
     this.currentTrack = track;
     
     const cleanTitle = track.name ? track.name.replace(/\.[^/.]+$/, '') : 'GT Track';
     
-    const pngArtworkUrl = new URL('icon.png', window.location.href).href;
-    const svgArtworkUrl = new URL('icon.svg', window.location.href).href;
-    
-    try {
-      navigator.mediaSession.metadata = new MediaMetadata({
-        title: cleanTitle,
-        artist: 'GT SoundMaster',
-        album: 'Local Audiophile Library',
-        artwork: [
-          { src: pngArtworkUrl, sizes: '512x512', type: 'image/png' },
-          { src: svgArtworkUrl, sizes: '512x512', type: 'image/svg+xml' }
-        ]
-      });
-    } catch (e) {
-      console.warn('[MediaSession] Metadata update error:', e);
+    // ส่งคำสั่งให้ Native Android แจ้งเตือนบนแถบแจ้งเตือนและหน้าจอล็อค
+    if (window.AndroidBridge && typeof window.AndroidBridge.updatePlayback === 'function') {
+      window.AndroidBridge.updatePlayback(cleanTitle, 'GT SoundMaster', !this.audioEl.paused);
     }
     
-    this.setPlaybackState('playing');
-    this.updatePositionState();
+    if (this.isSupported) {
+      const pngArtworkUrl = new URL('icon.png', window.location.href).href;
+      const svgArtworkUrl = new URL('icon.svg', window.location.href).href;
+      
+      try {
+        navigator.mediaSession.metadata = new MediaMetadata({
+          title: cleanTitle,
+          artist: 'GT SoundMaster',
+          album: 'Local Audiophile Library',
+          artwork: [
+            { src: pngArtworkUrl, sizes: '512x512', type: 'image/png' },
+            { src: svgArtworkUrl, sizes: '512x512', type: 'image/svg+xml' }
+          ]
+        });
+      } catch (e) {
+        console.warn('[MediaSession] Metadata update error:', e);
+      }
+      
+      this.setPlaybackState('playing');
+      this.updatePositionState();
+    }
   }
   
   setPlaybackState(state) {
+    const isPlaying = state === 'playing';
+    const currentTitle = this.currentTrack ? (this.currentTrack.name || '').replace(/\.[^/.]+$/, '') : 'GT SoundMaster';
+    
+    if (window.AndroidBridge && typeof window.AndroidBridge.updatePlayback === 'function') {
+      window.AndroidBridge.updatePlayback(currentTitle, 'GT SoundMaster', isPlaying);
+    }
+    
     if (!this.isSupported) return;
     try {
       navigator.mediaSession.playbackState = state;

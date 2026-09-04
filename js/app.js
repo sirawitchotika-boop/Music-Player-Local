@@ -42,6 +42,39 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
     };
     
+    // ฟังก์ชันสั่งเล่นเพลงที่เปิดเข้ามาจากภายนอกแอป (File Manager / Intent)
+    const playExternalAudio = async (trackData) => {
+      if (!trackData || !trackData.url) return;
+      try {
+        console.log('[App] Playing external track:', trackData.name);
+        await audioEngine.load(trackData.url);
+        await audioEngine.play();
+        const cleanName = trackData.name ? trackData.name.replace(/\.[^/.]+$/, "") : "External Track";
+        playerUi.updateTitle(cleanName);
+        mediaSessionManager.updateMetadata({ name: cleanName, blob: null });
+      } catch (err) {
+        console.error('[App] Failed to play external track:', err);
+      }
+    };
+    
+    // รองรับการกดเปิดไฟล์ขณะที่แอปเปิดค้างอยู่แล้ว (Warm Start)
+    window.handleExternalTrack = (trackData) => {
+      playExternalAudio(trackData);
+    };
+    
+    // ตรวจสอบเพลงที่เปิดค้างไว้ตั้งแต่ตอนเปิดแอปครั้งแรก (Cold Start)
+    if (window.AndroidBridge && typeof window.AndroidBridge.getPendingTrack === 'function') {
+      try {
+        const pendingRaw = window.AndroidBridge.getPendingTrack();
+        if (pendingRaw) {
+          const pendingTrack = JSON.parse(pendingRaw);
+          playExternalAudio(pendingTrack);
+        }
+      } catch (e) {
+        console.warn('[App] Error parsing pending external track:', e);
+      }
+    }
+    
     const loadingOverlay = document.getElementById('loading-overlay');
     const appContainer = document.getElementById('app-container');
     
