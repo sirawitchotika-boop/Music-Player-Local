@@ -17,11 +17,11 @@
 <body>
     <div id="toast-container" class="toast-container"></div>
     <div id="gt-modal-root"></div>
-    
+         
     <div id="help-modal" class="help-modal hidden">
         <div class="help-container">
             <div class="help-header">
-                <h2>USER GUIDE</h2>
+                <h2>SYSTEM MANUAL</h2>
                 <button id="close-help-btn" class="close-btn">
                     <svg viewBox="0 0 24 24" width="24" height="24" fill="#fff"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
                 </button>
@@ -29,52 +29,43 @@
             <div class="help-content-scroll">
                 <div class="help-card">
                     <div class="help-card-title">
-                        <span>1. การจัดการเพลงและเพลย์ลิสต์</span>
-                        <span class="help-badge">LIBRARY</span>
+                        <span>MODULE 01: STORAGE & LIBRARY</span>
+                        <span class="help-badge">FILE SYSTEM</span>
                     </div>
                     <ul class="help-list">
-                        <li class="help-item"><strong>นำเข้าเพลง:</strong> กดปุ่มเปิดเพลย์ลิสต์ที่มุมขวาล่าง จากนั้นกด ADD MUSIC เพื่อเลือกไฟล์เพลงจากอุปกรณ์ ระบบจะบันทึกลงฐานข้อมูล IndexedDB ในเครื่องโดยตรง</li>
-                        <li class="help-item"><strong>สร้างเพลย์ลิสต์:</strong> กด ADD PLAYLIST เพื่อจัดหมวดหมู่เพลงตามต้องการ สามารถเปลี่ยนชื่อหรือลบเพลย์ลิสต์ได้ที่เมนู Dropdown</li>
-                        <li class="help-item"><strong>ค้นหาเพลง:</strong> พิมพ์ชื่อเพลงในช่องค้นหาเพื่อกรองรายชื่อเพลงในเพลย์ลิสต์ปัจจุบันแบบทันที</li>
-                        <li class="help-item"><strong>รายการโปรด:</strong> กดปุ่มไอคอนหัวใจที่หน้าจอหลักเพื่อเพิ่มหรือถอนเพลงออกจากหมวด Favorites</li>
+                        <li class="help-item"><strong>ADD MUSIC:</strong> นำเข้าข้อมูลเสียงลง IndexedDB ทำงานแบบ Local 100%</li>
+                        <li class="help-item"><strong>ADD PLAYLIST:</strong> จัดกลุ่มหมวดหมู่รายการเสียง</li>
+                        <li class="help-item"><strong>FAVORITES:</strong> แทร็กที่ทำเครื่องหมายจะได้รับการป้องกันจากการล้างข้อมูลคลังหลัก</li>
                     </ul>
                 </div>
-
                 <div class="help-card">
                     <div class="help-card-title">
-                        <span>2. การควบคุมเครื่องเล่นเพลง</span>
-                        <span class="help-badge gold">PLAYBACK</span>
+                        <span>MODULE 02: PLAYBACK CONTROL</span>
+                        <span class="help-badge gold">CORE AUDIO</span>
                     </div>
                     <ul class="help-list">
-                        <li class="help-item"><strong>แตะค้างเพื่อกรอเพลง:</strong> กดปุ่ม Next หรือ Prev ค้างไว้เพื่อกรอไปข้างหน้า (Fast Forward) หรือย้อนหลัง (Rewind) เพลงละ 3 วินาทีต่อเนื่อง</li>
-                        <li class="help-item"><strong>โหมดการเล่น:</strong> กดปุ่มซ้ายสุดของแถบควบคุมเพื่อสลับโหมด: เล่นตามลำดับ, เล่นซ้ำเพลงเดียว, และสุ่มเพลง (Shuffle)</li>
-                        <li class="help-item"><strong>แถบเวลา (Seek Bar):</strong> ลากเลื่อนจุดสีขาวบนแถบเวลาเพื่อข้ามไปยังท่อนเพลงที่ต้องการได้อย่างแม่นยำ</li>
-                        <li class="help-item"><strong>ระบบกู้คืนไฟล์เสีย:</strong> หากตรวจพบไฟล์เสียงที่ไม่สมบูรณ์ ระบบจะข้ามไปเล่นเพลงถัดไปให้อัตโนมัติโดยไม่หยุดชะงัก</li>
+                        <li class="help-item"><strong>NAVIGATION:</strong> กดค้างที่ปุ่ม Next หรือ Prev เพื่อกรอสัญญาณเสียง (Hold to Seek)</li>
+                        <li class="help-item"><strong>PLAY MODES:</strong> เล่นตามลำดับ, เล่นซ้ำแทร็กเดียว, และสุ่มรายการ (Shuffle)</li>
                     </ul>
                 </div>
-
                 <div class="help-card">
                     <div class="help-card-title">
-                        <span>3. อีควอไลเซอร์ระดับ Audiophile</span>
-                        <span class="help-badge">AUDIO ENGINE</span>
+                        <span>MODULE 03: DSP & EQUALIZER</span>
+                        <span class="help-badge">SIGNAL PATH</span>
                     </div>
                     <ul class="help-list">
-                        <li class="help-item"><strong>Pre-Amp Headroom:</strong> แถบเลื่อน PREAMP สีส้มด้านซ้ายใช้ลดระดับสัญญาณก่อนเข้าฟิลเตอร์ เพื่อป้องกันเสียงแตกพร่า (Clipping) เมื่อบูสต์ย่านความถี่</li>
-                        <li class="help-item"><strong>ปุ่ม DIRECT (Bypass):</strong> สลับฟังเสียงต้นฉบับแบบ Bit-Perfect โดยตัดวงจร EQ ออกทั้งหมดทันทีเพื่อการทำ A/B Testing</li>
-                        <li class="help-item"><strong>10-Band ISO Filters:</strong> ปรับแต่งความถี่ได้ตั้งแต่ 32Hz จนถึง 16kHz พร้อมพรีเซ็ตมาตรฐานระดับสตูดิโอ เช่น Harman Target, Vocal Clarity, Air and Soundstage</li>
-                        <li class="help-item"><strong>บันทึก Preset:</strong> ปรับระดับความถี่ตามชอบแล้วกด SAVE เพื่อบันทึกพรีเซ็ตส่วนตัวเก็บไว้ใช้งานได้ตลอดเวลา</li>
+                        <li class="help-item"><strong>PRE-AMP:</strong> ควบคุม Headroom ป้องกันสัญญาณดิจิทัลคลิปปิ้ง (Clipping)</li>
+                        <li class="help-item"><strong>DIRECT (BYPASS):</strong> ส่งผ่านสัญญาณเสียงแบบ Bit-Perfect ไม่ผ่านวงจรกรองความถี่</li>
+                        <li class="help-item"><strong>10-BAND ISO:</strong> ปรับแต่งความถี่ช่วง 32Hz - 16kHz</li>
                     </ul>
                 </div>
-
                 <div class="help-card">
                     <div class="help-card-title">
-                        <span>4. ระบบตั้งเวลาปิด (Sleep Timer)</span>
-                        <span class="help-badge red">TIMER</span>
+                        <span>MODULE 04: AUTOMATION</span>
+                        <span class="help-badge red">DAEMON</span>
                     </div>
                     <ul class="help-list">
-                        <li class="help-item"><strong>ตั้งเวลา:</strong> แตะตัวเลขกลางหน้าปัดเพื่อพิมพ์ระบุจำนวนนาที หรือเลือกเวลาสำเร็จรูปจากแถบพรีเซ็ตด้านล่าง</li>
-                        <li class="help-item"><strong>เริ่มการนับถอยหลัง:</strong> กดปุ่ม START เพื่อเริ่มจับเวลา เมื่อหมดเวลาระบบจะหยุดเล่นเพลงและสั่นเตือนอัตโนมัติ</li>
-                        <li class="help-item"><strong>โหมดแก้ไข Preset:</strong> กดไอคอนรูปดินสอเพื่อแก้ไขเวลาหรือลบพรีเซ็ตที่ไม่ต้องการออกได้</li>
+                        <li class="help-item"><strong>SLEEP TIMER:</strong> กำหนดเวลาระงับการทำงานของ Audio Engine อัตโนมัติ</li>
                     </ul>
                 </div>
             </div>
@@ -92,42 +83,39 @@
                     <svg viewBox="0 0 24 24" width="24" height="24" fill="#fff"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
                 </button>
             </div>
-            
+                         
             <div class="timer-dial-wrapper">
                 <div id="timer-dial" class="timer-dial">
-                    <div class="timer-dial-inner" title="กดเพื่อตั้งเวลาเอง">
+                    <div class="timer-dial-inner">
                         <div id="timer-display-mins" class="timer-display-mins">0</div>
                         <div id="timer-display-label" class="timer-display-label">MINUTES</div>
                     </div>
                     <div id="timer-dial-indicator" class="timer-dial-indicator"></div>
                 </div>
             </div>
-
             <div class="timer-status-row">
-                <button id="toggle-edit-mode-btn" class="preset-stationed-btn" title="โหมดแก้ไข Preset">
+                <button id="toggle-edit-mode-btn" class="preset-stationed-btn" title="EDIT PRESETS">
                     <svg viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
                 </button>
-                
-                <button id="reset-timer-btn" class="preset-stationed-btn" title="รีเซ็ตเวลา">
+                                 
+                <button id="reset-timer-btn" class="preset-stationed-btn" title="RESET">
                     <svg viewBox="0 0 24 24"><path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/></svg>
                 </button>
-                
-                <button id="add-timer-preset-btn" class="preset-stationed-btn" title="เพิ่ม Preset">
+                                 
+                <button id="add-timer-preset-btn" class="preset-stationed-btn" title="ADD PRESET">
                     <svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
                 </button>
             </div>
-
             <div class="timer-presets-wrapper">
                 <div id="timer-presets-list" class="timer-presets-list"></div>
             </div>
-
             <div class="timer-actions">
                 <button id="timer-start-btn" class="timer-btn primary">START</button>
                 <button id="timer-stop-btn" class="timer-btn danger">STOP</button>
             </div>
         </div>
     </div>
-    
+         
     <div id="eq-modal" class="eq-modal hidden">
         <div class="eq-container">
             <div class="eq-header">
@@ -143,7 +131,13 @@
                 </div>
             </div>
             <div class="eq-controls">
-                <select id="eq-preset-select" class="eq-preset-select"></select>
+                <div class="eq-dropdown-wrapper">
+                    <button id="eq-preset-toggle" class="eq-dropdown-btn">
+                        <span id="eq-preset-name">Flat (Reference)</span>
+                        <svg viewBox="0 0 24 24" width="18" height="18" fill="#7a7a8c"><path d="M7 10l5 5 5-5z"/></svg>
+                    </button>
+                    <div id="eq-dropdown-menu" class="eq-dropdown-menu hidden"></div>
+                </div>
                 <button id="eq-save-btn" class="eq-btn save">SAVE</button>
                 <button id="eq-delete-btn" class="eq-btn delete">DEL</button>
             </div>
@@ -170,7 +164,7 @@
                 <span class="app-title">GT SOUNDMASTER</span>
             </div>
             <div class="top-right-actions">
-                <button id="help-btn" class="icon-btn" title="User Guide">
+                <button id="help-btn" class="icon-btn" title="System Manual">
                     <svg viewBox="0 0 24 24"><path d="M11 18h2v-2h-2v2zm1-16C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm0-14c-2.21 0-4 1.79-4 4h2c0-1.1.9-2 2-2s2 .9 2 2c0 2-3 1.75-3 5h2c0-2.25 3-2.5 3-5 0-2.21-1.79-4-4-4z"/></svg>
                 </button>
                 <button id="sleep-timer-btn" class="icon-btn" title="Sleep Timer">
@@ -190,42 +184,42 @@
                 <svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
             </button>
         </section>
-        
+                 
         <section id="player-section" class="player-section">
             <div class="track-info">
-                <h2 id="now-playing-title" class="track-title">NO TRACK SELECTED</h2>
-                <p id="now-playing-artist" class="track-artist">Please add music to playlist</p>
+                <h2 id="now-playing-title" class="track-title">SYSTEM STANDBY</h2>
+                <p id="now-playing-artist" class="track-artist">NO AUDIO LOADED</p>
             </div>
-            
+                         
             <div class="progress-container">
                 <span id="time-current" class="time-text">0:00</span>
                 <input type="range" id="seek-bar" class="seek-bar" value="0" step="0.1">
                 <span id="time-total" class="time-text">0:00</span>
             </div>
-            
+                         
             <div class="controls-row">
                 <button id="play-mode-btn" class="control-btn small-btn">
                     <svg viewBox="0 0 24 24"><path d="M10.59 9.17L5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41l-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z"/></svg>
                 </button>
-                
+                                 
                 <button id="prev-btn" class="control-btn">
                     <svg viewBox="0 0 24 24"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg>
                 </button>
-                
+                                 
                 <button id="play-btn" class="control-btn play-pause-btn">
                     <svg id="icon-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
                 </button>
-                
+                                 
                 <button id="next-btn" class="control-btn">
                     <svg viewBox="0 0 24 24"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg>
                 </button>
-                
+                                 
                 <button id="playlist-toggle-btn" class="control-btn small-btn">
                     <svg viewBox="0 0 24 24"><path d="M15 6H3v2h12V6zm0 4H3v2h12v-2zM3 16h8v-2H3v2zM17 6v8.18c-.31-.11-.65-.18-1-.18-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3V8h3V6h-5z"/></svg>
                 </button>
             </div>
         </section>
-        
+                 
         <section id="playlist-section" class="playlist-section hidden">
             <div class="playlist-header">
                 <h2>PLAYLIST</h2>
@@ -248,7 +242,7 @@
                 <div class="control-col">
                     <div class="search-box">
                         <svg viewBox="0 0 24 24" class="search-icon"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
-                        <input type="text" id="search-input" class="search-input" placeholder="Search tracks...">
+                        <input type="text" id="search-input" class="search-input" placeholder="Filter library...">
                     </div>
                     <div class="dropdown-wrapper">
                         <button id="playlist-dropdown-toggle" class="dropdown-btn">

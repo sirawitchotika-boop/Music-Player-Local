@@ -1,5 +1,3 @@
-// js/core/storage.js
-
 const DB_NAME = 'LocalMusicDB';
 const DB_VERSION = 3;
 const STORE_NAME = 'audioTracks';
@@ -14,7 +12,7 @@ class StorageManager {
   async initDB() {
     return new Promise((resolve, reject) => {
       const request = indexedDB.open(DB_NAME, DB_VERSION);
-      request.onerror = (e) => reject(new Error("ระบบไม่สามารถเปิดฐานข้อมูลได้ค่ะ"));
+      request.onerror = (e) => reject(new Error("[DB] การเชื่อมต่อ IndexedDB ล้มเหลว"));
       request.onsuccess = (e) => {
         this.db = e.target.result;
         resolve(this.db);
@@ -49,7 +47,7 @@ class StorageManager {
   async saveFiles(fileList) {
     if (!this.db) await this.initDB();
     const validFiles = this.validateAudioFiles(fileList);
-    if (validFiles.length === 0) throw new Error("ไม่มีไฟล์เสียงที่ถูกต้องให้บันทึกเลยค่ะ");
+    if (validFiles.length === 0) throw new Error("[FS] ไม่พบไฟล์เสียงที่ระบบรองรับ");
     
     const existingTracks = await this.getAllTracks();
     const existingMap = new Map();
@@ -73,9 +71,9 @@ class StorageManager {
       
       tx.onerror = (e) => {
         if (e.target.error && e.target.error.name === 'QuotaExceededError') {
-          reject(new Error("พื้นที่ความจำของเครื่องเต็มแล้วค่ะ"));
+          reject(new Error("[FS] หน่วยความจำอุปกรณ์เต็ม (QuotaExceeded)"));
         } else {
-          reject(new Error("เกิดข้อผิดพลาดระหว่างบันทึกไฟล์ลงระบบ"));
+          reject(new Error("[FS] การเขียนข้อมูลลงฐานข้อมูลล้มเหลว"));
         }
       };
       
@@ -122,7 +120,7 @@ class StorageManager {
       const tx = this.db.transaction([STORE_NAME], 'readonly');
       const req = tx.objectStore(STORE_NAME).getAll();
       req.onsuccess = () => resolve(req.result || []);
-      req.onerror = () => reject(new Error("ไม่สามารถดึงข้อมูลคิวเพลงได้ค่ะ"));
+      req.onerror = () => reject(new Error("[DB] ไม่สามารถอ่านข้อมูลแทร็กเสียงได้"));
     });
   }
   
@@ -132,7 +130,7 @@ class StorageManager {
       const tx = this.db.transaction([STORE_NAME], 'readwrite');
       const req = tx.objectStore(STORE_NAME).delete(id);
       req.onsuccess = () => resolve(true);
-      req.onerror = () => reject(new Error("ลบไฟล์เพลงไม่สำเร็จค่ะ"));
+      req.onerror = () => reject(new Error("[DB] ไม่สามารถลบแทร็กเสียงได้"));
     });
   }
   
@@ -142,7 +140,7 @@ class StorageManager {
       const tx = this.db.transaction([storeName], 'readonly');
       const req = tx.objectStore(storeName).getAll();
       req.onsuccess = () => resolve(req.result || []);
-      req.onerror = () => reject(new Error(`ดึงข้อมูล ${storeName} ไม่สำเร็จค่ะ`));
+      req.onerror = () => reject(new Error(`[DB] อ่านข้อมูลจาก ${storeName} ล้มเหลว`));
     });
   }
   
@@ -152,7 +150,7 @@ class StorageManager {
       const tx = this.db.transaction([storeName], 'readwrite');
       const req = tx.objectStore(storeName).put(data);
       req.onsuccess = () => resolve(data);
-      req.onerror = () => reject(new Error(`บันทึก ${storeName} ไม่สำเร็จค่ะ`));
+      req.onerror = () => reject(new Error(`[DB] บันทึกข้อมูลลง ${storeName} ล้มเหลว`));
     });
   }
   
@@ -162,7 +160,7 @@ class StorageManager {
       const tx = this.db.transaction([storeName], 'readwrite');
       const req = tx.objectStore(storeName).delete(id);
       req.onsuccess = () => resolve(true);
-      req.onerror = () => reject(new Error(`ลบจาก ${storeName} ไม่สำเร็จค่ะ`));
+      req.onerror = () => reject(new Error(`[DB] ลบข้อมูลจาก ${storeName} ล้มเหลว`));
     });
   }
   
@@ -173,14 +171,13 @@ class StorageManager {
   async getTimerPresets() { return this._getAllFromStore(TIMER_STORE); }
   async saveTimerPreset(presetData) { return this._putToStore(TIMER_STORE, presetData); }
   async deleteTimerPreset(id) { return this._deleteFromStore(TIMER_STORE, id); }
-  
   async clearTimerPresets() {
     if (!this.db) await this.initDB();
     return new Promise((resolve, reject) => {
       const tx = this.db.transaction([TIMER_STORE], 'readwrite');
       const req = tx.objectStore(TIMER_STORE).clear();
       req.onsuccess = () => resolve(true);
-      req.onerror = () => reject(new Error("ล้างข้อมูล Timer Preset ไม่สำเร็จค่ะ"));
+      req.onerror = () => reject(new Error("[DB] ล้างข้อมูล Timer Presets ล้มเหลว"));
     });
   }
 }

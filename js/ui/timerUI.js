@@ -1,4 +1,3 @@
-// js/ui/timerUI.js
 import { storage } from '../core/storage.js';
 import { modalUI } from './modalUI.js';
 import { audioEngine } from '../core/audioEngine.js';
@@ -12,11 +11,9 @@ class TimerUI {
         this.dialInner = document.querySelector('.timer-dial-inner');
         this.indicator = document.getElementById('timer-dial-indicator');
         
-        // Center UI Elements
         this.displayMins = document.getElementById('timer-display-mins');
         this.displayLabel = document.getElementById('timer-display-label');
         
-        // Stationed Elements
         this.toggleEditBtn = document.getElementById('toggle-edit-mode-btn');
         this.addPresetBtn = document.getElementById('add-timer-preset-btn');
         this.resetBtn = document.getElementById('reset-timer-btn');
@@ -25,11 +22,9 @@ class TimerUI {
         this.startBtn = document.getElementById('timer-start-btn');
         this.stopBtn = document.getElementById('timer-stop-btn');
         
-        // สถานะเวลา
         this.minutes = 0;
         this.maxMinutes = 720;
         
-        // สถานะ Timer & Edit Mode
         this.timerInterval = null;
         this.targetTimestamp = null;
         this.isActive = false;
@@ -49,10 +44,9 @@ class TimerUI {
         this.openBtn?.addEventListener('click', () => this.openModal());
         this.closeBtn?.addEventListener('click', () => this.closeModal());
         
-        // ถ้ากำลังจับเวลาอยู่ บล็อกไม่ให้กดแก้เวลาตรงกลาง
         this.dialInner?.addEventListener('click', () => {
             if (this.isActive) {
-                modalUI.showToast("กด Stop ก่อนนะคะ ถ้าอยากตั้งเวลาใหม่", "warning");
+                modalUI.showToast("[WARN] ระบบกำลังนับถอยหลัง - กด STOP เพื่อแก้ไขเวลา", "warning");
                 return;
             }
             this.promptManualTime();
@@ -89,14 +83,14 @@ class TimerUI {
     
     async promptManualTime() {
         const defaultVal = this.minutes === 0 ? '' : this.minutes.toString();
-        const input = await modalUI.showPrompt("ตั้งเวลาเอง", "ระบุเวลา (นาที) ที่ต้องการ:", defaultVal, "number");
+        const input = await modalUI.showPrompt("[INPUT] กำหนดเวลา", "ระบุระยะเวลา (นาที):", defaultVal, "number");
         
         if (input !== null) {
             const parsed = parseInt(input);
             if (isNaN(parsed) || parsed < 0) {
-                modalUI.showToast("กรุณาใส่ตัวเลขให้ถูกต้องค่ะ", "error");
+                modalUI.showToast("[ERROR] ค่าตัวเลขไม่ถูกต้อง", "error");
             } else if (parsed > this.maxMinutes) {
-                modalUI.showToast(`ตั้งได้สูงสุด ${this.maxMinutes} นาทีค่ะ`, "error");
+                modalUI.showToast(`[ERROR] เกินขีดจำกัดสูงสุด (${this.maxMinutes} นาที)`, "error");
                 this.setMinutes(this.maxMinutes);
             } else {
                 this.setMinutes(parsed);
@@ -112,7 +106,7 @@ class TimerUI {
     
     startTimer() {
         if (this.minutes <= 0) {
-            modalUI.showToast("กรุณาตั้งเวลาก่อนนะคะ", "warning");
+            modalUI.showToast("[WARN] ค่าเวลาต้องมากกว่า 0 นาที", "warning");
             return;
         }
         if (this.timerInterval) clearInterval(this.timerInterval);
@@ -125,7 +119,7 @@ class TimerUI {
         this.updateUIState();
         this.timerInterval = setInterval(() => this.tick(), 1000);
         this.tick();
-        modalUI.showToast("เปิดโหมด Sleep Timer แล้วค่ะ", "success");
+        modalUI.showToast(`[TIMER] เริ่มระบบนับถอยหลัง (${this.minutes} นาที)`, "success");
     }
     
     stopTimer() {
@@ -136,7 +130,7 @@ class TimerUI {
         this.isActive = false;
         this.targetTimestamp = null;
         this.updateUIState();
-        modalUI.showToast("ปิด Sleep Timer แล้วค่ะ", "info");
+        modalUI.showToast("[TIMER] ระงับการทำงานตัวจับเวลาแล้ว", "info");
     }
 
     resetTimer() {
@@ -149,7 +143,7 @@ class TimerUI {
         
         this.setMinutes(0);
         this.updateUIState();
-        modalUI.showToast("รีเซ็ตเวลาเรียบร้อยแล้วค่ะ", "info");
+        modalUI.showToast("[TIMER] รีเซ็ตเวลาเป็น 0 นาที", "info");
     }
     
     tick() {
@@ -184,7 +178,7 @@ class TimerUI {
         audioEngine.pause();
         
         this.triggerHaptic([300, 100, 300, 100, 500]);
-        modalUI.showToast("หมดเวลา Sleep Timer คืนนี้นอนหลับฝันดีนะคะ", "info");
+        modalUI.showToast("[TIMER] ครบกำหนดเวลา - หยุดการทำงาน Audio Engine แล้ว", "info");
         
         this.openBtn.classList.add('breathing');
         setTimeout(() => this.openBtn.classList.remove('breathing'), 5000);
@@ -224,10 +218,9 @@ class TimerUI {
     toggleEditMode() {
         const presets = this.presetsList.querySelectorAll('.preset-group');
         if (presets.length === 0 && !this.isEditMode) {
-            modalUI.showToast("ไม่มี Preset ให้แก้ไขค่ะบอส", "info");
+            modalUI.showToast("[WARN] ไม่พบ Preset ในระบบ", "info");
             return;
         }
-
         this.isEditMode = !this.isEditMode;
         
         if (this.isEditMode) {
@@ -270,11 +263,11 @@ class TimerUI {
             btn.textContent = p.name;
             btn.addEventListener('click', () => {
                 if (this.isEditMode) {
-                    modalUI.showToast("บอสกำลังเปิดโหมดแก้ไขอยู่ค่ะ ปิดก่อนเลือก Preset นะคะ", "warning");
+                    modalUI.showToast("[WARN] ระบบอยู่ในโหมดแก้ไข", "warning");
                     return;
                 }
                 if (this.isActive) {
-                    modalUI.showToast("กำลังนับถอยหลังอยู่ค่ะ ถ้าจะเปลี่ยนเวลากด Stop ก่อนนะคะ", "warning");
+                    modalUI.showToast("[WARN] กำลังนับถอยหลัง - กด STOP เพื่อเปลี่ยน Preset", "warning");
                     return;
                 }
                 this.setMinutes(p.minutes);
@@ -301,7 +294,7 @@ class TimerUI {
         if (this.isEditMode && presets.length > 0) {
             const clearAllBtn = document.createElement('button');
             clearAllBtn.className = 'preset-chip-danger';
-            clearAllBtn.innerHTML = 'ลบทั้งหมด <svg viewBox="0 0 24 24" width="16" height="16" fill="#ff2a2a" style="margin-left:4px;"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>';
+            clearAllBtn.innerHTML = 'CLEAR ALL <svg viewBox="0 0 24 24" width="16" height="16" fill="#ff2a2a" style="margin-left:4px;"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>';
             clearAllBtn.addEventListener('click', () => this.clearAllPresets());
             this.presetsList.appendChild(clearAllBtn);
         }
@@ -309,23 +302,23 @@ class TimerUI {
     
     async createPreset() {
         if (this.minutes <= 0) {
-            modalUI.showToast("ตั้งเวลาก่อนบันทึกนะคะ", "warning");
+            modalUI.showToast("[WARN] ค่าเวลาต้องมากกว่า 0 นาที", "warning");
             return;
         }
         
-        const name = await modalUI.showPrompt("บันทึก Preset", "ตั้งชื่อ Preset ของคุณ:", `${this.minutes} นาที`);
+        const name = await modalUI.showPrompt("[INPUT] บันทึก Preset", "ระบุชื่อ Preset:", `${this.minutes} MIN`);
         if (name === null) return;
         
         const cleanName = name.trim();
         if (cleanName === '') {
-            modalUI.showToast("ชื่อ Preset ว่างเปล่าไม่ได้นะคะ", "error");
+            modalUI.showToast("[ERROR] ชื่อ Preset ห้ามว่าง", "error");
             return;
         }
         
         const presets = await storage.getTimerPresets();
         const isDuplicate = presets.some(p => p.name.toLowerCase() === cleanName.toLowerCase());
         if (isDuplicate) {
-            modalUI.showToast("ชื่อ Preset นี้มีอยู่แล้วค่ะ ตั้งชื่อใหม่นะคะ", "error");
+            modalUI.showToast("[ERROR] ตรวจพบชื่อ Preset ซ้ำในระบบ", "error");
             return;
         }
         
@@ -335,15 +328,15 @@ class TimerUI {
             minutes: this.minutes
         };
         await storage.saveTimerPreset(newPreset);
-        modalUI.showToast("บันทึกเรียบร้อย", "success");
+        modalUI.showToast("[STATUS] จัดเก็บ Preset สำเร็จ", "success");
         
         this.loadPresets();
     }
     
     async editPreset(id, currentName, currentMinutes, allPresets) {
         const result = await modalUI.showDoublePrompt(
-            "แก้ไข Preset", 
-            "ตั้งชื่อ Preset", currentName,
+            "[INPUT] แก้ไข Preset", 
+            "ชื่อ Preset", currentName,
             "เวลา (นาที)", currentMinutes.toString()
         );
         
@@ -351,46 +344,46 @@ class TimerUI {
         
         const cleanName = result.val1.trim();
         if (cleanName === '') {
-            modalUI.showToast("ชื่อ Preset ว่างเปล่าไม่ได้นะคะ", "error");
+            modalUI.showToast("[ERROR] ชื่อ Preset ห้ามว่าง", "error");
             return;
         }
         
         const isDuplicate = allPresets.some(p => p.id !== id && p.name.toLowerCase() === cleanName.toLowerCase());
         if (isDuplicate) {
-            modalUI.showToast("ชื่อ Preset นี้มีอยู่แล้วค่ะ", "error");
+            modalUI.showToast("[ERROR] ตรวจพบชื่อ Preset ซ้ำในระบบ", "error");
             return;
         }
         
         const parsed = parseInt(result.val2);
         if (isNaN(parsed) || parsed <= 0) {
-            modalUI.showToast("กรุณาใส่เวลาเป็นตัวเลขที่มากกว่า 0 ค่ะ", "error");
+            modalUI.showToast("[ERROR] ค่าเวลาต้องเป็นตัวเลขที่มากกว่า 0", "error");
             return;
         } else if (parsed > this.maxMinutes) {
-            modalUI.showToast(`ตั้งเวลาได้สูงสุด ${this.maxMinutes} นาทีค่ะ`, "error");
+            modalUI.showToast(`[ERROR] เกินขีดจำกัดสูงสุด (${this.maxMinutes} นาที)`, "error");
             return;
         }
         
         await storage.saveTimerPreset({ id, name: cleanName, minutes: parsed });
-        modalUI.showToast("อัปเดต Preset เรียบร้อยค่ะ", "success");
+        modalUI.showToast("[STATUS] อัปเดตข้อมูล Preset สำเร็จ", "success");
         this.loadPresets();
     }
     
     async managePreset(id, name) {
-        const confirmDelete = await modalUI.showConfirm("จัดการ Preset", `คุณต้องการลบ Preset "${name}" ใช่หรือไม่?`);
+        const confirmDelete = await modalUI.showConfirm("[CONFIRM] ลบ Preset", `ยืนยันการลบ Preset "${name}"?`);
         if (confirmDelete) {
             await storage.deleteTimerPreset(id);
-            modalUI.showToast("ลบแล้วค่ะ", "info");
+            modalUI.showToast("[STATUS] ลบ Preset สำเร็จ", "info");
             this.loadPresets();
         }
     }
     
     async clearAllPresets() {
-        const confirm1 = await modalUI.showConfirm("ลบทั้งหมด", "ต้องการลบ Preset ทั้งหมดทิ้งใช่ไหมคะ?");
+        const confirm1 = await modalUI.showConfirm("[CONFIRM] ล้างข้อมูล", "ยืนยันการลบ Preset ทั้งหมดหรือไม่?");
         if (confirm1) {
-            const confirm2 = await modalUI.showConfirm("ยืนยันอีกครั้ง!", "ลบแล้วลบเลย กู้คืนไม่ได้นะคะ แน่ใจจริงๆ ใช่ไหมคะ?");
+            const confirm2 = await modalUI.showConfirm("[WARNING] ยืนยันขั้นสุดท้าย", "ข้อมูล Preset ทั้งหมดจะถูกลบถาวร ดำเนินการต่อ?");
             if (confirm2) {
                 await storage.clearTimerPresets();
-                modalUI.showToast("ล้างบาง Preset เกลี้ยงแล้วค่ะ!", "success");
+                modalUI.showToast("[STATUS] ล้างข้อมูล Preset ทั้งหมดแล้ว", "success");
                 this.loadPresets();
             }
         }

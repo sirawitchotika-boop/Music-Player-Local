@@ -17,6 +17,7 @@ export class EqUI {
     this.customPresets = [];
     this.currentBands = [...this.stdPresets['Flat (Reference)'].bands];
     this.currentPreamp = 0;
+    this.currentPresetName = 'Flat (Reference)';
     this.isBypassed = false;
     
     this._initDOM();
@@ -30,14 +31,18 @@ export class EqUI {
     this.closeBtn = document.getElementById('close-eq-btn');
     this.resetBtn = document.getElementById('reset-eq-btn');
     this.bypassBtn = document.getElementById('eq-bypass-btn');
-    this.presetSelect = document.getElementById('eq-preset-select');
+    
+    this.presetToggle = document.getElementById('eq-preset-toggle');
+    this.presetNameDisplay = document.getElementById('eq-preset-name');
+    this.presetMenu = document.getElementById('eq-dropdown-menu');
+    
     this.saveBtn = document.getElementById('eq-save-btn');
     this.deleteBtn = document.getElementById('eq-delete-btn');
     this.fadersContainer = document.getElementById('eq-faders-scroll');
     this.preampSlider = document.getElementById('eq-preamp-slider');
     this.preampVal = document.getElementById('eq-preamp-val');
     
-    if (!this.presetSelect || !this.fadersContainer) return;
+    if (!this.fadersContainer) return;
     
     this.sliders = [];
     this.valLabels = [];
@@ -80,9 +85,16 @@ export class EqUI {
         const val = parseFloat(e.target.value);
         this._updateBandUI(index, val);
         audioEffect.setEqBand(index, val);
-        this.presetSelect.value = 'Custom...';
+        this._setPresetDisplay('Custom...');
       });
     });
+  }
+  
+  _setPresetDisplay(name) {
+    this.currentPresetName = name;
+    if (this.presetNameDisplay) {
+      this.presetNameDisplay.textContent = name;
+    }
   }
   
   _updateBandUI(index, val) {
@@ -117,37 +129,35 @@ export class EqUI {
   }
   
   async loadPresets() {
-    if (!this.presetSelect) return;
-    this.presetSelect.innerHTML = '';
-    
-    Object.keys(this.stdPresets).forEach(name => {
-      const opt = document.createElement('option');
-      opt.value = name;
-      opt.textContent = name;
-      this.presetSelect.appendChild(opt);
-    });
-    
     try {
       this.customPresets = await storage.getEqPresets();
-      this.customPresets.forEach(preset => {
-        const opt = document.createElement('option');
-        opt.value = preset.id;
-        opt.textContent = preset.id;
-        this.presetSelect.appendChild(opt);
-      });
     } catch (e) {
       console.error('[EqUI]', e);
     }
+    this.renderPresetMenu();
+  }
+  
+  renderPresetMenu() {
+    if (!this.presetMenu) return;
+    this.presetMenu.innerHTML = '';
     
-    const customOpt = document.createElement('option');
-    customOpt.value = 'Custom...';
-    customOpt.textContent = 'Custom...';
-    customOpt.hidden = true;
-    this.presetSelect.appendChild(customOpt);
+    const addMenuItem = (name) => {
+      const item = document.createElement('div');
+      item.className = 'eq-dropdown-item';
+      if (name === this.currentPresetName) item.classList.add('active');
+      item.textContent = name;
+      item.addEventListener('click', () => {
+        this.applyPreset(name);
+        this.presetMenu.classList.add('hidden');
+      });
+      this.presetMenu.appendChild(item);
+    };
+    
+    Object.keys(this.stdPresets).forEach(name => addMenuItem(name));
+    this.customPresets.forEach(p => addMenuItem(p.id));
   }
   
   applyPreset(presetName) {
-    if (!this.presetSelect) return;
     let target = this.stdPresets[presetName];
     if (!target) {
       const custom = this.customPresets.find(p => p.id === presetName);
@@ -169,20 +179,35 @@ export class EqUI {
       const preampVal = target.preamp !== undefined ? target.preamp : 0;
       this._updatePreampUI(preampVal);
       audioEffect.setPreamp(preampVal);
-      this.presetSelect.value = presetName;
+      this._setPresetDisplay(presetName);
+      this.renderPresetMenu();
     }
   }
   
   _bindEvents() {
     this.openBtn?.addEventListener('click', () => this.modal?.classList.remove('hidden'));
-    this.closeBtn?.addEventListener('click', () => this.modal?.classList.add('hidden'));
+    this.closeBtn?.addEventListener('click', () => {
+      this.modal?.classList.add('hidden');
+      this.presetMenu?.classList.add('hidden');
+    });
     this.resetBtn?.addEventListener('click', () => this.applyPreset('Flat (Reference)'));
+    
+    this.presetToggle?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.presetMenu?.classList.toggle('hidden');
+    });
+    
+    document.addEventListener('click', (e) => {
+      if (this.presetMenu && !this.presetMenu.contains(e.target) && e.target !== this.presetToggle) {
+        this.presetMenu.classList.add('hidden');
+      }
+    });
     
     this.preampSlider?.addEventListener('input', (e) => {
       const val = parseFloat(e.target.value);
       this._updatePreampUI(val);
       audioEffect.setPreamp(val);
-      this.presetSelect.value = 'Custom...';
+      this._setPresetDisplay('Custom...');
     });
     
     this.bypassBtn?.addEventListener('click', () => {
@@ -190,30 +215,23 @@ export class EqUI {
       audioEffect.setBypass(this.isBypassed);
       if (this.isBypassed) {
         this.bypassBtn.classList.add('active');
-        modalUI.showToast('Pure Direct: ON (Bypass EQ)', 'info');
+        modalUI.showToast('[AUDIO] Pure Direct: ON (Bypass EQ)', 'info');
       } else {
         this.bypassBtn.classList.remove('active');
-        modalUI.showToast('Pure Direct: OFF (EQ Active)', 'info');
-      }
-    });
-    
-    this.presetSelect?.addEventListener('change', (e) => {
-      const val = e.target.value;
-      if (val !== 'Custom...') {
-        this.applyPreset(val);
+        modalUI.showToast('[AUDIO] Pure Direct: OFF (EQ Filter Active)', 'info');
       }
     });
     
     this.saveBtn?.addEventListener('click', async () => {
-      let name = await modalUI.showPrompt("บันทึก Preset", "ตั้งชื่อ Preset (เว้นว่างเพื่อสุ่มชื่อ):");
+      let name = await modalUI.showPrompt("[INPUT] บันทึก Preset", "ระบุชื่อ Preset:");
       if (name === null) return;
       
       if (name.trim() === '') {
-        name = `Custom ${Math.floor(Date.now() / 1000).toString().slice(-4)}`;
+        name = `Custom_${Math.floor(Date.now() / 1000).toString().slice(-4)}`;
       }
       
       if (this.stdPresets[name]) {
-        await modalUI.showAlert('แจ้งเตือน', 'ชื่อนี้ซ้ำกับ Preset มาตรฐานค่ะ');
+        await modalUI.showAlert('[REJECT] ข้อผิดพลาด', 'ชื่อ Preset นี้สงวนไว้สำหรับระบบ');
         return;
       }
       
@@ -224,30 +242,29 @@ export class EqUI {
           preamp: this.currentPreamp
         });
         await this.loadPresets();
-        this.presetSelect.value = name;
-        modalUI.showToast(`บันทึก ${name} เรียบร้อยค่ะ`);
+        this._setPresetDisplay(name);
+        modalUI.showToast(`[STATUS] บันทึก Preset "${name}" สำเร็จ`);
       } catch (e) {
-        await modalUI.showAlert('ผิดพลาด', 'บันทึกไม่สำเร็จ: ' + e.message);
+        await modalUI.showAlert('[ERROR] ล้มเหลว', 'เกิดข้อผิดพลาด: ' + e.message);
       }
     });
     
     this.deleteBtn?.addEventListener('click', async () => {
-      if (!this.presetSelect) return;
-      const currentName = this.presetSelect.value;
+      const currentName = this.currentPresetName;
       if (this.stdPresets[currentName] || currentName === 'Custom...') {
-        await modalUI.showAlert('แจ้งเตือน', 'ไม่สามารถลบ Preset มาตรฐานได้ค่ะ');
+        await modalUI.showAlert('[REJECT] ข้อผิดพลาด', 'ไม่อนุญาตให้ลบ Preset ค่าเริ่มต้นของระบบ');
         return;
       }
       
-      const isConfirmed = await modalUI.showConfirm('ยืนยันการลบ', `ลบ Preset "${currentName}" ถาวร?`);
+      const isConfirmed = await modalUI.showConfirm('[CONFIRM] ลบ Preset', `ยืนยันการลบ Preset "${currentName}"?`);
       if (isConfirmed) {
         try {
           await storage.deleteEqPreset(currentName);
           await this.loadPresets();
           this.applyPreset('Flat (Reference)');
-          modalUI.showToast('ลบ Preset เรียบร้อยค่ะ');
+          modalUI.showToast('[STATUS] ลบ Preset สำเร็จ');
         } catch (e) {
-          await modalUI.showAlert('ผิดพลาด', 'ลบไม่สำเร็จ: ' + e.message);
+          await modalUI.showAlert('[ERROR] ล้มเหลว', 'เกิดข้อผิดพลาด: ' + e.message);
         }
       }
     });

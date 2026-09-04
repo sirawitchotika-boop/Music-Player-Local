@@ -1,4 +1,3 @@
-// js/ui/playerUI.js
 import { modalUI } from './modalUI.js';
 import { mediaSessionManager } from '../core/mediaSessionManager.js';
 
@@ -91,7 +90,7 @@ export class PlayerUI {
   
   handleLikeClick() {
     if (!this.audioEl.src || this.state.currentTrackIndex === -1) {
-      this.showToast('ยังไม่มีเพลงที่เล่นอยู่', 'error');
+      this.showToast('[ERROR] ไม่พบข้อมูลแทร็กเสียง', 'error');
       return;
     }
     
@@ -103,10 +102,10 @@ export class PlayerUI {
     
     if (willLike) {
       this.favoriteBtn.classList.add('active');
-      this.showToast('เพิ่มใน Favorites แล้ว', 'info');
+      this.showToast('[FAVORITE] บันทึกลงในรายการโปรด', 'info');
     } else {
       this.favoriteBtn.classList.remove('active');
-      this.showToast('ลบออกจาก Favorites แล้ว', 'error');
+      this.showToast('[FAVORITE] นำออกจากรายการโปรด', 'error');
     }
     
     clearTimeout(this.likeDebounceTimer);
@@ -149,7 +148,7 @@ export class PlayerUI {
       isHolding = false;
       pressTimer = setTimeout(() => {
         isHolding = true;
-        this.showToast(direction === 'next' ? 'Fast Forward >>>' : '<<< Rewind', 'info');
+        this.showToast(direction === 'next' ? '[SEEK] Fast Forward >>>' : '[SEEK] <<< Rewind', 'info');
         seekInterval = setInterval(() => {
           if (this.audioEl.duration) {
             this.audioEl.currentTime += (direction === 'next' ? 3 : -3);
@@ -182,13 +181,13 @@ export class PlayerUI {
   async playNext() {
     const track = this.state.nextTrack();
     if (track) await this.loadAndPlay(track);
-    else this.showToast('ไม่มีเพลงถัดไปในคิว', 'error');
+    else this.showToast('[STATUS] สิ้นสุดคิวการเล่น', 'error');
   }
   
   async playPrev() {
     const track = this.state.prevTrack();
     if (track) await this.loadAndPlay(track);
-    else this.showToast('ไม่มีเพลงก่อนหน้าในคิว', 'error');
+    else this.showToast('[STATUS] ไม่พบแทร็กก่อนหน้า', 'error');
   }
   
   async loadAndPlay(track) {
@@ -199,7 +198,7 @@ export class PlayerUI {
       this.refreshLikeButtonState();
       mediaSessionManager.updateMetadata(track);
     } catch (error) {
-      this.showToast('เกิดข้อผิดพลาดในการโหลดไฟล์...', 'error');
+      this.showToast('[ERROR] ถอดรหัสไฟล์ล้มเหลว กำลังสลับแทร็กถัดไป...', 'error');
       setTimeout(() => this.playNext(), 1500);
     }
   }
@@ -218,7 +217,7 @@ export class PlayerUI {
   
   togglePlay() {
     if (!this.audioEl.src) {
-      this.showToast('กรุณาเลือกเพลงจาก Playlist ก่อน', 'error');
+      this.showToast('[WARN] คิวว่าง กรุณาเลือกแทร็กจากเพลย์ลิสต์', 'error');
       return;
     }
     if (this.audioEl.paused) this.audio.play();
@@ -261,7 +260,7 @@ export class PlayerUI {
   
   updateTitle(title) {
     if (this.titleDisplay) this.titleDisplay.textContent = title;
-    if (this.artistDisplay) this.artistDisplay.textContent = 'LOCAL TRACK';
+    if (this.artistDisplay) this.artistDisplay.textContent = 'LOCAL SOURCE';
   }
   
   showToast(message, type = 'success') {
