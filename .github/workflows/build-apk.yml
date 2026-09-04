@@ -29,13 +29,13 @@ jobs:
           npm init -y
           npm install @capacitor/core@latest @capacitor/cli@latest @capacitor/android@latest @capacitor/assets@latest sharp@latest
 
-          # แปลง icon.svg เป็น icon.png (512x512) สำหรับ Media Session และ Icon Generator
-          node -e "
+          cat << 'EOF' > generate-icon.js
           const sharp = require('sharp');
           sharp('icon.svg').resize(512, 512).png().toFile('icon.png')
             .then(() => console.log('Generated icon.png successfully.'))
             .catch(err => { console.error(err); process.exit(1); });
-          "
+          EOF
+          node generate-icon.js
 
           mkdir -p www
           cp -r index.html css js manifest.json icon.svg icon.png www/
@@ -43,53 +43,51 @@ jobs:
           npx cap init "GT SoundMaster" "com.gt.soundmaster" --web-dir www
           npx cap add android
 
-          # เตรียมโฟลเดอร์ Assets สำหรับสร้าง Adaptive Icon ของ Android
           mkdir -p assets
           cp icon.png assets/logo.png
           cp icon.png assets/icon-only.png
           cp icon.png assets/icon-foreground.png
 
-          # สร้าง Android Mipmap และ Adaptive Icons ทั้งหมดลงใน android/
           npx @capacitor/assets generate --android --iconBackgroundColor '#121218'
 
-          # ฉีด Intent Filters สำหรับ Music App และสิทธิ์ Background Media ลงใน AndroidManifest.xml
-          python3 -c "
+          cat << 'EOF' > patch-manifest.py
           manifest_path = 'android/app/src/main/AndroidManifest.xml'
           with open(manifest_path, 'r', encoding='utf-8') as f:
               content = f.read()
 
-          permissions = '''
-    <uses-permission android:name=\"android.permission.WAKE_LOCK\" />
-    <uses-permission android:name=\"android.permission.FOREGROUND_SERVICE\" />
-    <uses-permission android:name=\"android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK\" />
-    <uses-permission android:name=\"android.permission.POST_NOTIFICATIONS\" />
-          '''.strip()
+          permissions = '\n'.join([
+              '    <uses-permission android:name="android.permission.WAKE_LOCK" />',
+              '    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />',
+              '    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />',
+              '    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />'
+          ])
 
           if '<application' in content:
               content = content.replace('<application', permissions + '\n    <application', 1)
 
-          music_intent_filters = '''
-            <intent-filter>
-                <action android:name=\"android.intent.action.MUSIC_PLAYER\" />
-                <category android:name=\"android.intent.category.DEFAULT\" />
-                <category android:name=\"android.intent.category.APP_MUSIC\" />
-            </intent-filter>
-            <intent-filter>
-                <action android:name=\"android.intent.action.VIEW\" />
-                <category android:name=\"android.intent.category.DEFAULT\" />
-                <category android:name=\"android.intent.category.BROWSABLE\" />
-                <data android:scheme=\"file\" />
-                <data android:scheme=\"content\" />
-                <data android:mimeType=\"audio/*\" />
-            </intent-filter>
-          '''.rstrip()
+          music_intent_filters = '\n'.join([
+              '            <intent-filter>',
+              '                <action android:name="android.intent.action.MUSIC_PLAYER" />',
+              '                <category android:name="android.intent.category.DEFAULT" />',
+              '                <category android:name="android.intent.category.APP_MUSIC" />',
+              '            </intent-filter>',
+              '            <intent-filter>',
+              '                <action android:name="android.intent.action.VIEW" />',
+              '                <category android:name="android.intent.category.DEFAULT" />',
+              '                <category android:name="android.intent.category.BROWSABLE" />',
+              '                <data android:scheme="file" />',
+              '                <data android:scheme="content" />',
+              '                <data android:mimeType="audio/*" />',
+              '            </intent-filter>'
+          ])
 
           content = content.replace('</activity>', music_intent_filters + '\n        </activity>', 1)
 
           with open(manifest_path, 'w', encoding='utf-8') as f:
               f.write(content)
           print('Successfully injected Music intent filters and permissions into AndroidManifest.xml')
-          "
+          EOF
+          python3 patch-manifest.py
 
       - name: Sync and Compile Debug APK
         run: |
