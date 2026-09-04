@@ -105,6 +105,7 @@ jobs:
           import android.database.Cursor;
           import android.graphics.Bitmap;
           import android.graphics.BitmapFactory;
+          import android.graphics.drawable.Icon;
           import android.media.MediaMetadata;
           import android.media.session.MediaSession;
           import android.media.session.PlaybackState;
@@ -114,6 +115,7 @@ jobs:
           import android.provider.OpenableColumns;
           import android.webkit.JavascriptInterface;
           import android.webkit.WebView;
+          import com.getcapacitor.Bridge;
           import com.getcapacitor.BridgeActivity;
           import java.io.File;
           import java.io.FileOutputStream;
@@ -140,11 +142,7 @@ jobs:
                           else cmd = null;
 
                           if (cmd != null) {
-                              runOnUiThread(() -> {
-                                  if (getBridge() != null && getBridge().getWebView() != null) {
-                                      getBridge().getWebView().evaluateJavascript(cmd, null);
-                                  }
-                              });
+                              sendJsCommand(cmd);
                           }
                       }
                   }
@@ -158,8 +156,9 @@ jobs:
                   setupMediaSession();
                   registerMediaReceiver();
 
-                  if (getBridge() != null && getBridge().getWebView() != null) {
-                      getBridge().getWebView().addJavascriptInterface(new WebAppInterface(), "AndroidBridge");
+                  WebView webView = getAppWebView();
+                  if (webView != null) {
+                      webView.addJavascriptInterface(new WebAppInterface(), "AndroidBridge");
                   }
 
                   handleIntent(getIntent());
@@ -186,6 +185,11 @@ jobs:
                   if (notificationManager != null) {
                       notificationManager.cancel(NOTIFICATION_ID);
                   }
+              }
+
+              private WebView getAppWebView() {
+                  Bridge bridge = getBridge();
+                  return bridge != null ? bridge.getWebView() : null;
               }
 
               private void createNotificationChannel() {
@@ -232,8 +236,8 @@ jobs:
                   filter.addAction("com.gt.soundmaster.PLAYPAUSE");
                   filter.addAction("com.gt.soundmaster.NEXT");
 
-                  if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                      registerReceiver(mediaReceiver, filter, Context.RECEIVER_NOT_EXPORTED);
+                  if (Build.VERSION.SDK_INT >= 33) {
+                      registerReceiver(mediaReceiver, filter, 4);
                   } else {
                       registerReceiver(mediaReceiver, filter);
                   }
@@ -241,8 +245,9 @@ jobs:
 
               private void sendJsCommand(String cmd) {
                   runOnUiThread(() -> {
-                      if (getBridge() != null && getBridge().getWebView() != null) {
-                          getBridge().getWebView().evaluateJavascript(cmd, null);
+                      WebView webView = getAppWebView();
+                      if (webView != null) {
+                          webView.evaluateJavascript(cmd, null);
                       }
                   });
               }
@@ -291,24 +296,33 @@ jobs:
                       builder = new Notification.Builder(this);
                   }
 
+                  Icon iconPrev = Icon.createWithResource(this, android.R.drawable.ic_media_previous);
+                  Icon iconPlay = Icon.createWithResource(this, isPlaying ? android.R.drawable.ic_media_pause : android.R.drawable.ic_media_play);
+                  Icon iconNext = Icon.createWithResource(this, android.R.drawable.ic_media_next);
+
                   Notification.Action prevAction = new Notification.Action.Builder(
-                      android.R.drawable.ic_media_previous, "Previous",
+                      iconPrev, "Previous",
                       getBroadcastPendingIntent("com.gt.soundmaster.PREV", 1)
                   ).build();
 
                   Notification.Action playPauseAction = new Notification.Action.Builder(
-                      isPlaying ? android.R.drawable.ic_media_pause : android.R.drawable.ic_media_play,
-                      isPlaying ? "Pause" : "Play",
+                      iconPlay, isPlaying ? "Pause" : "Play",
                       getBroadcastPendingIntent("com.gt.soundmaster.PLAYPAUSE", 2)
                   ).build();
 
                   Notification.Action nextAction = new Notification.Action.Builder(
-                      android.R.drawable.ic_media_next, "Next",
+                      iconNext, "Next",
                       getBroadcastPendingIntent("com.gt.soundmaster.NEXT", 3)
                   ).build();
 
-                  builder.setSmallIcon(R.mipmap.ic_launcher)
-                      .setContentTitle(title)
+                  int smallIconId = getResources().getIdentifier("ic_launcher", "mipmap", getPackageName());
+                  if (smallIconId != 0) {
+                      builder.setSmallIcon(smallIconId);
+                  } else {
+                      builder.setSmallIcon(android.R.drawable.ic_media_play);
+                  }
+
+                  builder.setContentTitle(title)
                       .setContentText(artist)
                       .setContentIntent(contentPendingIntent)
                       .setVisibility(Notification.VISIBILITY_PUBLIC)
@@ -321,9 +335,12 @@ jobs:
                           .setShowActionsInCompactView(0, 1, 2));
 
                   try {
-                      Bitmap largeIcon = BitmapFactory.decodeResource(getResources(), R.mipmap.ic_launcher);
-                      if (largeIcon != null) {
-                          builder.setLargeIcon(largeIcon);
+                      int largeIconId = getResources().getIdentifier("ic_launcher", "mipmap", getPackageName());
+                      if (largeIconId != 0) {
+                          Bitmap largeIcon = BitmapFactory.decodeResource(getResources(), largeIconId);
+                          if (largeIcon != null) {
+                              builder.setLargeIcon(largeIcon);
+                          }
                       }
                   } catch (Exception ignored) {}
 
@@ -370,25 +387,14 @@ jobs:
                       }
 
                       String localUrl = "https://localhost/_capacitor_file_" + destFile.getAbsolutePath();
-                      String json = "{\"name\":\"" + escapeJson(fileName) + "\",\"url\":\"" + localUrl + "\"}";
+                      String cleanName = fileName.replace("\"", "").replace("'", "");
+                      String json = "{\"name\":\"" + cleanName + "\",\"url\":\"" + localUrl + "\"}";
                       this.pendingTrackJson = json;
 
-                      runOnUiThread(() -> {
-                          if (getBridge() != null && getBridge().getWebView() != null) {
-                              getBridge().getWebView().evaluateJavascript(
-                                  "if (typeof window.handleExternalTrack === 'function') { window.handleExternalTrack(" + json + "); }",
-                                  null
-                              );
-                          }
-                      });
+                      sendJsCommand("if (typeof window.handleExternalTrack === 'function') { window.handleExternalTrack(" + json + "); }");
                   } catch (Exception e) {
                       e.printStackTrace();
                   }
-              }
-
-              private String escapeJson(String str) {
-                  if (str == null) return "";
-                  return str.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "").replace("\r", "");
               }
 
               public class WebAppInterface {

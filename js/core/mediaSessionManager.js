@@ -19,7 +19,6 @@ export class MediaSessionManager {
     this.onNextTrack = onNext;
     this.onPrevTrack = onPrev;
     
-    // รับ Action สั่งงานจากแผง Lock Screen และ Notification Bar ของ Android
     window.mediaControlAction = (action) => {
       if (action === 'playpause') {
         this.audioEl.paused ? this.audio.play() : this.audio.pause();
@@ -128,7 +127,6 @@ export class MediaSessionManager {
     
     const cleanTitle = track.name ? track.name.replace(/\.[^/.]+$/, '') : 'GT Track';
     
-    // ส่งคำสั่งให้ Native Android แจ้งเตือนบนแถบแจ้งเตือนและหน้าจอล็อค
     if (window.AndroidBridge && typeof window.AndroidBridge.updatePlayback === 'function') {
       window.AndroidBridge.updatePlayback(cleanTitle, 'GT SoundMaster', !this.audioEl.paused);
     }

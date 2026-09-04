@@ -21,7 +21,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     const eqUi = new EqUI();
     helpUI.init();
     
-    // กำหนด Callback สำหรับ Media Session Control (หน้าจอล็อค & Notification Bar)
     mediaSessionManager.init({
       onNext: () => playerUi.playNext(),
       onPrev: () => playerUi.playPrev()
@@ -42,7 +41,6 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
     };
     
-    // ฟังก์ชันสั่งเล่นเพลงที่เปิดเข้ามาจากภายนอกแอป (File Manager / Intent)
     const playExternalAudio = async (trackData) => {
       if (!trackData || !trackData.url) return;
       try {
@@ -57,12 +55,10 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
     };
     
-    // รองรับการกดเปิดไฟล์ขณะที่แอปเปิดค้างอยู่แล้ว (Warm Start)
     window.handleExternalTrack = (trackData) => {
       playExternalAudio(trackData);
     };
     
-    // ตรวจสอบเพลงที่เปิดค้างไว้ตั้งแต่ตอนเปิดแอปครั้งแรก (Cold Start)
     if (window.AndroidBridge && typeof window.AndroidBridge.getPendingTrack === 'function') {
       try {
         const pendingRaw = window.AndroidBridge.getPendingTrack();

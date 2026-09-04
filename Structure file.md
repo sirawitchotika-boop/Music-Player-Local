@@ -42,7 +42,7 @@
 - External Intent File Resolution:
   ผู้ใช้กดไฟล์เพลงใน File Manager -> Android OS ยิง Intent ACTION_VIEW สู่ MainActivity -> MainActivity คัดลอก Stream สู่แคชในตัวแอปแล้วแปลงเป็น Local URL -> ส่งผ่าน AndroidBridge เข้าสู่ window.handleExternalTrack หรือ getPendingTrack() -> audioEngine.load() โหลดและเริ่มเล่นเพลงทันทีโดยไม่ต้องรอเพิ่มลงเพลย์ลิสต์
 - Native Lock Screen & Notification Shade Control Flow:
-  - ทิศทางขาออก (App สู่ Native OS): เมื่อเพลงเริ่มเล่น mediaSessionManager.js จะส่ง Title และ Artist ผ่าน AndroidBridge.updatePlayback() -> Native Android Service สร้าง NotificationCompat ด้วย Notification.MediaStyle และ MediaSession Token ทันที ทำให้ปุ่ม Play/Pause, Next, Previous ปรากฏบนหน้าจอล็อค
+  - ทิศทางขาออก (App สู่ Native OS): เมื่อเพลงเริ่มเล่น mediaSessionManager.js จะส่ง Title และ Artist ผ่าน AndroidBridge.updatePlayback() -> Native Android Service สร้าง Notification ด้วย Notification.MediaStyle และ MediaSession Token ทันที ทำให้ปุ่ม Play/Pause, Next, Previous ปรากฏบนหน้าจอล็อค
   - ทิศทางขาเข้า (Native OS สู่ App): เมื่อผู้ใช้กดปุ่มบนหน้าจอล็อคหรือแถบแจ้งเตือน -> BroadcastReceiver รับ Action และประมวลผลคำสั่ง window.mediaControlAction() กลับมายัง PlayerUI เพื่อควบคุมการเล่นเพลงแบบเรียลไทม์
 - Audiophile Audio Processing Graph:
   audioEngine.audioElement -> MediaElementAudioSourceNode
@@ -52,7 +52,7 @@
 ## 4. Module Connections & Dependencies (สายสัมพันธ์ของไฟล์)
 
 ### App Configuration & CI/CD Pipeline
-- **.github/workflows/build-apk.yml**: จัดการการคอมไพล์ Android Debug APK แบบอัตโนมัติ แปลงไอคอน ฉีดสิทธิ์ Android Permissions (READ_MEDIA_AUDIO, READ_EXTERNAL_STORAGE, FOREGROUND_SERVICE_MEDIA_PLAYBACK, WAKE_LOCK, POST_NOTIFICATIONS) และแพตช์ MainActivity.java ให้มี MediaSession และ Intent Resolution
+- **.github/workflows/build-apk.yml**: จัดการการคอมไพล์ Android Debug APK แบบอัตโนมัติ แปลงไอคอน ฉีดสิทธิ์ Android Permissions (READ_MEDIA_AUDIO, READ_EXTERNAL_STORAGE, FOREGROUND_SERVICE_MEDIA_PLAYBACK, WAKE_LOCK, POST_NOTIFICATIONS) และเขียนคลาส MainActivity.java ให้มี MediaSession และ Intent Resolution
   - *ดึงค่าจาก (Imports):* actions/checkout@v4, actions/setup-java@v4, actions/setup-node@v4, actions/upload-artifact@v4, @capacitor/core, @capacitor/cli, @capacitor/android, @capacitor/assets, sharp, python3
   - *ถูกเรียกใช้โดย (Used By):* GitHub Actions Platform
   - *จุดเชื่อมต่อ (Endpoints/Hooks):* ./gradlew assembleDebug, Android Manifest & Java Native Source Injection
