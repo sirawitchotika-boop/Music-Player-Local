@@ -26,12 +26,31 @@ jobs:
 
       - name: Bundle Web Files and Initialize Capacitor
         run: |
-          mkdir -p www
-          cp -r index.html css js manifest.json icon.svg www/
           npm init -y
-          npm install @capacitor/core@latest @capacitor/cli@latest @capacitor/android@latest
+          npm install @capacitor/core@latest @capacitor/cli@latest @capacitor/android@latest @capacitor/assets@latest sharp@latest
+
+          # แปลง icon.svg เป็น icon.png (512x512) สำหรับ Media Session และ Icon Generator
+          node -e "
+          const sharp = require('sharp');
+          sharp('icon.svg').resize(512, 512).png().toFile('icon.png')
+            .then(() => console.log('Generated icon.png successfully.'))
+            .catch(err => { console.error(err); process.exit(1); });
+          "
+
+          mkdir -p www
+          cp -r index.html css js manifest.json icon.svg icon.png www/
+
           npx cap init "GT SoundMaster" "com.gt.soundmaster" --web-dir www
           npx cap add android
+
+          # เตรียมโฟลเดอร์ Assets สำหรับสร้าง Adaptive Icon ของ Android
+          mkdir -p assets
+          cp icon.png assets/logo.png
+          cp icon.png assets/icon-only.png
+          cp icon.png assets/icon-foreground.png
+
+          # สร้าง Android Mipmap และ Adaptive Icons ทั้งหมดลงใน android/
+          npx @capacitor/assets generate --android --iconBackgroundColor '#121218'
 
       - name: Sync and Compile Debug APK
         run: |

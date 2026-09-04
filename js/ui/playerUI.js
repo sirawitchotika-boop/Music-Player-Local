@@ -1,5 +1,6 @@
-// พิกัดไฟล์: js/ui/playerUI.js
+// js/ui/playerUI.js
 import { modalUI } from './modalUI.js';
+import { mediaSessionManager } from '../core/mediaSessionManager.js';
 
 export class PlayerUI {
   constructor(stateManager, audioEngine) {
@@ -67,6 +68,7 @@ export class PlayerUI {
         if (!this.audioEl.duration) return;
         const seekTime = (e.target.value / 100) * this.audioEl.duration;
         this.audio.seek(seekTime);
+        mediaSessionManager.updatePositionState();
         this.isDragging = false;
       });
       this.seekBar.addEventListener('touchend', () => this.isDragging = false);
@@ -84,13 +86,12 @@ export class PlayerUI {
     this.audioEl.addEventListener('pause', () => this.updatePlayState(false));
     this.audioEl.addEventListener('loadedmetadata', () => this.updateDuration());
     
-    // จัดการจบเพลงที่นี่ที่เดียว ไม่ให้ซ้ำซ้อนกับ audioEngine
     this.audioEl.addEventListener('ended', () => this.playNext());
   }
   
   handleLikeClick() {
     if (!this.audioEl.src || this.state.currentTrackIndex === -1) {
-      this.showToast('เครื่องยนต์ว่างเปล่า โหลดเพลงก่อนค่ะบอส', 'error');
+      this.showToast('ยังไม่มีเพลงที่เล่นอยู่', 'error');
       return;
     }
     
@@ -102,10 +103,10 @@ export class PlayerUI {
     
     if (willLike) {
       this.favoriteBtn.classList.add('active');
-      this.showToast('เพิ่มเข้า Favorites แล้วค่ะ ❤️', 'info');
+      this.showToast('เพิ่มใน Favorites แล้ว', 'info');
     } else {
       this.favoriteBtn.classList.remove('active');
-      this.showToast('ปลดออกจาก Favorites แล้วค่ะ', 'error');
+      this.showToast('ลบออกจาก Favorites แล้ว', 'error');
     }
     
     clearTimeout(this.likeDebounceTimer);
@@ -152,6 +153,7 @@ export class PlayerUI {
         seekInterval = setInterval(() => {
           if (this.audioEl.duration) {
             this.audioEl.currentTime += (direction === 'next' ? 3 : -3);
+            mediaSessionManager.updatePositionState();
           }
         }, 150);
       }, 400);
@@ -180,13 +182,13 @@ export class PlayerUI {
   async playNext() {
     const track = this.state.nextTrack();
     if (track) await this.loadAndPlay(track);
-    else this.showToast('ไม่มีเพลงถัดไปในคิวค่ะ', 'error');
+    else this.showToast('ไม่มีเพลงถัดไปในคิว', 'error');
   }
   
   async playPrev() {
     const track = this.state.prevTrack();
     if (track) await this.loadAndPlay(track);
-    else this.showToast('ไม่มีเพลงก่อนหน้าค่ะ', 'error');
+    else this.showToast('ไม่มีเพลงก่อนหน้าในคิว', 'error');
   }
   
   async loadAndPlay(track) {
@@ -195,8 +197,9 @@ export class PlayerUI {
       await this.audio.play();
       this.updateTitle(track.name.replace(/\.[^/.]+$/, ""));
       this.refreshLikeButtonState();
+      mediaSessionManager.updateMetadata(track);
     } catch (error) {
-      this.showToast('ไฟล์นี้เสีย ข้ามอัตโนมัตินะคะ...', 'error');
+      this.showToast('เกิดข้อผิดพลาดในการโหลดไฟล์...', 'error');
       setTimeout(() => this.playNext(), 1500);
     }
   }
@@ -215,7 +218,7 @@ export class PlayerUI {
   
   togglePlay() {
     if (!this.audioEl.src) {
-      this.showToast('เครื่องยนต์ว่างเปล่า แตะเพลงใน Playlist ก่อนค่ะ', 'error');
+      this.showToast('กรุณาเลือกเพลงจาก Playlist ก่อน', 'error');
       return;
     }
     if (this.audioEl.paused) this.audio.play();

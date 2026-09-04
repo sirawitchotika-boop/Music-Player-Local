@@ -1,3 +1,4 @@
+// js/app.js
 import { timerUI } from './ui/timerUI.js';
 import { audioEngine } from './core/audioEngine.js';
 import { StateManager } from './core/stateManager.js';
@@ -6,6 +7,7 @@ import { PlayerUI } from './ui/playerUI.js';
 import { storage } from './core/storage.js';
 import { EqUI } from './ui/eqUI.js';
 import { helpUI } from './ui/helpUI.js';
+import { mediaSessionManager } from './core/mediaSessionManager.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
   try {
@@ -19,11 +21,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     const eqUi = new EqUI();
     helpUI.init();
     
+    // กำหนด Callback สำหรับ Media Session Control (หน้าจอล็อค & Notification Bar)
+    mediaSessionManager.init({
+      onNext: () => playerUi.playNext(),
+      onPrev: () => playerUi.playPrev()
+    });
+    
     const originalPlay = playlistUi.playTrack.bind(playlistUi);
     playlistUi.playTrack = async (track) => {
       await originalPlay(track);
       const trackName = track.name.replace(/\.[^/.]+$/, "");
       playerUi.updateTitle(trackName);
+      mediaSessionManager.updateMetadata(track);
     };
     
     window.nextTrackFallback = () => {
