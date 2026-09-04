@@ -1,15 +1,20 @@
 # Project Architecture & Dependency Matrix
 
 ## 1. Project Overview & Architecture (ภาพรวมและสถาปัตยกรรม)
-- Description: เครื่องเล่นเพลงระดับพรีเมียมทำงานแบบ Local Client-Side 100% เล่นไฟล์เสียงในเครื่องโดยไม่ต้องพึ่งพาเซิร์ฟเวอร์ พร้อมระบบ 10-Band Audiophile EQ, Pre-Amp Headroom Management, Pure Direct Mode, Transparent Safety Limiter, Sleep Timer, วงแหวน Audio Visualizer ตอบสนองความถี่เสียงแบบเรียลไทม์ และระบบแนะนำการใช้งาน (User Guide)
-- Tech Stack: HTML5, CSS3 (Glassmorphism), Vanilla JavaScript (ES6 Modules), Web Audio API, IndexedDB API, LocalStorage API
-- Architecture Pattern: Modular Component Architecture (Separation of Concerns: Core Audio Engines, State Management, Local Persistence, และ UI Layer)
+- Description: GT SoundMaster คือเครื่องเล่นเพลงระดับพรีเมียมทำงานแบบ Local Client-Side 100% เล่นไฟล์เสียงในเครื่องโดยไม่ต้องพึ่งพาเซิร์ฟเวอร์ พร้อมระบบ 10-Band Audiophile EQ, Pre-Amp Headroom Management, Pure Direct Mode, Transparent Safety Limiter, Sleep Timer, วงแหวน Audio Visualizer ตอบสนองความถี่เสียงแบบเรียลไทม์, ระบบแนะนำการใช้งาน (User Guide) และรองรับการคอมไพล์เป็น Android APK อัตโนมัติผ่าน GitHub Actions
+- Tech Stack: HTML5, CSS3 (Glassmorphism), Vanilla JavaScript (ES6 Modules), Web Audio API, IndexedDB API, LocalStorage API, Web App Manifest, Capacitor Android SDK
+- Architecture Pattern: Modular Component Architecture (Separation of Concerns: Core Audio Engines, State Management, Local Persistence, UI Layer, และ CI/CD Mobile Build Pipeline)
 
 ## 2. Directory Tree (โครงสร้างโฟลเดอร์)
 / (Root)
 ├── index.html
+├── manifest.json
+├── icon.svg
 ├── Structure file.md
 ├── Project Roadmap
+├── .github/
+│   └── workflows/
+│       └── build-apk.yml
 ├── css/
 │   ├── eq.css
 │   ├── help.css
@@ -40,13 +45,30 @@
   └── Dry Path (Pure Direct) -> `dryGain` -> `audioCtx.destination` + `analyser`
 - การควบคุมสถานะการเล่น: Event Listeners ใน `playerUI.js` สั่งการผ่าน `audioEngine.js` และ `stateManager.js` -> ควบคุมคิวเพลง ลูป สุ่มเพลง และอัปเดตสถานะแบบเรียลไทม์
 - ระบบตัวช่วยแนะนำการใช้งาน: ปุ่ม `help-btn` ใน `index.html` รับการคลิก -> สั่งการผ่าน `helpUI.js` เพื่อสลับคลาส `hidden` ของโมดอล `help-modal`
+- การบรรจุแอปพลิเคชัน (Mobile Packaging Pipeline): โค้ด Web ทั้งหมดถูกรวบรวมลงโฟลเดอร์ `www` ผ่าน GitHub Actions Workflow -> ถูกห่อหุ้มด้วย Capacitor Android Runtime -> คอมไพล์ผ่าน Gradle Wrapper ออกมาเป็น `app-debug.apk`
 
 ## 4. Module Connections & Dependencies (สายสัมพันธ์ของไฟล์)
 
+### App Configuration & CI/CD
+- **manifest.json**: กำหนดคุณสมบัติ Web App Manifest, การแสดงผลแบบ Standalone, Theme Color และตำแหน่งไอคอน
+  - ดึงค่าจาก: `icon.svg`
+  - ถูกเรียกใช้โดย: `index.html`, Capacitor Android Build Pipeline
+  - จุดเชื่อมต่อ: Web App Install Banner, Android App Launcher Configuration
+
+- **icon.svg**: ไฟล์ภาพไอคอนความละเอียดสูงแบบ Vector สำหรับแอปพลิเคชันและ Favicon
+  - ดึงค่าจาก: ไม่มี
+  - ถูกเรียกใช้โดย: `index.html`, `manifest.json`, Capacitor Build Pipeline
+  - จุดเชื่อมต่อ: หน้าจอแสดงผล Splash Screen และ App Icon
+
+- **.github/workflows/build-apk.yml**: สคริปต์อัตโนมัติบน GitHub Actions สำหรับคอมไพล์โปรเจกต์เว็บเป็นไฟล์ Android APK
+  - ดึงค่าจาก: ไฟล์ทั้งหมดในโปรเจกต์ (`index.html`, `css/*`, `js/*`, `manifest.json`, `icon.svg`)
+  - ถูกเรียกใช้โดย: GitHub Actions Runner (เมื่อเกิดการ Push ไปยัง Branch `main` หรือ `master`)
+  - จุดเชื่อมต่อ: Android SDK Build Tools, Gradle Wrapper (`./gradlew assembleDebug`), GitHub Artifacts Storage
+
 ### Entry Point & Application Core
 - **index.html**: โครงสร้าง Layout หลักของแอปพลิเคชัน โมดอล EQ, Sleep Timer, Help Guide และคอนเทนเนอร์แสดงผล
-  - ดึงค่าจาก: `css/*.css`, `js/app.js`
-  - ถูกเรียกใช้โดย: เว็บบราวเซอร์ (Root Document)
+  - ดึงค่าจาก: `manifest.json`, `icon.svg`, `css/*.css`, `js/app.js`
+  - ถูกเรียกใช้โดย: เว็บบราวเซอร์, Capacitor WebView
   - จุดเชื่อมต่อ: DOM Elements IDs (`#app-container`, `#help-modal`, `#help-btn`, `#eq-modal`, `#timer-modal`, `#playlist-section`)
 
 - **js/app.js**: จุดเริ่มต้นการบูตสแตรปแอปพลิเคชัน ผูกความสัมพันธ์ของ State, Storage, Audio Engine และ UI ทั้งหมด
@@ -107,7 +129,6 @@
   - จุดเชื่อมต่อ: `showAlert()`, `showConfirm()`, `showPrompt()`, `showDoublePrompt()`, `showToast()`
 
 ## 5. Scalability & Refactoring Notes (แผนการขยายสเกล)
-- **IndexedDB Quota Management**: เมื่อมีการนำเข้าไฟล์เสียงขนาดใหญ่จำนวนมาก ควรเพิ่มระบบตรวจสอบ Storage Quota ผ่าน `navigator.storage.estimate()` เพื่อแจ้งเตือนความจุคงเหลือก่อนที่เบราว์เซอร์จะปฏิเสธการเขียนข้อมูล
-- **Audio Decoding Optimization**: หากในอนาคตต้องการรองรับการอ่าน Metadata (ID3 Tags, หน้าปกอัลบั้มแบบฝัง) ควรแยก Web Worker สำหรับ Parse ข้อมูลไฟล์เสียง เพื่อไม่ให้บล็อก Main UI Thread
-- **Modular CSS Migration**: ปัจจุบันแยก CSS ตาม Feature แล้ว หากระบบเติบโตขึ้น สามารถจัดทำ CSS Variables กลางไว้ใน `main.css` เพิ่มเติมเพื่อควบคุมชุดสีและดีไซน์โทนเดียวได้อย่างเบ็ดเสร็จ
-- 
+- **APK Release Automation**: เมื่อต้องการแจกจ่าย APK ให้ผู้ใช้อื่น สามารถปรับแต่ง `build-apk.yml` ให้สร้าง GitHub Release พร้อมแนบไฟล์ `.apk` โดยอัตโนมัติเมื่อมีการติดแท็กเวอร์ชันใหม่ (Git Tag)
+- **Native Audio Background Playback**: หากต้องการให้แอปในรูปแบบ APK เล่นเพลงต่อเนื่องเมื่อหน้าจอดับลงในอุปกรณ์บางยี่ห้อ สามารถเพิ่ม Capacitor Background Mode Plugin ในขั้นตอนบิลด์ได้
+- **Icon Adaptive Generation**: ในอนาคตสามารถใช้คำสั่ง `@capacitor/assets` ภายในเวิร์กโฟลว์เพื่อแปลง `icon.svg` เป็น Adaptive Icon หลากขนาดสำหรับโฟลเดอร์ `res/mipmap-*` ของ Android โดยอัตโนมัติ
