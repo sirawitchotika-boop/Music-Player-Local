@@ -14,19 +14,13 @@ class StorageManager {
   async initDB() {
     return new Promise((resolve, reject) => {
       const request = indexedDB.open(DB_NAME, DB_VERSION);
-      
-      request.onerror = (event) => {
-        console.error("IndexedDB error:", event.target.errorCode);
-        reject(new Error("ระบบไม่สามารถเปิดฐานข้อมูลได้ค่ะ"));
-      };
-      
-      request.onsuccess = (event) => {
-        this.db = event.target.result;
+      request.onerror = (e) => reject(new Error("ระบบไม่สามารถเปิดฐานข้อมูลได้ค่ะ"));
+      request.onsuccess = (e) => {
+        this.db = e.target.result;
         resolve(this.db);
       };
-      
-      request.onupgradeneeded = (event) => {
-        const db = event.target.result;
+      request.onupgradeneeded = (e) => {
+        const db = e.target.result;
         if (!db.objectStoreNames.contains(STORE_NAME)) {
           db.createObjectStore(STORE_NAME, { keyPath: 'id', autoIncrement: true });
         }
@@ -47,8 +41,6 @@ class StorageManager {
       const file = fileList[i];
       if (file.type && (file.type.startsWith('audio/') || allowedTypes.includes(file.type))) {
         validFiles.push(file);
-      } else {
-        console.warn(`บล็อกไฟล์: ${file.name} (ไม่ใช่ไฟล์เสียงที่รองรับ)`);
       }
     }
     return validFiles;
@@ -59,30 +51,47 @@ class StorageManager {
     const validFiles = this.validateAudioFiles(fileList);
     if (validFiles.length === 0) throw new Error("ไม่มีไฟล์เสียงที่ถูกต้องให้บันทึกเลยค่ะ");
     
-    // ตรวจสอบเพลงเดิม ป้องกันเพลงซ้ำ
     const existingTracks = await this.getAllTracks();
-    const existingMap = new Set(existingTracks.map(t => `${t.name}_${t.size}`));
+    const existingMap = new Map();
+    existingTracks.forEach(t => existingMap.set(`${t.name}_${t.size}`, t));
     
     return new Promise((resolve, reject) => {
-      const transaction = this.db.transaction([STORE_NAME], 'readwrite');
-      const store = transaction.objectStore(STORE_NAME);
+      const tx = this.db.transaction([STORE_NAME], 'readwrite');
+      const store = tx.objectStore(STORE_NAME);
       let addedCount = 0;
       let skippedCount = 0;
+      const processedTracks = [];
       
-      transaction.oncomplete = () => resolve({ success: true, count: addedCount, skipped: skippedCount });
-      transaction.onerror = (event) => {
-        const error = event.target.error;
-        if (error.name === 'QuotaExceededError') {
-          reject(new Error("พื้นที่ความจำของเครื่องเต็มแล้วค่ะ ไม่สามารถบันทึกเพลงเพิ่มได้"));
+      tx.oncomplete = () => {
+        resolve({
+          success: true,
+          count: addedCount,
+          skipped: skippedCount,
+          processedTracks
+        });
+      };
+      
+      tx.onerror = (e) => {
+        if (e.target.error && e.target.error.name === 'QuotaExceededError') {
+          reject(new Error("พื้นที่ความจำของเครื่องเต็มแล้วค่ะ"));
         } else {
           reject(new Error("เกิดข้อผิดพลาดระหว่างบันทึกไฟล์ลงระบบ"));
         }
       };
       
       validFiles.forEach(file => {
+        if (!file.size || file.size <= 0) {
+          skippedCount++;
+          return;
+        }
+        
         const key = `${file.name}_${file.size}`;
         if (existingMap.has(key)) {
           skippedCount++;
+          processedTracks.push({
+            track: existingMap.get(key),
+            isNew: false
+          });
           return;
         }
         
@@ -91,12 +100,17 @@ class StorageManager {
           type: file.type,
           size: file.size,
           blob: file,
-          addedAt: new Date().getTime()
+          addedAt: Date.now()
         };
-        const request = store.add(trackData);
-        request.onsuccess = () => {
+        const req = store.add(trackData);
+        req.onsuccess = (e) => {
           addedCount++;
-          existingMap.add(key);
+          const savedTrack = { ...trackData, id: e.target.result };
+          existingMap.set(key, savedTrack);
+          processedTracks.push({
+            track: savedTrack,
+            isNew: true
+          });
         };
       });
     });
@@ -105,86 +119,60 @@ class StorageManager {
   async getAllTracks() {
     if (!this.db) await this.initDB();
     return new Promise((resolve, reject) => {
-      const transaction = this.db.transaction([STORE_NAME], 'readonly');
-      const store = transaction.objectStore(STORE_NAME);
-      const request = store.getAll();
-      request.onsuccess = () => resolve(request.result || []);
-      request.onerror = () => reject(new Error("ไม่สามารถดึงข้อมูลคิวเพลงจากระบบได้ค่ะ"));
+      const tx = this.db.transaction([STORE_NAME], 'readonly');
+      const req = tx.objectStore(STORE_NAME).getAll();
+      req.onsuccess = () => resolve(req.result || []);
+      req.onerror = () => reject(new Error("ไม่สามารถดึงข้อมูลคิวเพลงได้ค่ะ"));
     });
   }
   
   async deleteTrack(id) {
     if (!this.db) await this.initDB();
     return new Promise((resolve, reject) => {
-      const transaction = this.db.transaction([STORE_NAME], 'readwrite');
-      const store = transaction.objectStore(STORE_NAME);
-      const request = store.delete(id);
-      request.onsuccess = () => resolve(true);
-      request.onerror = () => reject(new Error("ลบไฟล์เพลงไม่สำเร็จค่ะ"));
-    });
-  }
-  
-  // --- EQ Preset Management ---
-  async getEqPresets() {
-    if (!this.db) await this.initDB();
-    return new Promise((resolve, reject) => {
-      const tx = this.db.transaction([EQ_STORE], 'readonly');
-      const req = tx.objectStore(EQ_STORE).getAll();
-      req.onsuccess = () => resolve(req.result || []);
-      req.onerror = () => reject(new Error("ดึงข้อมูล Preset ไม่สำเร็จค่ะ"));
-    });
-  }
-  
-  async saveEqPreset(presetData) {
-    if (!this.db) await this.initDB();
-    return new Promise((resolve, reject) => {
-      const tx = this.db.transaction([EQ_STORE], 'readwrite');
-      const req = tx.objectStore(EQ_STORE).put(presetData);
-      req.onsuccess = () => resolve(presetData);
-      req.onerror = () => reject(new Error("บันทึก Preset ไม่สำเร็จค่ะ"));
-    });
-  }
-  
-  async deleteEqPreset(id) {
-    if (!this.db) await this.initDB();
-    return new Promise((resolve, reject) => {
-      const tx = this.db.transaction([EQ_STORE], 'readwrite');
-      const req = tx.objectStore(EQ_STORE).delete(id);
+      const tx = this.db.transaction([STORE_NAME], 'readwrite');
+      const req = tx.objectStore(STORE_NAME).delete(id);
       req.onsuccess = () => resolve(true);
-      req.onerror = () => reject(new Error("ลบ Preset ไม่สำเร็จค่ะ"));
+      req.onerror = () => reject(new Error("ลบไฟล์เพลงไม่สำเร็จค่ะ"));
     });
   }
   
-  // --- Timer Preset Management ---
-  async getTimerPresets() {
+  async _getAllFromStore(storeName) {
     if (!this.db) await this.initDB();
     return new Promise((resolve, reject) => {
-      const tx = this.db.transaction([TIMER_STORE], 'readonly');
-      const req = tx.objectStore(TIMER_STORE).getAll();
+      const tx = this.db.transaction([storeName], 'readonly');
+      const req = tx.objectStore(storeName).getAll();
       req.onsuccess = () => resolve(req.result || []);
-      req.onerror = () => reject(new Error("ดึงข้อมูล Timer Preset ไม่สำเร็จค่ะ"));
+      req.onerror = () => reject(new Error(`ดึงข้อมูล ${storeName} ไม่สำเร็จค่ะ`));
     });
   }
   
-  async saveTimerPreset(presetData) {
+  async _putToStore(storeName, data) {
     if (!this.db) await this.initDB();
     return new Promise((resolve, reject) => {
-      const tx = this.db.transaction([TIMER_STORE], 'readwrite');
-      const req = tx.objectStore(TIMER_STORE).put(presetData);
-      req.onsuccess = () => resolve(presetData);
-      req.onerror = () => reject(new Error("บันทึก Timer Preset ไม่สำเร็จค่ะ"));
+      const tx = this.db.transaction([storeName], 'readwrite');
+      const req = tx.objectStore(storeName).put(data);
+      req.onsuccess = () => resolve(data);
+      req.onerror = () => reject(new Error(`บันทึก ${storeName} ไม่สำเร็จค่ะ`));
     });
   }
   
-  async deleteTimerPreset(id) {
+  async _deleteFromStore(storeName, id) {
     if (!this.db) await this.initDB();
     return new Promise((resolve, reject) => {
-      const tx = this.db.transaction([TIMER_STORE], 'readwrite');
-      const req = tx.objectStore(TIMER_STORE).delete(id);
+      const tx = this.db.transaction([storeName], 'readwrite');
+      const req = tx.objectStore(storeName).delete(id);
       req.onsuccess = () => resolve(true);
-      req.onerror = () => reject(new Error("ลบ Timer Preset ไม่สำเร็จค่ะ"));
+      req.onerror = () => reject(new Error(`ลบจาก ${storeName} ไม่สำเร็จค่ะ`));
     });
   }
+  
+  async getEqPresets() { return this._getAllFromStore(EQ_STORE); }
+  async saveEqPreset(presetData) { return this._putToStore(EQ_STORE, presetData); }
+  async deleteEqPreset(id) { return this._deleteFromStore(EQ_STORE, id); }
+  
+  async getTimerPresets() { return this._getAllFromStore(TIMER_STORE); }
+  async saveTimerPreset(presetData) { return this._putToStore(TIMER_STORE, presetData); }
+  async deleteTimerPreset(id) { return this._deleteFromStore(TIMER_STORE, id); }
   
   async clearTimerPresets() {
     if (!this.db) await this.initDB();

@@ -1,3 +1,4 @@
+// File: js/ui/playlistUI.js
 import { storage } from '../core/storage.js';
 import { modalUI } from './modalUI.js';
 
@@ -41,133 +42,134 @@ export class PlaylistUI {
     }
     
     if (this.dropdownToggle) {
-        this.dropdownToggle.addEventListener('click', (e) => {
-            e.stopPropagation();
-            this.dropdownMenu.classList.toggle('hidden');
-        });
+      this.dropdownToggle.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.dropdownMenu.classList.toggle('hidden');
+      });
     }
     
     document.addEventListener('click', () => {
-        if (this.dropdownMenu && !this.dropdownMenu.classList.contains('hidden')) {
-            this.dropdownMenu.classList.add('hidden');
-        }
+      if (this.dropdownMenu && !this.dropdownMenu.classList.contains('hidden')) {
+        this.dropdownMenu.classList.add('hidden');
+      }
     });
 
     if (this.addPlaylistBtn) {
-        this.addPlaylistBtn.addEventListener('click', async () => {
-            const val = await modalUI.showPrompt("สร้าง Playlist ใหม่", "กรอกชื่อ Playlist ที่ต้องการค่ะ");
-            if (val && val.trim()) {
-                const newId = 'pl_' + Date.now();
-                this.playlists.push({ id: newId, name: val.trim(), tracks: [] });
-                this.savePlaylists();
-                this.renderDropdown();
-                this.selectPlaylist(newId);
-                modalUI.showToast(`สร้าง ${val} เรียบร้อยค่ะ`);
-            }
-        });
+      this.addPlaylistBtn.addEventListener('click', async () => {
+        const val = await modalUI.showPrompt("สร้าง Playlist ใหม่", "กรอกชื่อ Playlist ที่ต้องการค่ะ");
+        if (val && val.trim()) {
+          const newId = 'pl_' + Date.now();
+          this.playlists.push({ id: newId, name: val.trim(), tracks: [] });
+          this.savePlaylists();
+          this.renderDropdown();
+          this.selectPlaylist(newId);
+          modalUI.showToast(`สร้าง ${val} เรียบร้อยค่ะ`);
+        }
+      });
     }
     
     if (this.audio && this.audio.audioElement) {
-        this.audio.audioElement.addEventListener('play', () => this.updateActiveHighlight());
+      this.audio.audioElement.addEventListener('play', () => this.updateActiveHighlight());
     }
 
     const playlistToggleBtn = document.getElementById('playlist-toggle-btn');
     if (playlistToggleBtn) {
-        playlistToggleBtn.addEventListener('click', () => {
-            setTimeout(() => this.updateActiveHighlight(true), 300);
-        });
+      playlistToggleBtn.addEventListener('click', () => {
+        setTimeout(() => this.updateActiveHighlight(true), 300);
+      });
     }
     
     window.addEventListener('gt-liked-updated', () => {
-        this.likedTracks = JSON.parse(localStorage.getItem('gt_liked_tracks')) || [];
-        if (this.currentPlaylistId === 'favorites') {
-            this.loadPlaylist();
-        }
+      this.likedTracks = JSON.parse(localStorage.getItem('gt_liked_tracks')) || [];
+      if (this.currentPlaylistId === 'favorites') {
+        this.loadPlaylist();
+      }
     });
   }
 
   savePlaylists() {
-      localStorage.setItem('gt_playlists', JSON.stringify(this.playlists));
+    localStorage.setItem('gt_playlists', JSON.stringify(this.playlists));
   }
   
   renderDropdown() {
-      if(!this.dropdownMenu) return;
-      this.dropdownMenu.innerHTML = '';
+    if (!this.dropdownMenu) return;
+    this.dropdownMenu.innerHTML = '';
+    
+    const createItem = (id, name, isSystem = false) => {
+      const div = document.createElement('div');
+      div.className = 'dropdown-item';
       
-      const createItem = (id, name, isSystem = false) => {
-          const div = document.createElement('div');
-          div.className = 'dropdown-item';
-          
-          let actionHTML = '';
-          if (!isSystem) {
-              actionHTML = `
-                <div class="pl-actions">
-                    <button class="pl-action-btn edit-btn" data-id="${id}"><svg viewBox="0 0 24 24" width="16" height="16" fill="#6bc5ff"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></button>
-                    <button class="pl-action-btn del-btn" data-id="${id}"><svg viewBox="0 0 24 24" width="16" height="16" fill="#ff2a2a"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg></button>
-                </div>
-              `;
-          }
-          
-          div.innerHTML = `<span style="pointer-events:none;">${name}</span>${actionHTML}`;
-          
-          div.addEventListener('click', (e) => {
-              const editBtn = e.target.closest('.edit-btn');
-              const delBtn = e.target.closest('.del-btn');
-              
-              if (editBtn) {
-                  e.stopPropagation();
-                  this.editPlaylist(id);
-              } else if (delBtn) {
-                  e.stopPropagation();
-                  this.deletePlaylist(id);
-              } else {
-                  this.selectPlaylist(id);
-              }
-          });
-          this.dropdownMenu.appendChild(div);
-      };
+      let actionHTML = '';
+      if (!isSystem) {
+        actionHTML = `
+          <div class="pl-actions">
+            <button class="pl-action-btn edit-btn" data-id="${id}"><svg viewBox="0 0 24 24" width="16" height="16" fill="#6bc5ff"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></button>
+            <button class="pl-action-btn del-btn" data-id="${id}"><svg viewBox="0 0 24 24" width="16" height="16" fill="#ff2a2a"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg></button>
+          </div>
+        `;
+      }
+      
+      div.innerHTML = `<span style="pointer-events:none;">${name}</span>${actionHTML}`;
+      
+      div.addEventListener('click', (e) => {
+        const editBtn = e.target.closest('.edit-btn');
+        const delBtn = e.target.closest('.del-btn');
+        
+        if (editBtn) {
+          e.stopPropagation();
+          this.editPlaylist(id);
+        } else if (delBtn) {
+          e.stopPropagation();
+          this.deletePlaylist(id);
+        } else {
+          this.selectPlaylist(id);
+        }
+      });
+      this.dropdownMenu.appendChild(div);
+    };
 
-      createItem('all', 'All Tracks', true);
-      createItem('favorites', 'Favorites ❤️', true);
-      this.playlists.forEach(pl => createItem(pl.id, pl.name));
+    createItem('all', 'All Tracks', true);
+    createItem('favorites', 'Favorites ❤️', true);
+    this.playlists.forEach(pl => createItem(pl.id, pl.name));
   }
 
   selectPlaylist(id) {
-      this.currentPlaylistId = id;
-      if (id === 'all') {
-          this.activePlaylistName.textContent = 'All Tracks';
-      } else if (id === 'favorites') {
-          this.activePlaylistName.textContent = 'Favorites ❤️';
-      } else {
-          const pl = this.playlists.find(p => p.id === id);
-          if (pl) this.activePlaylistName.textContent = pl.name;
-      }
-      this.loadPlaylist();
+    this.currentPlaylistId = id;
+    if (id === 'all') {
+      this.activePlaylistName.textContent = 'All Tracks';
+    } else if (id === 'favorites') {
+      this.activePlaylistName.textContent = 'Favorites ❤️';
+    } else {
+      const pl = this.playlists.find(p => p.id === id);
+      if (pl) this.activePlaylistName.textContent = pl.name;
+    }
+    this.loadPlaylist();
   }
 
   async editPlaylist(id) {
-      const pl = this.playlists.find(p => p.id === id);
-      if(!pl) return;
-      const val = await modalUI.showPrompt("เปลี่ยนชื่อ Playlist", "ระบุชื่อใหม่เลยค่ะบอส", pl.name);
-      if (val && val.trim()) {
-          pl.name = val.trim();
-          this.savePlaylists();
-          this.renderDropdown();
-          if(this.currentPlaylistId === id) this.activePlaylistName.textContent = pl.name;
-          modalUI.showToast('อัปเดตชื่อเรียบร้อยค่ะ');
-      }
+    const pl = this.playlists.find(p => p.id === id);
+    if (!pl) return;
+    const val = await modalUI.showPrompt("เปลี่ยนชื่อ Playlist", "ระบุชื่อใหม่เลยค่ะบอส", pl.name);
+    if (val && val.trim()) {
+      pl.name = val.trim();
+      this.savePlaylists();
+      this.renderDropdown();
+      if (this.currentPlaylistId === id) this.activePlaylistName.textContent = pl.name;
+      modalUI.showToast('อัปเดตชื่อเรียบร้อยค่ะ');
+    }
   }
 
   async deletePlaylist(id) {
-      const pl = this.playlists.find(p => p.id === id);
-      const isConfirmed = await modalUI.showConfirm("ยืนยันการลบ", `แน่ใจนะคะว่าจะลบเพลย์ลิสต์ "${pl.name}"? (เพลงจะไม่หายไปนะคะ)`);
-      if (isConfirmed) {
-          this.playlists = this.playlists.filter(p => p.id !== id);
-          this.savePlaylists();
-          this.renderDropdown();
-          if(this.currentPlaylistId === id) this.selectPlaylist('all');
-          modalUI.showToast('ลบเพลย์ลิสต์เรียบร้อยค่ะ');
-      }
+    const pl = this.playlists.find(p => p.id === id);
+    if (!pl) return;
+    const isConfirmed = await modalUI.showConfirm("ยืนยันการลบ", `แน่ใจนะคะว่าจะลบเพลย์ลิสต์ "${pl.name}"? (เพลงจะไม่หายไปนะคะ)`);
+    if (isConfirmed) {
+      this.playlists = this.playlists.filter(p => p.id !== id);
+      this.savePlaylists();
+      this.renderDropdown();
+      if (this.currentPlaylistId === id) this.selectPlaylist('all');
+      modalUI.showToast('ลบเพลย์ลิสต์เรียบร้อยค่ะ');
+    }
   }
   
   async handleFileUpload(event) {
@@ -177,29 +179,64 @@ export class PlaylistUI {
     try {
       modalUI.showToast('กำลังโหลดข้อมูล...', 'info');
       
-      const tracksBefore = await storage.getAllTracks();
       const result = await storage.saveFiles(files);
-      const tracksAfter = await storage.getAllTracks();
+      const processed = result.processedTracks || [];
       
-      if (this.currentPlaylistId !== 'all' && this.currentPlaylistId !== 'favorites') {
-          const beforeIds = new Set(tracksBefore.map(t => t.id));
-          const newTracks = tracksAfter.filter(t => !beforeIds.has(t.id));
-          const targetPl = this.playlists.find(p => p.id === this.currentPlaylistId);
-          if (targetPl && newTracks.length > 0) {
-              newTracks.forEach(t => {
-                  if (!targetPl.tracks.includes(t.id)) {
-                      targetPl.tracks.push(t.id);
-                  }
-              });
-              this.savePlaylists();
+      if (this.currentPlaylistId === 'all') {
+        if (result.count > 0) {
+          const dupText = result.skipped > 0 ? ` (ข้ามเพลงเดิมในคลัง ${result.skipped} เพลง)` : '';
+          modalUI.showToast(`เพิ่มเพลงใหม่ ${result.count} เพลง${dupText}`);
+        } else {
+          modalUI.showToast('เพลงที่เลือกมีอยู่ในคลังทั้งหมดแล้วค่ะ', 'info');
+        }
+      } else if (this.currentPlaylistId === 'favorites') {
+        let addedToFav = 0;
+        let dupInFav = 0;
+        processed.forEach(({ track }) => {
+          if (this.likedTracks.includes(track.id)) {
+            dupInFav++;
+          } else {
+            this.likedTracks.push(track.id);
+            addedToFav++;
           }
+        });
+        if (addedToFav > 0) {
+          localStorage.setItem('gt_liked_tracks', JSON.stringify(this.likedTracks));
+          window.dispatchEvent(new Event('gt-liked-updated'));
+          const dupText = dupInFav > 0 ? ` (มีใน Favorites แล้ว ${dupInFav} เพลง)` : '';
+          modalUI.showToast(`เพิ่มเข้า Favorites ${addedToFav} เพลง${dupText}`);
+        } else {
+          modalUI.showToast('เพลงที่เลือกอยู่ใน Favorites แล้วค่ะ', 'info');
+        }
+      } else {
+        const targetPl = this.playlists.find(p => p.id === this.currentPlaylistId);
+        if (targetPl) {
+          if (!Array.isArray(targetPl.tracks)) targetPl.tracks = [];
+          
+          let addedToPl = 0;
+          let dupInPl = 0;
+          
+          processed.forEach(({ track }) => {
+            if (targetPl.tracks.includes(track.id)) {
+              dupInPl++;
+            } else {
+              targetPl.tracks.push(track.id);
+              addedToPl++;
+            }
+          });
+          
+          targetPl.tracks = [...new Set(targetPl.tracks)];
+          this.savePlaylists();
+          
+          if (addedToPl > 0) {
+            const dupText = dupInPl > 0 ? ` (ซ้ำในเพลย์ลิสต์นี้ ${dupInPl} เพลง)` : '';
+            modalUI.showToast(`เพิ่มเข้า "${targetPl.name}" ${addedToPl} เพลง${dupText}`);
+          } else {
+            modalUI.showToast(`เพลงนี้มีอยู่ใน "${targetPl.name}" แล้วค่ะ`, 'info');
+          }
+        }
       }
       
-      if (result.skipped && result.skipped > 0) {
-        modalUI.showToast(`เพิ่มเพลงใหม่ ${result.count} เพลง (ข้ามเพลงซ้ำ ${result.skipped} เพลง)`);
-      } else {
-        modalUI.showToast(`เพิ่มสำเร็จ ${result.count} เพลงค่ะ`);
-      }
       await this.loadPlaylist();
     } catch (error) {
       modalUI.showToast(error.message, 'error');
@@ -213,15 +250,27 @@ export class PlaylistUI {
     
     try {
       this.playlistContainer.innerHTML = '<div style="text-align: center; padding: 30px; color: #7a7a8c; font-weight: bold;">กำลังสแกนฐานข้อมูล...</div>';
-      let tracks = await storage.getAllTracks();
+      const allTracks = await storage.getAllTracks();
+      const trackMap = new Map(allTracks.map(t => [t.id, t]));
+      let tracks = [];
       
       if (this.currentPlaylistId === 'favorites') {
-          tracks = tracks.filter(t => this.likedTracks.includes(t.id));
+        tracks = this.likedTracks
+          .map(id => trackMap.get(id))
+          .filter(Boolean);
       } else if (this.currentPlaylistId !== 'all') {
-          const pl = this.playlists.find(p => p.id === this.currentPlaylistId);
-          if (pl) {
-              tracks = tracks.filter(t => pl.tracks.includes(t.id));
+        const pl = this.playlists.find(p => p.id === this.currentPlaylistId);
+        if (pl) {
+          if (!Array.isArray(pl.tracks)) pl.tracks = [];
+          const validIds = [...new Set(pl.tracks)].filter(id => trackMap.has(id));
+          if (validIds.length !== pl.tracks.length) {
+            pl.tracks = validIds;
+            this.savePlaylists();
           }
+          tracks = pl.tracks.map(id => trackMap.get(id)).filter(Boolean);
+        }
+      } else {
+        tracks = allTracks;
       }
       
       this.state.setQueue(tracks);
@@ -231,7 +280,10 @@ export class PlaylistUI {
       );
       
       if (filteredTracks.length === 0) {
-        this.playlistContainer.innerHTML = '<div style="text-align: center; padding: 40px; color: #7a7a8c; font-weight: bold;">คิวว่างเปล่า โยนไฟล์เพลงเข้ามาได้เลยค่ะ</div>';
+        const emptyMsg = searchQuery 
+          ? 'ไม่พบเพลงที่ค้นหาค่ะ' 
+          : 'คิวว่างเปล่า โยนไฟล์เพลงเข้ามาได้เลยค่ะ';
+        this.playlistContainer.innerHTML = `<div style="text-align: center; padding: 40px; color: #7a7a8c; font-weight: bold;">${emptyMsg}</div>`;
         return;
       }
       
@@ -247,66 +299,64 @@ export class PlaylistUI {
   
   async handleClearPlaylist() {
     if (!this.state.queue || this.state.queue.length === 0) {
-        modalUI.showToast('คิวเพลงว่างเปล่าอยู่แล้วค่ะบอส', 'info');
-        return;
+      modalUI.showToast('คิวเพลงว่างเปล่าอยู่แล้วค่ะบอส', 'info');
+      return;
     }
     
     if (this.currentPlaylistId === 'favorites') {
-        modalUI.showToast('หมวด Favorites ไม่สามารถล้างบางได้ค่ะ ต้องลบทีละเพลง', 'error');
-        return;
+      modalUI.showToast('หมวด Favorites ไม่สามารถล้างบางได้ค่ะ ต้องลบทีละเพลง', 'error');
+      return;
     }
 
     let title = 'ล้างคิวเพลงทั้งหมด';
     let desc = 'แน่ใจว่าจะเตะเพลงทั้งหมดทิ้งเกลี้ยงเลยนะคะบอส? (ข้อมูลไฟล์ในเครื่องจะหายไปด้วย)';
 
     if (this.currentPlaylistId !== 'all') {
-        const pl = this.playlists.find(p => p.id === this.currentPlaylistId);
-        if (!pl) return;
-        title = `เคลียร์เพลย์ลิสต์ "${pl.name}"`;
-        desc = `แน่ใจว่าจะเอาเพลงทั้งหมดออกจากเพลย์ลิสต์ "${pl.name}" ไหมคะ? (ไฟล์ต้นฉบับจะยังอยู่ใน All Tracks ไม่หายไปไหนค่ะ)`;
+      const pl = this.playlists.find(p => p.id === this.currentPlaylistId);
+      if (!pl) return;
+      title = `เคลียร์เพลย์ลิสต์ "${pl.name}"`;
+      desc = `แน่ใจว่าจะเอาเพลงทั้งหมดออกจากเพลย์ลิสต์ "${pl.name}" ไหมคะ? (ไฟล์ต้นฉบับจะยังอยู่ใน All Tracks ไม่หายไปไหนค่ะ)`;
     }
 
     const isConfirmed = await modalUI.showConfirm(title, desc);
     
     if (isConfirmed) {
-        try {
-          if (this.currentPlaylistId === 'all') {
-              const tracks = await storage.getAllTracks();
-              let keptCount = 0;
-              
-              for (const track of tracks) {
-                  // บาเรียป้องกันเพลงโปรด
-                  if (this.likedTracks.includes(track.id)) {
-                      keptCount++;
-                      continue;
-                  }
-                  await storage.deleteTrack(track.id);
-              }
-              
-              // ล้างรายการใน Custom Playlist ด้วย
-              this.playlists.forEach(pl => {
-                  pl.tracks = pl.tracks.filter(tid => this.likedTracks.includes(tid));
-              });
-              this.savePlaylists();
-              
-              if (keptCount > 0) {
-                  modalUI.showToast(`ล้างรายการปกติเรียบร้อย (เหลือเพลงโปรด ${keptCount} เพลงที่รอดตายค่ะ)`);
-              } else {
-                  modalUI.showToast('ล้างรายการเรียบร้อย สะอาดเอี่ยมค่ะ');
-              }
-          } else {
-              const targetPl = this.playlists.find(p => p.id === this.currentPlaylistId);
-              if (targetPl) {
-                  targetPl.tracks = [];
-                  this.savePlaylists();
-                  modalUI.showToast('ล้างเพลย์ลิสต์เรียบร้อยค่ะ');
-              }
+      try {
+        if (this.currentPlaylistId === 'all') {
+          const tracks = await storage.getAllTracks();
+          let keptCount = 0;
+          
+          for (const track of tracks) {
+            if (this.likedTracks.includes(track.id)) {
+              keptCount++;
+              continue;
+            }
+            await storage.deleteTrack(track.id);
           }
           
-          await this.loadPlaylist();
-        } catch (error) {
-          modalUI.showToast('เกิดข้อผิดพลาดตอนล้างคิวค่ะ', 'error');
+          this.playlists.forEach(pl => {
+            pl.tracks = pl.tracks.filter(tid => this.likedTracks.includes(tid));
+          });
+          this.savePlaylists();
+          
+          if (keptCount > 0) {
+            modalUI.showToast(`ล้างรายการปกติเรียบร้อย (เหลือเพลงโปรด ${keptCount} เพลงที่รอดตายค่ะ)`);
+          } else {
+            modalUI.showToast('ล้างรายการเรียบร้อย สะอาดเอี่ยมค่ะ');
+          }
+        } else {
+          const targetPl = this.playlists.find(p => p.id === this.currentPlaylistId);
+          if (targetPl) {
+            targetPl.tracks = [];
+            this.savePlaylists();
+            modalUI.showToast('ล้างเพลย์ลิสต์เรียบร้อยค่ะ');
+          }
         }
+        
+        await this.loadPlaylist();
+      } catch (error) {
+        modalUI.showToast('เกิดข้อผิดพลาดตอนล้างคิวค่ะ', 'error');
+      }
     }
   }
   
@@ -321,17 +371,17 @@ export class PlaylistUI {
       const trackName = track.name.replace(/\.[^/.]+$/, "");
       
       item.innerHTML = `
-                <div class="track-info-area" style="cursor: pointer; flex-grow: 1; overflow: hidden; display: flex; align-items: center; gap: 12px;">
-                    <div class="track-icon" style="width: 38px; height: 38px; background: #252535; border-radius: 8px; display: flex; justify-content: center; align-items: center; flex-shrink: 0; transition: 0.3s;">
-                        <svg viewBox="0 0 24 24" width="20" height="20" fill="#7a7a8c" style="transition: 0.3s;"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>
-                    </div>
-                    <div style="overflow: hidden;">
-                        <div class="track-title-text" style="color: #fff; font-weight: bold; font-size: 14px; white-space: nowrap; text-overflow: ellipsis; overflow: hidden; margin-bottom: 4px; transition: 0.3s;">${trackName}</div>
-                        <div style="color: #ff2a2a; font-size: 11px; font-weight: 800; letter-spacing: 1px;">LOCAL TRACK</div>
-                    </div>
-                </div>
-                <button class="delete-btn" data-id="${track.id}" style="margin-left: 10px; background: rgba(255, 42, 42, 0.1); color: #ff2a2a; border: 1px solid rgba(255, 42, 42, 0.3); padding: 8px 14px; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 12px; transition: 0.2s;">ลบ</button>
-            `;
+        <div class="track-info-area" style="cursor: pointer; flex-grow: 1; overflow: hidden; display: flex; align-items: center; gap: 12px;">
+          <div class="track-icon" style="width: 38px; height: 38px; background: #252535; border-radius: 8px; display: flex; justify-content: center; align-items: center; flex-shrink: 0; transition: 0.3s;">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="#7a7a8c" style="transition: 0.3s;"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>
+          </div>
+          <div style="overflow: hidden;">
+            <div class="track-title-text" style="color: #fff; font-weight: bold; font-size: 14px; white-space: nowrap; text-overflow: ellipsis; overflow: hidden; margin-bottom: 4px; transition: 0.3s;">${trackName}</div>
+            <div style="color: #ff2a2a; font-size: 11px; font-weight: 800; letter-spacing: 1px;">LOCAL TRACK</div>
+          </div>
+        </div>
+        <button class="delete-btn" data-id="${track.id}" style="margin-left: 10px; background: rgba(255, 42, 42, 0.1); color: #ff2a2a; border: 1px solid rgba(255, 42, 42, 0.3); padding: 8px 14px; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 12px; transition: 0.2s;">ลบ</button>
+      `;
       
       const trackInfoArea = item.querySelector('.track-info-area');
       trackInfoArea.addEventListener('click', () => this.playTrack(track));
@@ -349,26 +399,26 @@ export class PlaylistUI {
   }
 
   updateActiveHighlight(forceScroll = false) {
-      if (!this.playlistContainer) return;
+    if (!this.playlistContainer) return;
+    
+    const allItems = this.playlistContainer.querySelectorAll('.playlist-track-item');
+    allItems.forEach(item => item.classList.remove('active-playing'));
+    
+    if (this.state.currentTrackIndex === -1 || !this.state.queue.length) return;
+    const activeTrack = this.state.queue[this.state.currentTrackIndex];
+    if (!activeTrack) return;
+    
+    const activeItem = this.playlistContainer.querySelector(`.playlist-track-item[data-id="${activeTrack.id}"]`);
+    if (activeItem) {
+      activeItem.classList.add('active-playing');
       
-      const allItems = this.playlistContainer.querySelectorAll('.playlist-track-item');
-      allItems.forEach(item => item.classList.remove('active-playing'));
+      const playlistSection = document.getElementById('playlist-section');
+      const isHidden = playlistSection && playlistSection.classList.contains('hidden');
       
-      if (this.state.currentTrackIndex === -1 || !this.state.queue.length) return;
-      const activeTrack = this.state.queue[this.state.currentTrackIndex];
-      if (!activeTrack) return;
-      
-      const activeItem = this.playlistContainer.querySelector(`.playlist-track-item[data-id="${activeTrack.id}"]`);
-      if (activeItem) {
-          activeItem.classList.add('active-playing');
-          
-          const playlistSection = document.getElementById('playlist-section');
-          const isHidden = playlistSection && playlistSection.classList.contains('hidden');
-          
-          if (!isHidden || forceScroll) {
-              activeItem.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-          }
+      if (!isHidden || forceScroll) {
+        activeItem.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
       }
+    }
   }
   
   async playTrack(track) {
@@ -388,36 +438,35 @@ export class PlaylistUI {
   async deleteTrack(id) {
     try {
       if (this.currentPlaylistId === 'favorites') {
-          const isConfirmed = await modalUI.showConfirm("เอาออกจาก Favorites", "แน่ใจนะคะว่าจะปลดเพลงนี้ออกจากรายการโปรด?");
-          if (!isConfirmed) return;
-          
-          this.likedTracks = this.likedTracks.filter(tid => tid !== id);
-          localStorage.setItem('gt_liked_tracks', JSON.stringify(this.likedTracks));
-          modalUI.showToast('ปลดออกจากรายการโปรดแล้วค่ะ');
-          window.dispatchEvent(new Event('gt-liked-updated'));
-          
+        const isConfirmed = await modalUI.showConfirm("เอาออกจาก Favorites", "แน่ใจนะคะว่าจะปลดเพลงนี้ออกจากรายการโปรด?");
+        if (!isConfirmed) return;
+        
+        this.likedTracks = this.likedTracks.filter(tid => tid !== id);
+        localStorage.setItem('gt_liked_tracks', JSON.stringify(this.likedTracks));
+        modalUI.showToast('ปลดออกจากรายการโปรดแล้วค่ะ');
+        window.dispatchEvent(new Event('gt-liked-updated'));
       } else if (this.currentPlaylistId === 'all') {
-          const isConfirmed = await modalUI.showConfirm("ลบไฟล์ถาวร", "ลบเพลงนี้ออกจากเครื่องและทุกเพลย์ลิสต์เลยไหมคะ?");
-          if (!isConfirmed) return;
-          
-          await storage.deleteTrack(id);
-          
-          this.playlists.forEach(pl => {
-              pl.tracks = pl.tracks.filter(tid => tid !== id);
-          });
-          this.likedTracks = this.likedTracks.filter(tid => tid !== id);
-          localStorage.setItem('gt_liked_tracks', JSON.stringify(this.likedTracks));
-          this.savePlaylists();
-          
-          modalUI.showToast('เตะเพลงออกจากเครื่องเรียบร้อย');
-          window.dispatchEvent(new Event('gt-liked-updated'));
+        const isConfirmed = await modalUI.showConfirm("ลบไฟล์ถาวร", "ลบเพลงนี้ออกจากเครื่องและทุกเพลย์ลิสต์เลยไหมคะ?");
+        if (!isConfirmed) return;
+        
+        await storage.deleteTrack(id);
+        
+        this.playlists.forEach(pl => {
+          pl.tracks = pl.tracks.filter(tid => tid !== id);
+        });
+        this.likedTracks = this.likedTracks.filter(tid => tid !== id);
+        localStorage.setItem('gt_liked_tracks', JSON.stringify(this.likedTracks));
+        this.savePlaylists();
+        
+        modalUI.showToast('เตะเพลงออกจากเครื่องเรียบร้อย');
+        window.dispatchEvent(new Event('gt-liked-updated'));
       } else {
-          const targetPl = this.playlists.find(p => p.id === this.currentPlaylistId);
-          if (targetPl) {
-              targetPl.tracks = targetPl.tracks.filter(tid => tid !== id);
-              this.savePlaylists();
-              modalUI.showToast('เอาเพลงออกจากเพลย์ลิสต์นี้แล้วค่ะ');
-          }
+        const targetPl = this.playlists.find(p => p.id === this.currentPlaylistId);
+        if (targetPl) {
+          targetPl.tracks = targetPl.tracks.filter(tid => tid !== id);
+          this.savePlaylists();
+          modalUI.showToast('เอาเพลงออกจากเพลย์ลิสต์นี้แล้วค่ะ');
+        }
       }
       
       await this.loadPlaylist();
