@@ -46,20 +46,22 @@
   - เส้นทางสัญญาณ Wet Path: wetGain -> preampNode -> BiquadFilterNode Cascade (10 ย่านความถี่: 32Hz, 64Hz, 125Hz, 250Hz, 500Hz, 1kHz, 2kHz, 4kHz, 8kHz, 16kHz) -> DynamicsCompressorNode (Safety Limiter ที่ -0.1dB) -> audioCtx.destination และ analyserNode
   - เส้นทางสัญญาณ Dry Path (Pure Direct / Bypass): dryGain -> audioCtx.destination และ analyserNode
 - System Media Session & Lock Screen Control Flow:
-  - ทิศทางขาออก (App สู่ OS): เมื่อเริ่มเล่นเพลงหรือเปลี่ยนเพลง audioEngine และ playerUI จะส่งข้อมูลแทร็กไปยัง mediaSessionManager.js -> อัปเดต navigator.mediaSession.metadata (ชื่อเพลง, ศิลปิน, ภาพปก PNG/SVG) และสถานะ playbackState ("playing"/"paused") รวมถึง positionState ไปยังระบบปฏิบัติการ Android เพื่อแสดงผลบน Notification Shade, Quick Settings Media Panel และ Lock Screen Widget
+  - ทิศทางขาออก (App สู่ OS): เมื่อเริ่มเล่นเพลงหรือเปลี่ยนเพลง audioEngine และ playerUI จะส่งข้อมูลแทร็กไปยัง mediaSessionManager.js -> อัปเดต navigator.mediaSession.metadata (ชื่อเพลง, ศิลปิน, ภาพปก PNG/SVG แบบ Absolute URL) และสถานะ playbackState ("playing"/"paused") รวมถึง positionState ไปยังระบบปฏิบัติการ Android เพื่อแสดงผลบน Notification Shade, Quick Settings Media Panel และ Lock Screen Widget
   - ทิศทางขาเข้า (OS สู่ App): เมื่อผู้ใช้สั่งงานผ่านปุ่มควบคุมภายนอกแอพ เช่น หน้าจอล็อค หูฟังบลูทูธ หรือ Smartwatch ระบบปฏิบัติการจะยิง Action Event (play, pause, previoustrack, nexttrack, seekto, seekforward, seekbackward, stop) เข้ามาที่ mediaSessionManager.js -> ส่งคำสั่งต่อไปยัง audioEngine.js และ playerUI.js ทันทีโดยไม่ต้องเปิดหน้าจอแอพ
+- Android OS Registration Flow:
+  GitHub Actions CI ทำการฉีด Intent Filter หมวดหมู่ android.intent.category.APP_MUSIC และ android.intent.action.MUSIC_PLAYER รวมถึง MIME type audio/* ลงใน AndroidManifest.xml ทำให้อุปกรณ์ Android รู้จักแอปเป็นเครื่องเล่นเพลงเริ่มต้น (Default Music App) ในการตั้งค่าระบบทันทีหลังติดตั้ง
 - Visualizer Animation Loop:
   analyserNode ดึงค่าความถี่แบบเรียลไทม์ผ่าน getByteFrequencyData -> คำนวณค่าเฉลี่ยย่าน Bass เพื่อสร้าง Bass Pulse ขยายขนาดวงแหวนและไอคอนกลางจอ -> วาดกราฟฟิกแท่ง Equalizer และวงแหวนนีออนลงบน visualizer-canvas ผ่าน requestAnimationFrame
 - Sleep Timer Execution Flow:
   timerUI.js คำนวณเวลาถอยหลังแบบ Epoch Timestamp -> แสดงผลนับถอยหลังบนหน้าปัด -> เมื่อหมดเวลาจะเรียก audioEngine.pause() สั่งหยุดเล่นเสียง พร้อมส่งคำสั่ง Haptic Feedback (สั่นเตือน) และแสดงข้อความแจ้งเตือนผ่าน modalUI.js
 - Mobile APK Build Pipeline:
-  GitHub Push (main/master) -> GitHub Actions Runner ติดตั้ง Node.js, Java JDK, Capacitor และ Sharp -> รัน Node Script แปลง icon.svg เป็น icon.png ขนาด 512x512 -> รวบรวมไฟล์เว็บลงไดเรกทอรี www -> เตรียม assets/ และรัน @capacitor/assets generate --android เพื่อสร้างโฟลเดอร์ mipmap-* และ Adaptive Icons ของ Android ทั้งหมด -> ซิงค์โค้ดด้วย cap sync -> รัน gradlew assembleDebug คอมไพล์เป็น app-debug.apk พร้อมดาวน์โหลดจาก Artifacts
+  GitHub Push (main/master) -> GitHub Actions Runner ติดตั้ง Node.js, Java JDK, Capacitor และ Sharp -> รัน Node Script แปลง icon.svg เป็น icon.png ขนาด 512x512 -> รวบรวมไฟล์เว็บลงไดเรกทอรี www -> เตรียม assets/ และรัน @capacitor/assets generate --android เพื่อสร้างโฟลเดอร์ mipmap-* และ Adaptive Icons ของ Android ทั้งหมด -> ฉีด Intent Filters และ Permissions สิทธิ์เบื้องหลังลง AndroidManifest.xml -> ซิงค์โค้ดด้วย cap sync -> รัน gradlew assembleDebug คอมไพล์เป็น app-debug.apk พร้อมดาวน์โหลดจาก Artifacts
 
 ## 4. Module Connections & Dependencies (สายสัมพันธ์ของไฟล์)
 
 ### App Configuration & CI/CD Pipeline
-- **.github/workflows/build-apk.yml**: กำหนดขั้นตอน CI/CD Pipeline บน GitHub Actions สำหรับคอมไพล์ Android Debug APK แบบอัตโนมัติ พร้อมทั้งรันสคริปต์ Node.js แปลง icon.svg เป็น icon.png และสั่ง @capacitor/assets สร้างโครงสร้าง Android Adaptive Launcher Icons
-  - *ดึงค่าจาก (Imports):* actions/checkout@v4, actions/setup-java@v4, actions/setup-node@v4, actions/upload-artifact@v4, @capacitor/core, @capacitor/cli, @capacitor/android, @capacitor/assets, sharp
+- **.github/workflows/build-apk.yml**: กำหนดขั้นตอน CI/CD Pipeline บน GitHub Actions สำหรับคอมไพล์ Android Debug APK แบบอัตโนมัติ พร้อมทั้งรันสคริปต์ Node.js แปลง icon.svg เป็น icon.png สั่ง @capacitor/assets สร้างโครงสร้าง Android Adaptive Launcher Icons และฉีด Intent Filter / Permissions สำหรับ Music Player ลงใน AndroidManifest.xml
+  - *ดึงค่าจาก (Imports):* actions/checkout@v4, actions/setup-java@v4, actions/setup-node@v4, actions/upload-artifact@v4, @capacitor/core, @capacitor/cli, @capacitor/android, @capacitor/assets, sharp, python3
   - *ถูกเรียกใช้โดย (Used By):* GitHub Actions Platform (ทำงานอัตโนมัติเมื่อ Push ขึ้น Branch main, master หรือสั่งงานผ่าน workflow_dispatch)
   - *จุดเชื่อมต่อ (Endpoints/Hooks):* ./gradlew assembleDebug, อัปโหลดผลลัพธ์ไปที่ android/app/build/outputs/apk/debug/app-debug.apk
 - **manifest.json**: กำหนดค่าการติดตั้ง Web App Manifest รองรับการทำงานแบบ Standalone การกำหนดสีธีมระบบ และระบุแหล่งที่อยู่ของไอคอนทั้งรูปแบบ PNG และ SVG
@@ -112,15 +114,15 @@
   - *จุดเชื่อมต่อ (Endpoints/Hooks):* .help-modal, .help-container, .help-content-scroll, .help-card
 
 ### Core Engine & State Layer
-- **js/core/audioEngine.js**: ควบคุมและบริหารจัดการ Web AudioContext และ HTML5 Audio Element รวมถึงการโหลดไฟล์เสียง (Object URL / String), เล่น, หยุด, เลื่อนตำแหน่งเพลง และส่งต่อข้อผิดพลาด
+- **js/core/audioEngine.js**: ควบคุมและบริหารจัดการ Web AudioContext และ HTML5 Audio Element รวมถึงการโหลดไฟล์เสียง (Object URL / String), เล่น, หยุด, เลื่อนตำแหน่งเพลง, ป้องกันการระงับการทำงานผ่าน visibilitychange และส่งต่อข้อผิดพลาด
   - *ดึงค่าจาก (Imports):* js/core/audioEffect.js
   - *ถูกเรียกใช้โดย (Used By):* js/app.js, js/core/mediaSessionManager.js, js/ui/playerUI.js, js/ui/playlistUI.js, js/ui/timerUI.js
-  - *จุดเชื่อมต่อ (Endpoints/Hooks):* load(fileOrUrl), play(), pause(), seek(seconds), skipToNext(), audioElement.onplay, audioElement.onpause, audioElement.onerror
+  - *จุดเชื่อมต่อ (Endpoints/Hooks):* load(fileOrUrl), play(), pause(), seek(seconds), skipToNext(), audioElement.onplay, audioElement.onpause, audioElement.onerror, document.visibilitychange
 - **js/core/audioEffect.js**: ภาคประมวลผลเสียงขั้นสูง ประกอบด้วยวงจร 10-Band Biquad Filter, Pre-Amp Gain Node, วงจรตัดวงจร EQ แบบ Pure Direct (Wet/Dry Gain Nodes), Transparent Safety Limiter (DynamicsCompressor) และระบบวาด Neon Audio Visualizer บน Canvas
   - *ดึงค่าจาก (Imports):* ไม่มี
   - *ถูกเรียกใช้โดย (Used By):* js/core/audioEngine.js, js/ui/eqUI.js
   - *จุดเชื่อมต่อ (Endpoints/Hooks):* init(existingContext, audioElement), setPreamp(gainDb), setBypass(bypassed), setEqBand(index, gainValue), start(), stop(), draw()
-- **js/core/mediaSessionManager.js**: บริหารจัดการการผสานรวมระหว่างแอปพลิเคชันกับระบบปฏิบัติการผ่าน W3C Media Session API ทำหน้าที่รับ-ส่งข้อมูลสองทาง (Two-way Bridge) เพื่อให้แสดงสถานะเพลงบนหน้าจอล็อคและแถบแจ้งเตือนของมือถือ พร้อมรับคำสั่งควบคุมภายนอกกลับมาสั่งงาน Audio Engine
+- **js/core/mediaSessionManager.js**: บริหารจัดการการผสานรวมระหว่างแอปพลิเคชันกับระบบปฏิบัติการผ่าน W3C Media Session API ทำหน้าที่รับ-ส่งข้อมูลสองทาง (Two-way Bridge) เพื่อให้แสดงสถานะเพลงบนหน้าจอล็อคและแถบแจ้งเตือนของมือถือ พร้อมรับคำสั่งควบคุมภายนอกกลับมาสั่งงาน Audio Engine โดยใช้ Absolute URLs
   - *ดึงค่าจาก (Imports):* js/core/audioEngine.js
   - *ถูกเรียกใช้โดย (Used By):* js/app.js, js/ui/playerUI.js, js/ui/playlistUI.js
   - *จุดเชื่อมต่อ (Endpoints/Hooks):* init({ onNext, onPrev }), updateMetadata(track), setPlaybackState(state), updatePositionState(), navigator.mediaSession.setActionHandler
@@ -161,7 +163,7 @@
 
 ## 5. Scalability & Refactoring Notes (แผนการขยายสเกล)
 - Background Audio Persistence (Android Service Integration):
-  แม้ว่า Media Session API จะช่วยให้ระบบปฏิบัติการรู้จักแทร็กเพลงและคงสถานะการเล่นเบื้องหลังไว้ได้ แต่ในรอมที่มีการจัดการพลังงานแบบเข้มงวด (เช่น ColorOS, HyperOS, OneUI) มีโอกาสที่ WebView จะถูกระงับการทำงาน (Freeze) เมื่อจอดับเป็นเวลานาน หากในอนาคตต้องการรองรับการเล่นแบบข้ามวันโดยไม่ต้องตั้งค่า Battery เป็น Unrestricted ให้พิจารณาติดตั้ง Capacitor Native Plugin เช่น @capacitor-community/media หรือ @capgo/capacitor-audio เพื่อรัน Foreground Service แท้จริงบนระบบปฏิบัติการ
+  การเพิ่ม Intent Filter และ Permissions สำหรับ FOREGROUND_SERVICE_MEDIA_PLAYBACK และ WAKE_LOCK จะช่วยให้ระบบ Android จัดหมวดหมู่แอพเป็นโปรแกรมเล่นเพลงและคงการเล่นเบื้องหลังได้อย่างมั่นคงยิ่งขึ้น หากในอนาคตต้องการรองรับการเล่นข้ามวันโดยไม่ถูกระบบจัดการพลังงานของ ColorOS/RealmeUI รบกวน สามารถพิจารณาเพิ่ม Capacitor Plugin เสริมสำหรับ Native Foreground Service Service แบบแยก Service Process ได้
 - ID3 Tags Parser Integration:
   ปัจจุบันระบบดึงชื่อเพลงจากชื่อไฟล์โดยการตัดนามสกุลออก หากต้องการให้แสดงชื่อศิลปิน ชื่ออัลบั้ม และภาพปกเพลงของแต่ละไฟล์บน Notification Shade ได้ถูกต้องแม่นยำ ควรแยกโมดูล js/core/metadataParser.js เพื่ออ่าน Binary ID3v2/Vorbis Tags จาก Blob ก่อนบันทึกลง IndexedDB
 - IndexedDB Large Scale Pagination:

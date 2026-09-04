@@ -35,7 +35,6 @@ export class MediaSessionManager {
     });
     
     this.audioEl.addEventListener('timeupdate', () => {
-      // อัปเดต positionState เมื่อพร้อม
       if (this.audioEl.duration && !isNaN(this.audioEl.duration)) {
         this.updatePositionState();
       }
@@ -63,10 +62,12 @@ export class MediaSessionManager {
     
     registerHandler('play', async () => {
       await this.audio.play();
+      this.setPlaybackState('playing');
     });
     
     registerHandler('pause', () => {
       this.audio.pause();
+      this.setPlaybackState('paused');
     });
     
     registerHandler('previoustrack', () => {
@@ -112,14 +113,17 @@ export class MediaSessionManager {
     
     const cleanTitle = track.name ? track.name.replace(/\.[^/.]+$/, '') : 'GT Track';
     
+    const pngArtworkUrl = new URL('icon.png', window.location.href).href;
+    const svgArtworkUrl = new URL('icon.svg', window.location.href).href;
+    
     try {
       navigator.mediaSession.metadata = new MediaMetadata({
         title: cleanTitle,
         artist: 'GT SoundMaster',
         album: 'Local Audiophile Library',
         artwork: [
-          { src: 'icon.png', sizes: '512x512', type: 'image/png' },
-          { src: 'icon.svg', sizes: '512x512', type: 'image/svg+xml' }
+          { src: pngArtworkUrl, sizes: '512x512', type: 'image/png' },
+          { src: svgArtworkUrl, sizes: '512x512', type: 'image/svg+xml' }
         ]
       });
     } catch (e) {
@@ -152,7 +156,7 @@ export class MediaSessionManager {
         position: Math.min(this.audio.currentTime, duration)
       });
     } catch (e) {
-      // ป้องกัน error ระหว่าง reset audio buffer
+      // ป้องกันข้อผิดพลาดระหว่าง reset audio buffer
     }
   }
 }

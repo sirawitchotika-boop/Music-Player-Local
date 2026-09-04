@@ -11,12 +11,11 @@ class AudioEngine {
         this.currentObjectUrl = null;
         
         this.audioElement.onerror = (error) => {
-            console.error("ไฟล์เสียงพัง ข้ามไปเพลงถัดไป", error);
+            console.error("เกิดข้อผิดพลาดในการโหลดหรือเล่นไฟล์เสียง:", error);
             audioEffect.stop();
             this.skipToNext();
         };
         
-        // จัดการ Event onplay/onpause สำหรับ visualizer
         this.audioElement.onplay = () => {
             audioEffect.start();
         };
@@ -24,6 +23,17 @@ class AudioEngine {
         this.audioElement.onpause = () => {
             audioEffect.stop();
         };
+        
+        // ป้องกัน Android WebView สั่ง Suspend AudioContext เมื่อยุบแอพหรือจอดับ
+        document.addEventListener('visibilitychange', async () => {
+            if (this.context && this.context.state === 'suspended' && !this.audioElement.paused) {
+                try {
+                    await this.context.resume();
+                } catch (e) {
+                    console.warn('[AudioEngine] Context resume error on visibility change:', e);
+                }
+            }
+        });
     }
     
     async load(fileOrUrl) {
@@ -39,7 +49,7 @@ class AudioEngine {
             }
             this.audioElement.load();
         } catch (error) {
-            console.error("โหลดไฟล์ไม่สำเร็จ:", error);
+            console.error("ไม่สามารถโหลดไฟล์เสียงได้:", error);
             this.skipToNext();
         }
     }
@@ -57,7 +67,7 @@ class AudioEngine {
             await this.audioElement.play();
         } catch (error) {
             if (error.name !== 'AbortError') {
-                console.error("ไม่สามารถเล่นเพลงได้:", error);
+                console.error("เกิดข้อผิดพลาดในการสั่งเล่นเสียง:", error);
             }
         }
     }

@@ -52,6 +52,45 @@ jobs:
           # สร้าง Android Mipmap และ Adaptive Icons ทั้งหมดลงใน android/
           npx @capacitor/assets generate --android --iconBackgroundColor '#121218'
 
+          # ฉีด Intent Filters สำหรับ Music App และสิทธิ์ Background Media ลงใน AndroidManifest.xml
+          python3 -c "
+          manifest_path = 'android/app/src/main/AndroidManifest.xml'
+          with open(manifest_path, 'r', encoding='utf-8') as f:
+              content = f.read()
+
+          permissions = '''
+    <uses-permission android:name=\"android.permission.WAKE_LOCK\" />
+    <uses-permission android:name=\"android.permission.FOREGROUND_SERVICE\" />
+    <uses-permission android:name=\"android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK\" />
+    <uses-permission android:name=\"android.permission.POST_NOTIFICATIONS\" />
+          '''.strip()
+
+          if '<application' in content:
+              content = content.replace('<application', permissions + '\n    <application', 1)
+
+          music_intent_filters = '''
+            <intent-filter>
+                <action android:name=\"android.intent.action.MUSIC_PLAYER\" />
+                <category android:name=\"android.intent.category.DEFAULT\" />
+                <category android:name=\"android.intent.category.APP_MUSIC\" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name=\"android.intent.action.VIEW\" />
+                <category android:name=\"android.intent.category.DEFAULT\" />
+                <category android:name=\"android.intent.category.BROWSABLE\" />
+                <data android:scheme=\"file\" />
+                <data android:scheme=\"content\" />
+                <data android:mimeType=\"audio/*\" />
+            </intent-filter>
+          '''.rstrip()
+
+          content = content.replace('</activity>', music_intent_filters + '\n        </activity>', 1)
+
+          with open(manifest_path, 'w', encoding='utf-8') as f:
+              f.write(content)
+          print('Successfully injected Music intent filters and permissions into AndroidManifest.xml')
+          "
+
       - name: Sync and Compile Debug APK
         run: |
           npx cap sync android
