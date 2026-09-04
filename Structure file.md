@@ -110,3 +110,4 @@
 - **IndexedDB Quota Management**: เมื่อมีการนำเข้าไฟล์เสียงขนาดใหญ่จำนวนมาก ควรเพิ่มระบบตรวจสอบ Storage Quota ผ่าน `navigator.storage.estimate()` เพื่อแจ้งเตือนความจุคงเหลือก่อนที่เบราว์เซอร์จะปฏิเสธการเขียนข้อมูล
 - **Audio Decoding Optimization**: หากในอนาคตต้องการรองรับการอ่าน Metadata (ID3 Tags, หน้าปกอัลบั้มแบบฝัง) ควรแยก Web Worker สำหรับ Parse ข้อมูลไฟล์เสียง เพื่อไม่ให้บล็อก Main UI Thread
 - **Modular CSS Migration**: ปัจจุบันแยก CSS ตาม Feature แล้ว หากระบบเติบโตขึ้น สามารถจัดทำ CSS Variables กลางไว้ใน `main.css` เพิ่มเติมเพื่อควบคุมชุดสีและดีไซน์โทนเดียวได้อย่างเบ็ดเสร็จ
+- 
