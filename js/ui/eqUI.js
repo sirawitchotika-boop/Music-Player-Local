@@ -1,4 +1,3 @@
-// File: js/ui/eqUI.js
 import { audioEffect } from '../core/audioEffect.js';
 import { storage } from '../core/storage.js';
 import { modalUI } from './modalUI.js';
@@ -7,15 +6,18 @@ export class EqUI {
   constructor() {
     this.frequencies = [32, 64, 125, 250, 500, 1000, 2000, 4000, 8000, 16000];
     this.stdPresets = {
-      'Flat': [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-      'Bass Boost': [6, 5, 4, 2, 0, 0, 0, 0, 0, 0],
-      'Acoustic': [2, 3, 1, 0, -1, 1, 3, 4, 3, 2],
-      'Rock': [5, 4, 3, 1, -1, -1, 2, 3, 4, 5],
-      'Vocal': [-2, -1, 0, 2, 4, 4, 3, 1, 0, -1],
-      'Electronic': [5, 4, 2, 0, -2, -1, 1, 4, 5, 4]
+      'Flat (Reference)': { bands: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0], preamp: 0 },
+      'Harman Target': { bands: [5.5, 4.0, 1.5, -0.5, 0, 1.0, 2.5, 1.5, -1.0, 1.0], preamp: -5.5 },
+      'Audiophile Warmth': { bands: [2.5, 3.0, 2.0, 1.0, 0.5, 0, -0.5, -1.5, -2.5, -3.0], preamp: -3.0 },
+      'Vocal Clarity': { bands: [-1.5, -1.0, 0, 1.5, 3.0, 3.5, 2.5, 1.0, 0, 0.5], preamp: -3.5 },
+      'Air & Soundstage': { bands: [2.0, 1.0, -0.5, -1.0, 0, 1.0, 2.0, 3.0, 4.5, 5.0], preamp: -5.0 },
+      'Deep Fidelity Bass': { bands: [6.0, 4.5, 2.0, 0, -1.0, 0, 0, 1.0, 1.5, 1.0], preamp: -6.0 },
+      'Fletcher-Munson': { bands: [4.5, 3.0, 1.0, -0.5, -1.0, -0.5, 1.0, 2.0, 3.5, 4.0], preamp: -4.5 }
     };
     this.customPresets = [];
-    this.currentBands = [...this.stdPresets['Flat']];
+    this.currentBands = [...this.stdPresets['Flat (Reference)'].bands];
+    this.currentPreamp = 0;
+    this.isBypassed = false;
     
     this._initDOM();
     this._bindEvents();
@@ -27,15 +29,15 @@ export class EqUI {
     this.openBtn = document.getElementById('eq-btn');
     this.closeBtn = document.getElementById('close-eq-btn');
     this.resetBtn = document.getElementById('reset-eq-btn');
+    this.bypassBtn = document.getElementById('eq-bypass-btn');
     this.presetSelect = document.getElementById('eq-preset-select');
     this.saveBtn = document.getElementById('eq-save-btn');
     this.deleteBtn = document.getElementById('eq-delete-btn');
     this.fadersContainer = document.getElementById('eq-faders-scroll');
+    this.preampSlider = document.getElementById('eq-preamp-slider');
+    this.preampVal = document.getElementById('eq-preamp-val');
     
-    if (!this.presetSelect || !this.fadersContainer) {
-      console.warn('[EqUI] EQ Elements not found in DOM.');
-      return;
-    }
+    if (!this.presetSelect || !this.fadersContainer) return;
     
     this.sliders = [];
     this.valLabels = [];
@@ -90,12 +92,27 @@ export class EqUI {
     label.textContent = (val > 0 ? '+' : '') + val.toFixed(1) + 'dB';
     this.currentBands[index] = val;
     
-    if (val > 0) {
+    if (val !== 0) {
       slider.classList.add('glow');
       label.classList.add('glow-text');
     } else {
       slider.classList.remove('glow');
       label.classList.remove('glow-text');
+    }
+  }
+  
+  _updatePreampUI(val) {
+    if (!this.preampSlider || !this.preampVal) return;
+    this.currentPreamp = val;
+    this.preampSlider.value = val;
+    this.preampVal.textContent = (val > 0 ? '+' : '') + val.toFixed(1) + 'dB';
+    
+    if (val !== 0) {
+      this.preampSlider.classList.add('glow');
+      this.preampVal.classList.add('glow-text');
+    } else {
+      this.preampSlider.classList.remove('glow');
+      this.preampVal.classList.remove('glow-text');
     }
   }
   
@@ -131,19 +148,27 @@ export class EqUI {
   
   applyPreset(presetName) {
     if (!this.presetSelect) return;
-    let bands = this.stdPresets[presetName];
-    if (!bands) {
+    let target = this.stdPresets[presetName];
+    if (!target) {
       const custom = this.customPresets.find(p => p.id === presetName);
-      if (custom) bands = custom.bands;
+      if (custom) {
+        target = {
+          bands: Array.isArray(custom.bands) ? custom.bands : custom,
+          preamp: typeof custom.preamp === 'number' ? custom.preamp : 0
+        };
+      }
     }
-    if (bands) {
-      bands.forEach((val, index) => {
+    if (target && target.bands) {
+      target.bands.forEach((val, index) => {
         if (this.sliders[index]) {
           this.sliders[index].value = val;
           this._updateBandUI(index, val);
           audioEffect.setEqBand(index, val);
         }
       });
+      const preampVal = target.preamp !== undefined ? target.preamp : 0;
+      this._updatePreampUI(preampVal);
+      audioEffect.setPreamp(preampVal);
       this.presetSelect.value = presetName;
     }
   }
@@ -151,7 +176,26 @@ export class EqUI {
   _bindEvents() {
     this.openBtn?.addEventListener('click', () => this.modal?.classList.remove('hidden'));
     this.closeBtn?.addEventListener('click', () => this.modal?.classList.add('hidden'));
-    this.resetBtn?.addEventListener('click', () => this.applyPreset('Flat'));
+    this.resetBtn?.addEventListener('click', () => this.applyPreset('Flat (Reference)'));
+    
+    this.preampSlider?.addEventListener('input', (e) => {
+      const val = parseFloat(e.target.value);
+      this._updatePreampUI(val);
+      audioEffect.setPreamp(val);
+      this.presetSelect.value = 'Custom...';
+    });
+    
+    this.bypassBtn?.addEventListener('click', () => {
+      this.isBypassed = !this.isBypassed;
+      audioEffect.setBypass(this.isBypassed);
+      if (this.isBypassed) {
+        this.bypassBtn.classList.add('active');
+        modalUI.showToast('Pure Direct: ON (Bypass EQ)', 'info');
+      } else {
+        this.bypassBtn.classList.remove('active');
+        modalUI.showToast('Pure Direct: OFF (EQ Active)', 'info');
+      }
+    });
     
     this.presetSelect?.addEventListener('change', (e) => {
       const val = e.target.value;
@@ -169,20 +213,21 @@ export class EqUI {
       }
       
       if (this.stdPresets[name]) {
-        await modalUI.showAlert('แจ้งเตือน', 'ชื่อนี้ซ้ำกับ Preset มาตรฐานค่ะ กรุณาตั้งชื่ออื่นนะคะ');
+        await modalUI.showAlert('แจ้งเตือน', 'ชื่อนี้ซ้ำกับ Preset มาตรฐานค่ะ');
         return;
       }
       
       try {
         await storage.saveEqPreset({
           id: name,
-          bands: [...this.currentBands]
+          bands: [...this.currentBands],
+          preamp: this.currentPreamp
         });
         await this.loadPresets();
         this.presetSelect.value = name;
         modalUI.showToast(`บันทึก ${name} เรียบร้อยค่ะ`);
       } catch (e) {
-        await modalUI.showAlert('ผิดพลาด', 'บันทึกไม่สำเร็จค่ะ: ' + e.message);
+        await modalUI.showAlert('ผิดพลาด', 'บันทึกไม่สำเร็จ: ' + e.message);
       }
     });
     
@@ -194,15 +239,15 @@ export class EqUI {
         return;
       }
       
-      const isConfirmed = await modalUI.showConfirm('ยืนยันการลบ', `ลบ Preset "${currentName}" อย่างถาวร?`);
+      const isConfirmed = await modalUI.showConfirm('ยืนยันการลบ', `ลบ Preset "${currentName}" ถาวร?`);
       if (isConfirmed) {
         try {
           await storage.deleteEqPreset(currentName);
           await this.loadPresets();
-          this.applyPreset('Flat');
+          this.applyPreset('Flat (Reference)');
           modalUI.showToast('ลบ Preset เรียบร้อยค่ะ');
         } catch (e) {
-          await modalUI.showAlert('ผิดพลาด', 'ลบไม่สำเร็จค่ะ: ' + e.message);
+          await modalUI.showAlert('ผิดพลาด', 'ลบไม่สำเร็จ: ' + e.message);
         }
       }
     });

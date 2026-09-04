@@ -1,4 +1,3 @@
-/* File: css/eq.css */
 .eq-modal {
     position: fixed;
     top: 0; left: 0; right: 0; bottom: 0;
@@ -17,8 +16,8 @@
     pointer-events: none;
 }
 .eq-container {
-    width: 90%;
-    max-width: 450px;
+    width: 92%;
+    max-width: 480px;
     background: rgba(20, 20, 25, 0.95);
     border: 1px solid rgba(0, 229, 255, 0.2);
     border-radius: 20px;
@@ -29,23 +28,41 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 20px;
+    margin-bottom: 18px;
 }
 .eq-header h2 {
     color: #fff;
-    font-size: 1.2rem;
+    font-size: 1.1rem;
     margin: 0;
     letter-spacing: 2px;
 }
 .eq-header-actions {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 10px;
+}
+.eq-bypass-btn {
+    background: #1e1e28;
+    color: #7a7a8c;
+    border: 1px solid #353545;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 1px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+.eq-bypass-btn.active {
+    background: rgba(255, 170, 0, 0.15);
+    color: #ffaa00;
+    border-color: #ffaa00;
+    box-shadow: 0 0 10px rgba(255, 170, 0, 0.3);
 }
 .eq-controls {
     display: flex;
     gap: 10px;
-    margin-bottom: 25px;
+    margin-bottom: 20px;
 }
 .eq-preset-select {
     flex: 1;
@@ -56,13 +73,13 @@
     border-radius: 8px;
     outline: none;
     font-family: inherit;
-    font-size: 0.9rem;
+    font-size: 0.85rem;
 }
 .eq-btn {
     background: #2a2a35;
     color: #fff;
     border: none;
-    padding: 10px 15px;
+    padding: 10px 14px;
     border-radius: 8px;
     cursor: pointer;
     font-weight: bold;
@@ -73,41 +90,61 @@
 .eq-btn.delete { background: #351a1a; color: #ff2a2a; }
 .eq-btn.delete:hover { background: #ff2a2a; color: #fff; }
 
+.eq-workspace {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    width: 100%;
+}
+.eq-preamp-column {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 52px;
+    flex-shrink: 0;
+}
+.eq-divider {
+    width: 1px;
+    height: 170px;
+    background: linear-gradient(to bottom, transparent, rgba(255, 255, 255, 0.15), transparent);
+    flex-shrink: 0;
+}
 .eq-faders-scroll {
     display: flex;
     overflow-x: auto;
-    gap: 20px;
-    padding-bottom: 15px;
+    gap: 18px;
+    padding-bottom: 10px;
     scroll-snap-type: x mandatory;
+    flex-grow: 1;
 }
 .eq-faders-scroll::-webkit-scrollbar {
-    height: 6px;
+    height: 5px;
 }
 .eq-faders-scroll::-webkit-scrollbar-track {
     background: #111;
     border-radius: 10px;
 }
 .eq-faders-scroll::-webkit-scrollbar-thumb {
-    background: #444;
+    background: #333;
     border-radius: 10px;
 }
 .eq-band {
     display: flex;
     flex-direction: column;
     align-items: center;
-    min-width: 50px;
+    min-width: 46px;
     scroll-snap-align: center;
 }
 .eq-slider-wrapper {
-    height: 160px;
+    height: 150px;
     display: flex;
     align-items: center;
     justify-content: center;
-    margin: 15px 0;
+    margin: 12px 0;
 }
 .eq-slider {
     -webkit-appearance: none;
-    width: 140px;
+    width: 130px;
     height: 4px;
     background: #333;
     border-radius: 2px;
@@ -130,87 +167,34 @@
 .eq-slider.glow::-webkit-slider-runnable-track {
     background: rgba(0, 229, 255, 0.4);
 }
+.eq-slider.preamp::-webkit-slider-thumb {
+    background: #ffaa00;
+}
+.eq-slider.preamp.glow::-webkit-slider-thumb {
+    box-shadow: 0 0 12px #ffaa00;
+}
+.eq-slider.preamp.glow::-webkit-slider-runnable-track {
+    background: rgba(255, 170, 0, 0.4);
+}
 .eq-label {
     color: #777;
-    font-size: 0.75rem;
+    font-size: 0.72rem;
     font-weight: bold;
+}
+.eq-label.preamp-label {
+    color: #ffaa00;
 }
 .eq-value {
     color: #aaa;
-    font-size: 0.75rem;
-    margin-bottom: 5px;
+    font-size: 0.72rem;
+    margin-bottom: 4px;
     transition: 0.2s;
 }
 .eq-value.glow-text {
     color: #00e5ff;
     text-shadow: 0 0 5px #00e5ff;
 }
-
-/* Custom Modern Dialogs */
-.eq-custom-dialog-overlay {
-    position: fixed;
-    top: 0; left: 0; right: 0; bottom: 0;
-    background: rgba(0, 0, 0, 0.75);
-    backdrop-filter: blur(8px);
-    z-index: 3000;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    opacity: 0;
-    transition: opacity 0.2s ease;
+.eq-value.preamp-text.glow-text {
+    color: #ffaa00;
+    text-shadow: 0 0 5px #ffaa00;
 }
-.eq-custom-dialog {
-    background: rgba(20, 20, 25, 0.95);
-    border: 1px solid rgba(0, 229, 255, 0.3);
-    border-radius: 16px;
-    padding: 24px;
-    width: 85%;
-    max-width: 320px;
-    box-shadow: 0 10px 40px rgba(0,0,0,0.8);
-    transform: scale(0.9);
-    transition: transform 0.2s ease;
-    text-align: center;
-}
-.eq-custom-dialog.show {
-    transform: scale(1);
-}
-.eq-custom-dialog-title {
-    color: #fff;
-    font-size: 1.1rem;
-    margin-bottom: 15px;
-    font-weight: bold;
-}
-.eq-custom-dialog-input {
-    width: 100%;
-    background: #1a1a24;
-    border: 1px solid #444;
-    color: #00e5ff;
-    padding: 12px;
-    border-radius: 8px;
-    margin-bottom: 20px;
-    outline: none;
-    font-size: 1rem;
-    text-align: center;
-    box-sizing: border-box;
-}
-.eq-custom-dialog-input:focus {
-    border-color: #00e5ff;
-    box-shadow: 0 0 8px rgba(0,229,255,0.3);
-}
-.eq-custom-dialog-actions {
-    display: flex;
-    gap: 10px;
-    justify-content: center;
-}
-.eq-dialog-btn {
-    flex: 1;
-    padding: 10px;
-    border: none;
-    border-radius: 8px;
-    font-weight: bold;
-    cursor: pointer;
-    transition: 0.2s;
-}
-.eq-dialog-btn.cancel { background: #2a2a35; color: #aaa; }
-.eq-dialog-btn.confirm { background: #00e5ff; color: #000; }
-.eq-dialog-btn.danger { background: #ff2a2a; color: #fff; }

@@ -1,16 +1,18 @@
-// File: js/core/audioEffect.js
-
 export class AudioEffect {
   constructor() {
     this.audioCtx = null;
     this.analyser = null;
     this.source = null;
+    this.preampNode = null;
+    this.wetGain = null;
+    this.dryGain = null;
     this.limiter = null;
     this.canvas = null;
     this.ctx = null;
     this.coreElement = null;
     this.animationId = null;
     this.isPlaying = false;
+    this.isBypassed = false;
     
     this.logicalWidth = 280;
     this.logicalHeight = 280;
@@ -27,10 +29,10 @@ export class AudioEffect {
     this.ringAngle = 0;
     this.ringRadius = 132;
     
-    // 10-Band EQ Frequency list
     this.frequencies = [32, 64, 125, 250, 500, 1000, 2000, 4000, 8000, 16000];
     this.filters = [];
     this.currentGains = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+    this.currentPreamp = 0;
     
     this._bindUI();
   }
@@ -65,17 +67,21 @@ export class AudioEffect {
         this.analyser.fftSize = 256;
         this.analyser.smoothingTimeConstant = 0.78;
         
-        // Soft Limiter ป้องกันเสียงแตกพร่า (Clipping)
-        this.limiter = this.audioCtx.createDynamicsCompressor();
-        this.limiter.threshold.setValueAtTime(-0.5, this.audioCtx.currentTime);
-        this.limiter.knee.setValueAtTime(3.0, this.audioCtx.currentTime);
-        this.limiter.ratio.setValueAtTime(16.0, this.audioCtx.currentTime);
-        this.limiter.attack.setValueAtTime(0.003, this.audioCtx.currentTime);
-        this.limiter.release.setValueAtTime(0.15, this.audioCtx.currentTime);
+        this.preampNode = this.audioCtx.createGain();
+        this.preampNode.gain.setValueAtTime(1.0, this.audioCtx.currentTime);
         
-        // 10-Band EQ Filters
-        // ย่านต่ำสุด (32Hz) ใช้ lowshelf เพื่อคงเนื้อเบสลึก
-        // ย่านสูงสุด (16kHz) ใช้ highshelf เพื่อคงรายละเอียดปลายแหลม
+        this.wetGain = this.audioCtx.createGain();
+        this.dryGain = this.audioCtx.createGain();
+        this.wetGain.gain.setValueAtTime(1.0, this.audioCtx.currentTime);
+        this.dryGain.gain.setValueAtTime(0.0, this.audioCtx.currentTime);
+        
+        this.limiter = this.audioCtx.createDynamicsCompressor();
+        this.limiter.threshold.setValueAtTime(-0.1, this.audioCtx.currentTime);
+        this.limiter.knee.setValueAtTime(2.0, this.audioCtx.currentTime);
+        this.limiter.ratio.setValueAtTime(20.0, this.audioCtx.currentTime);
+        this.limiter.attack.setValueAtTime(0.001, this.audioCtx.currentTime);
+        this.limiter.release.setValueAtTime(0.1, this.audioCtx.currentTime);
+        
         this.filters = [];
         this.frequencies.forEach((freq, index) => {
           const filter = this.audioCtx.createBiquadFilter();
@@ -94,8 +100,14 @@ export class AudioEffect {
         
         this.source = this.audioCtx.createMediaElementSource(audioElement);
         
-        // เชื่อมต่อ: Source -> Filter 0..9 -> Limiter -> Destination
-        this.source.connect(this.filters[0]);
+        this.source.connect(this.wetGain);
+        this.source.connect(this.dryGain);
+        
+        this.dryGain.connect(this.audioCtx.destination);
+        this.dryGain.connect(this.analyser);
+        
+        this.wetGain.connect(this.preampNode);
+        this.preampNode.connect(this.filters[0]);
         for (let i = 0; i < this.filters.length - 1; i++) {
           this.filters[i].connect(this.filters[i + 1]);
         }
@@ -103,13 +115,31 @@ export class AudioEffect {
         const lastFilter = this.filters[this.filters.length - 1];
         lastFilter.connect(this.limiter);
         this.limiter.connect(this.audioCtx.destination);
-        
-        // ต่อ Analyser แบบแยกแขนง (Parallel) ไม่ให้ขวางทางเสียงหลัก
         lastFilter.connect(this.analyser);
-        
-        console.log("[AudioEffect] EQ Filters, Limiter & Visualizer Initialized");
       } catch (error) {
-        console.error("[AudioEffect] Initialization failed:", error);
+        console.error("[AudioEffect] Init error:", error);
+      }
+    }
+  }
+  
+  setPreamp(gainDb) {
+    this.currentPreamp = gainDb;
+    if (this.preampNode && this.audioCtx) {
+      const linear = Math.pow(10, gainDb / 20);
+      this.preampNode.gain.setTargetAtTime(linear, this.audioCtx.currentTime, 0.03);
+    }
+  }
+  
+  setBypass(bypassed) {
+    this.isBypassed = bypassed;
+    if (this.wetGain && this.dryGain && this.audioCtx) {
+      const t = this.audioCtx.currentTime;
+      if (bypassed) {
+        this.wetGain.gain.setTargetAtTime(0, t, 0.02);
+        this.dryGain.gain.setTargetAtTime(1, t, 0.02);
+      } else {
+        this.wetGain.gain.setTargetAtTime(1, t, 0.02);
+        this.dryGain.gain.setTargetAtTime(0, t, 0.02);
       }
     }
   }
@@ -118,8 +148,7 @@ export class AudioEffect {
     this.currentGains[index] = gainValue;
     if (this.filters && this.filters[index] && this.audioCtx) {
       const filter = this.filters[index];
-      const currentTime = this.audioCtx.currentTime;
-      filter.gain.setTargetAtTime(gainValue, currentTime, 0.05);
+      filter.gain.setTargetAtTime(gainValue, this.audioCtx.currentTime, 0.03);
     }
   }
   
