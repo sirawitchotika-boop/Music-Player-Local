@@ -101,6 +101,7 @@ jobs:
           import android.content.Context;
           import android.content.Intent;
           import android.content.IntentFilter;
+          import android.content.pm.PackageManager;
           import android.database.Cursor;
           import android.graphics.Bitmap;
           import android.graphics.BitmapFactory;
@@ -111,7 +112,9 @@ jobs:
           import android.net.Uri;
           import android.os.Build;
           import android.os.Bundle;
+          import android.os.SystemClock;
           import android.provider.OpenableColumns;
+          import android.view.WindowManager;
           import android.webkit.JavascriptInterface;
           import android.webkit.WebView;
           import com.getcapacitor.Bridge;
@@ -120,6 +123,8 @@ jobs:
           import java.io.FileOutputStream;
           import java.io.InputStream;
           import java.io.OutputStream;
+          import java.util.ArrayList;
+          import java.util.List;
 
           public class MainActivity extends BridgeActivity {
               private static final String CHANNEL_ID = "gt_soundmaster_playback";
@@ -150,6 +155,9 @@ jobs:
               @Override
               public void onCreate(Bundle savedInstanceState) {
                   super.onCreate(savedInstanceState);
+                  setupWindowAppearance();
+                  checkAndRequestPermissions();
+
                   notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
                   createNotificationChannel();
                   setupMediaSession();
@@ -183,6 +191,49 @@ jobs:
                   }
                   if (notificationManager != null) {
                       notificationManager.cancel(NOTIFICATION_ID);
+                  }
+              }
+
+              private void setupWindowAppearance() {
+                  if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                      getWindow().setStatusBarColor(0xFF121218);
+                      getWindow().setNavigationBarColor(0xFF121218);
+                  }
+
+                  if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                      WindowManager.LayoutParams lp = getWindow().getAttributes();
+                      lp.layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES;
+                      getWindow().setAttributes(lp);
+                  }
+
+                  if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                      android.view.WindowInsetsController controller = getWindow().getInsetsController();
+                      if (controller != null) {
+                          controller.setSystemBarsAppearance(0, android.view.WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS | android.view.WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS);
+                      }
+                  } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                      getWindow().getDecorView().setSystemUiVisibility(
+                          getWindow().getDecorView().getSystemUiVisibility() & ~android.view.View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
+                      );
+                  }
+              }
+
+              private void checkAndRequestPermissions() {
+                  if (Build.VERSION.SDK_INT >= 33) {
+                      List<String> perms = new ArrayList<>();
+                      if (checkSelfPermission("android.permission.READ_MEDIA_AUDIO") != PackageManager.PERMISSION_GRANTED) {
+                          perms.add("android.permission.READ_MEDIA_AUDIO");
+                      }
+                      if (checkSelfPermission("android.permission.POST_NOTIFICATIONS") != PackageManager.PERMISSION_GRANTED) {
+                          perms.add("android.permission.POST_NOTIFICATIONS");
+                      }
+                      if (!perms.isEmpty()) {
+                          requestPermissions(perms.toArray(new String[0]), 101);
+                      }
+                  } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                      if (checkSelfPermission("android.permission.READ_EXTERNAL_STORAGE") != PackageManager.PERMISSION_GRANTED) {
+                          requestPermissions(new String[]{"android.permission.READ_EXTERNAL_STORAGE"}, 101);
+                      }
                   }
               }
 
@@ -224,6 +275,11 @@ jobs:
                       public void onSkipToPrevious() {
                           sendJsCommand("window.mediaControlAction('prev');");
                       }
+                      @Override
+                      public void onSeekTo(long pos) {
+                          double sec = Math.max(0, pos / 1000.0);
+                          sendJsCommand("window.mediaControlAction('seekto', " + sec + ");");
+                      }
                   });
                   mediaSession.setFlags(MediaSession.FLAG_HANDLES_MEDIA_BUTTONS | MediaSession.FLAG_HANDLES_TRANSPORT_CONTROLS);
                   mediaSession.setActive(true);
@@ -261,23 +317,35 @@ jobs:
                   return PendingIntent.getBroadcast(this, requestCode, intent, flags);
               }
 
-              private void showNotification(String title, String artist, boolean isPlaying) {
+              private void showNotification(String title, String artist, boolean isPlaying, double positionSec, double durationSec) {
                   if (notificationManager == null || mediaSession == null) return;
+
+                  long posMs = (long) (Math.max(0, positionSec) * 1000);
+                  long durMs = (long) (Math.max(0, durationSec) * 1000);
+                  if (durMs <= 0) durMs = 1;
+                  if (posMs > durMs) posMs = durMs;
 
                   long playbackActions = PlaybackState.ACTION_PLAY
                       | PlaybackState.ACTION_PAUSE
                       | PlaybackState.ACTION_SKIP_TO_NEXT
-                      | PlaybackState.ACTION_SKIP_TO_PREVIOUS;
+                      | PlaybackState.ACTION_SKIP_TO_PREVIOUS
+                      | PlaybackState.ACTION_SEEK_TO;
 
                   PlaybackState state = new PlaybackState.Builder()
                       .setActions(playbackActions)
-                      .setState(isPlaying ? PlaybackState.STATE_PLAYING : PlaybackState.STATE_PAUSED, PlaybackState.PLAYBACK_POSITION_UNKNOWN, 1.0f)
+                      .setState(
+                          isPlaying ? PlaybackState.STATE_PLAYING : PlaybackState.STATE_PAUSED,
+                          posMs,
+                          isPlaying ? 1.0f : 0.0f,
+                          SystemClock.elapsedRealtime()
+                      )
                       .build();
                   mediaSession.setPlaybackState(state);
 
                   MediaMetadata metadata = new MediaMetadata.Builder()
                       .putString(MediaMetadata.METADATA_KEY_TITLE, title)
                       .putString(MediaMetadata.METADATA_KEY_ARTIST, artist)
+                      .putLong(MediaMetadata.METADATA_KEY_DURATION, durMs)
                       .build();
                   mediaSession.setMetadata(metadata);
 
@@ -386,7 +454,7 @@ jobs:
                       }
 
                       String localUrl = "https://localhost/_capacitor_file_" + destFile.getAbsolutePath();
-                      String cleanName = fileName.replace("\"", "").replace("'", "");
+                      String cleanName = fileName.replace("\"", "").replace("'", "").replace("\\", "");
                       String json = "{\"name\":\"" + cleanName + "\",\"url\":\"" + localUrl + "\"}";
                       this.pendingTrackJson = json;
 
@@ -398,8 +466,8 @@ jobs:
 
               public class WebAppInterface {
                   @JavascriptInterface
-                  public void updatePlayback(String title, String artist, boolean isPlaying) {
-                      runOnUiThread(() -> showNotification(title, artist, isPlaying));
+                  public void updatePlayback(String title, String artist, boolean isPlaying, double positionSec, double durationSec) {
+                      runOnUiThread(() -> showNotification(title, artist, isPlaying, positionSec, durationSec));
                   }
 
                   @JavascriptInterface
