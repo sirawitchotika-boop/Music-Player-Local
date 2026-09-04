@@ -1,0 +1,390 @@
+/* css/timer.css */
+.timer-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(10, 10, 15, 0.98);
+  z-index: 2000;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  opacity: 1;
+  transition: opacity 0.3s ease;
+}
+
+.timer-modal.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.timer-container {
+  width: 90%;
+  max-width: 360px;
+  background: rgba(20, 20, 25, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 24px;
+  padding: 24px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.timer-header {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 25px;
+}
+
+.timer-header h2 {
+  color: #fff;
+  font-size: 1.2rem;
+  font-weight: 600;
+  letter-spacing: 2px;
+  margin: 0;
+}
+
+.timer-dial-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.timer-dial {
+  width: 200px;
+  height: 200px;
+  border-radius: 50%;
+  background: conic-gradient(from 180deg, #1a1a24, #2a2a35, #1a1a24);
+  box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.8), 0 5px 15px rgba(0, 0, 0, 0.5);
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border: 2px solid rgba(0, 229, 255, 0.3);
+}
+
+.timer-dial-inner {
+  width: 140px;
+  height: 140px;
+  border-radius: 50%;
+  background: #111116;
+  box-shadow: inset 0 5px 10px rgba(0, 0, 0, 0.8);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  z-index: 2;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.timer-dial-inner:active {
+  background: #1a1a22;
+}
+
+.timer-display-mins {
+  font-size: 3rem;
+  font-weight: 700;
+  color: #00e5ff;
+  text-shadow: 0 0 10px rgba(0, 229, 255, 0.5);
+  line-height: 1;
+  transition: all 0.3s;
+}
+
+.timer-display-label {
+  font-size: 0.7rem;
+  color: #7a7a8c;
+  letter-spacing: 2px;
+  margin-top: 5px;
+  transition: all 0.3s;
+}
+
+/* เอฟเฟกต์แปลงร่างตอนเริ่มนับถอยหลัง */
+.timer-display-mins.countdown {
+  font-size: 2.2rem;
+  color: #ffd700;
+  text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+}
+
+.timer-display-label.countdown {
+  color: #ffd700;
+  opacity: 0.8;
+}
+
+.timer-dial-indicator {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 1;
+  transform: rotate(0deg);
+}
+
+.timer-dial-indicator::before {
+  content: '';
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 8px;
+  height: 8px;
+  background: #00e5ff;
+  border-radius: 50%;
+  box-shadow: 0 0 10px #00e5ff, 0 0 20px #00e5ff;
+}
+
+/* --- Stationed Controls Row --- */
+.timer-status-row {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 25px;
+  margin-bottom: 25px;
+}
+
+.preset-stationed-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.preset-stationed-btn svg {
+  width: 18px;
+  height: 18px;
+  fill: #7a7a8c;
+  transition: fill 0.3s;
+}
+
+.preset-stationed-btn:active {
+  transform: scale(0.9);
+  background: rgba(255, 255, 255, 0.15);
+}
+
+/* Edit Mode Active State */
+.preset-stationed-btn.active-edit {
+  background: rgba(0, 229, 255, 0.15);
+  border-color: #00e5ff;
+  box-shadow: 0 0 15px rgba(0, 229, 255, 0.2);
+}
+
+.preset-stationed-btn.active-edit svg {
+  fill: #00e5ff;
+}
+
+/* --- Presets List --- */
+.timer-presets-wrapper {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  margin-bottom: 30px;
+  overflow-x: auto;
+  padding-bottom: 5px;
+  scrollbar-width: none;
+}
+
+.timer-presets-wrapper::-webkit-scrollbar {
+  display: none;
+}
+
+.timer-presets-list {
+  display: flex;
+  gap: 10px;
+  align-items: stretch;
+}
+
+.preset-group {
+  display: flex;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 20px;
+  padding: 0;
+  gap: 0;
+  transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+  overflow: hidden;
+}
+
+.preset-group.active {
+  background: rgba(0, 229, 255, 0.15);
+  border-color: #00e5ff;
+  box-shadow: 0 0 10px rgba(0, 229, 255, 0.2);
+}
+
+.preset-chip {
+  background: transparent;
+  border: none;
+  color: #fff;
+  font-size: 0.85rem;
+  white-space: nowrap;
+  cursor: pointer;
+  padding: 10px 18px;
+  border-radius: 20px;
+  transition: all 0.2s;
+}
+
+.preset-chip:active {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.preset-group.active .preset-chip {
+  color: #00e5ff;
+  font-weight: 700;
+}
+
+.preset-action {
+  display: none;
+  background: transparent;
+  border: none;
+  border-radius: 50%;
+  width: 28px;
+  height: 28px;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.preset-action:active {
+  background: rgba(255, 255, 255, 0.1);
+  transform: scale(0.9);
+}
+
+.preset-action svg {
+  width: 14px;
+  height: 14px;
+  fill: #7a7a8c;
+  transition: fill 0.2s;
+}
+
+.preset-action.edit:active svg { fill: #ffd700; }
+.preset-action.delete:active svg { fill: #ff2a2a; }
+
+/* Edit Mode Active State for List */
+.timer-presets-list.edit-mode .preset-group {
+  padding: 4px 6px;
+  gap: 4px;
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.timer-presets-list.edit-mode .preset-chip {
+  padding: 6px 10px;
+}
+
+.timer-presets-list.edit-mode .preset-action {
+  display: flex;
+}
+
+/* Dynamic Clear All Button (Only visible in Edit Mode) */
+.preset-chip-danger {
+  background: rgba(255, 42, 42, 0.1);
+  border: 1px solid rgba(255, 42, 42, 0.3);
+  color: #ff2a2a;
+  border-radius: 20px;
+  padding: 10px 18px;
+  display: none;
+  align-items: center;
+  cursor: pointer;
+  white-space: nowrap;
+  font-size: 0.85rem;
+  font-weight: bold;
+  transition: all 0.2s;
+}
+
+.timer-presets-list.edit-mode .preset-chip-danger {
+  display: flex;
+}
+
+.preset-chip-danger:active {
+  background: rgba(255, 42, 42, 0.25);
+  transform: scale(0.95);
+}
+
+/* --- Main Actions --- */
+.timer-actions {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.timer-btn {
+  width: 100%;
+  padding: 14px;
+  border-radius: 12px;
+  border: none;
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.timer-btn.primary {
+  background: linear-gradient(135deg, #00e5ff, #0077ff);
+  color: #fff;
+  box-shadow: 0 4px 15px rgba(0, 229, 255, 0.3);
+}
+
+.timer-btn.primary:active {
+  transform: translateY(2px);
+  box-shadow: 0 2px 8px rgba(0, 229, 255, 0.3);
+}
+
+.timer-btn.danger {
+  background: transparent;
+  color: #ff2a2a;
+  border: 1px solid rgba(255, 42, 42, 0.5);
+}
+
+.timer-btn.danger:active {
+  background: rgba(255, 42, 42, 0.15);
+}
+
+@keyframes breathe {
+    0% { opacity: 0.6; transform: scale(1); }
+    50% { opacity: 1; transform: scale(1.03); }
+    100% { opacity: 0.6; transform: scale(1); }
+}
+
+.timer-dial.active-breathing {
+    animation: breathe 3s infinite ease-in-out;
+    transform: translateZ(0);
+    will-change: transform, opacity;
+}
+
+@keyframes icon-breathe {
+    0% { color: #fff; transform: scale(1); }
+    50% { color: #ffd700; transform: scale(1.2); }
+    100% { color: #fff; transform: scale(1); }
+}
+
+.icon-btn.breathing svg {
+    animation: icon-breathe 1.5s infinite ease-in-out;
+}
+
+/* --- Active Timer Icon Neon Glow (Top Bar) --- */
+#sleep-timer-btn.timer-active-neon svg {
+    fill: #ff2a2a;
+    filter: drop-shadow(0 0 5px rgba(255, 42, 42, 0.8)) drop-shadow(0 0 12px rgba(255, 42, 42, 0.4));
+    animation: timer-neon-pulse 2s infinite alternate ease-in-out;
+    transition: all 0.3s ease;
+}
+
+@keyframes timer-neon-pulse {
+    0% { filter: drop-shadow(0 0 3px rgba(255, 42, 42, 0.5)); transform: scale(1); }
+    100% { filter: drop-shadow(0 0 10px rgba(255, 42, 42, 1)) drop-shadow(0 0 20px rgba(255, 42, 42, 0.6)); transform: scale(1.05); }
+}

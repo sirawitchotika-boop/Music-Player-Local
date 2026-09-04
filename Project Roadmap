@@ -1,0 +1,34 @@
+# Local Music Player - Enterprise Development Roadmap (Updated)
+
+## Phase 1: Foundation, UI Skeleton & Fallbacks [Completed]
+- [x] สร้าง `index.html` วางโครงสร้าง Layout ทั้งหมด
+- [x] เขียน `css/main.css` ตั้งค่า Reset, ล็อก Scroll หน้าจอไม่ให้ขยับ
+- [x] เตรียม UI Fallbacks
+- [x] สร้างระบบแจ้งเตือน (Toast/Alert)
+
+## Phase 2: Core Audio Engine & Error Prevention [Completed]
+- [x] สร้าง `js/core/audioEngine.js` รองรับการโหลดไฟล์เสียง
+- [x] เขียนฟังก์ชัน Play, Pause, Seek และเปลี่ยนเพลง
+- [x] สร้างระบบ Error Handling ดักจับกรณีไฟล์เสียงเสีย
+
+## Phase 3: State & UI Integration [Completed]
+- [x] สร้าง `js/core/stateManager.js` คุมตรรกะ สุ่มเพลง เรียงลำดับ วนลูป
+- [x] สร้าง `js/ui/playerUI.js` ควบคุมปุ่มและ Seekbar
+- [x] เชื่อมต่อปุ่มข้ามเพลง ย้อนกลับ ตามเวลาจริง
+
+## Phase 4: Data Management, Security & Storage [Completed]
+- [x] สร้าง File Validation ใน `js/core/storage.js`
+- [x] ป้องกันการบันทึกเพลงซ้ำใน IndexedDB
+- [x] สร้าง `js/ui/playlistUI.js` แสดงรายชื่อเพลง ค้นหา สร้าง/ลบ Playlist
+
+## Phase 5: Advanced Premium Features [Completed]
+- [x] พัฒนา Audio Visualizer แบบวงแหวน
+- [x] พัฒนาระบบ 10-Band EQ พร้อม Soft Limiter และ Presets
+- [x] พัฒนาระบบ Sleep Timer ผูกกับหน้าปัดนับถอยหลัง
+
+## Phase 6: Enterprise QA & Bug Fixes [Completed]
+- [x] แก้ไขบัคเพลงซ้ำใน Current Playlist / All Tracks
+- [x] ปรับขนาด Toast ให้พอดี ไม่ชนขอบจอ
+- [x] แก้ไขช่องกรอกชื่อ Preset EQ ให้พิมพ์ตัวอักษรและภาษาไทยได้
+- [x] ปรับจูน Audio Graph (Lowshelf/Highshelf + Soft Limiter) แก้ปัญหาเสียงแตกในหูฟัง
+- [x] ลบอักขระขยะ vhhh และแก้บัคปุ่ม Favorite ซ้อน

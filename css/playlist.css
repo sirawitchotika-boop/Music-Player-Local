@@ -1,0 +1,374 @@
+/* File: css/playlist.css */
+.playlist-section {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(13, 13, 18, 0.95);
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    padding: 25px 20px;
+    backdrop-filter: blur(15px);
+    transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.playlist-section.hidden {
+    transform: translateY(100%);
+    display: flex !important;
+}
+.playlist-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-top: 5px;
+}
+.playlist-header h2 {
+    font-size: 20px;
+    font-weight: 800;
+    letter-spacing: 2px;
+    color: #fff;
+}
+.close-btn {
+    background: #252535;
+    border: none;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+.close-btn:active {
+    background: #ff2a2a;
+}
+.playlist-controls-grid {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 15px;
+    align-items: stretch;
+    height: 95px;
+    flex-shrink: 0;
+}
+.control-col {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    flex-grow: 1;
+    width: 42%;
+    justify-content: space-between;
+}
+.action-col {
+    display: flex;
+    flex-direction: column;
+    width: 46px;
+}
+.hidden-input { display: none; }
+.upload-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 0 10px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 800;
+    cursor: pointer;
+    transition: 0.2s;
+    height: 100%;
+    color: white;
+    letter-spacing: 0.5px;
+}
+.primary-btn { background: #252535; }
+.primary-btn:active { background: #353545; }
+.secondary-btn {
+    background: rgba(255, 42, 42, 0.15);
+    border: 1px solid rgba(255, 42, 42, 0.3);
+    color: #ff6b6b;
+}
+.secondary-btn:active { background: rgba(255, 42, 42, 0.3); }
+.search-box {
+    position: relative;
+    display: flex;
+    align-items: center;
+    height: 100%;
+}
+.search-icon {
+    position: absolute;
+    left: 10px;
+    width: 18px;
+    height: 18px;
+    fill: #7a7a8c;
+}
+.search-input {
+    width: 100%;
+    height: 100%;
+    background: #1a1a24;
+    border: 1px solid #252535;
+    color: white;
+    padding: 0 12px 0 34px;
+    border-radius: 12px;
+    outline: none;
+    font-size: 13px;
+    transition: border-color 0.3s;
+}
+.search-input:focus { border-color: #ff2a2a; }
+.danger-btn {
+    background: rgba(255, 42, 42, 0.1);
+    border: 1px solid rgba(255, 42, 42, 0.3);
+    border-radius: 12px;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: 0.2s;
+    cursor: pointer;
+}
+.danger-btn:active {
+    background: rgba(255, 42, 42, 0.4);
+    transform: scale(0.95);
+}
+.dropdown-wrapper { position: relative; height: 100%; }
+.dropdown-btn {
+    width: 100%;
+    height: 100%;
+    background: #1a1a24;
+    border: 1px solid #252535;
+    border-radius: 12px;
+    color: white;
+    padding: 0 12px;
+    font-size: 12px;
+    font-weight: bold;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    transition: 0.2s;
+    outline: none;
+}
+.dropdown-btn:active { border-color: #ff2a2a; background: #252535; }
+.dropdown-menu {
+    position: absolute;
+    top: calc(100% + 5px);
+    left: 0;
+    width: 150%;
+    background: #111118;
+    border: 1px solid #252535;
+    border-radius: 12px;
+    z-index: 200;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.9);
+    display: flex;
+    flex-direction: column;
+    max-height: 200px;
+    overflow-y: auto;
+}
+.dropdown-menu.hidden { display: none; }
+.dropdown-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 15px;
+    border-bottom: 1px solid #1a1a24;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: bold;
+    transition: 0.2s;
+    color: #fff;
+}
+.dropdown-item:active { background: #252535; }
+.dropdown-item:last-child { border-bottom: none; }
+.pl-actions { display: flex; gap: 8px; }
+.pl-action-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 5px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.pl-action-btn:active { background: #353545; transform: scale(0.9); }
+.playlist-container {
+    flex-grow: 1;
+    overflow-y: auto;
+    padding-bottom: 20px;
+    margin-top: 5px;
+}
+.playlist-track-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 15px;
+    background: #1a1a24;
+    margin-bottom: 8px;
+    border-radius: 12px;
+    border: 1px solid #252535;
+    transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+}
+.playlist-track-item:active {
+    background: #252535;
+    transform: scale(0.98);
+}
+.playlist-track-item.active-playing {
+    background: linear-gradient(145deg, rgba(255, 42, 42, 0.15), rgba(26, 26, 36, 0.9));
+    border: 1px solid rgba(255, 42, 42, 0.6);
+    box-shadow: 0 5px 15px rgba(255, 42, 42, 0.15), inset 0 0 10px rgba(255, 42, 42, 0.05);
+    transform: scale(1.02);
+}
+.playlist-track-item.active-playing::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    height: 100%;
+    width: 4px;
+    background: #ff2a2a;
+    box-shadow: 0 0 12px #ff2a2a, 0 0 20px #ff2a2a;
+    border-radius: 12px 0 0 12px;
+}
+.playlist-track-item.active-playing .track-title-text {
+    color: #ff2a2a !important;
+    text-shadow: 0 0 8px rgba(255, 42, 42, 0.4);
+}
+.playlist-track-item.active-playing .track-icon svg {
+    fill: #ff2a2a !important;
+    animation: pulse-icon 1s infinite alternate cubic-bezier(0.4, 0, 0.2, 1);
+}
+@keyframes pulse-icon {
+    0% { transform: scale(1); filter: drop-shadow(0 0 2px rgba(255, 42, 42, 0.4)); }
+    100% { transform: scale(1.25); filter: drop-shadow(0 0 10px rgba(255, 42, 42, 0.9)); }
+}
+/* =========================================
+   Modal & Toast Styles (Glassmorphism UI)
+   ========================================= */
+.toast-container {
+    position: fixed;
+    top: 25px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 10000;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    pointer-events: none;
+    width: 100%;
+    padding: 0 15px;
+}
+.gt-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.75);
+    backdrop-filter: blur(8px);
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+}
+.gt-modal-overlay.show {
+    opacity: 1;
+    pointer-events: auto;
+}
+.gt-modal-box {
+    background: rgba(20, 20, 25, 0.95);
+    border: 1px solid rgba(0, 229, 255, 0.3);
+    border-radius: 16px;
+    padding: 24px;
+    width: 85%;
+    max-width: 320px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.8);
+    transform: scale(0.9);
+    transition: transform 0.2s ease;
+    text-align: center;
+}
+.gt-modal-overlay.show .gt-modal-box {
+    transform: scale(1);
+}
+.gt-modal-title {
+    color: #fff;
+    font-size: 1.1rem;
+    margin-bottom: 12px;
+    font-weight: bold;
+}
+.gt-modal-text {
+    color: #7a7a8c;
+    font-size: 0.9rem;
+    margin-bottom: 20px;
+    line-height: 1.5;
+}
+.gt-modal-input {
+    width: 100%;
+    background: #1a1a24;
+    border: 1px solid #444;
+    color: #00e5ff;
+    padding: 12px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    outline: none;
+    font-size: 1rem;
+    text-align: center;
+    box-sizing: border-box;
+    transition: 0.3s;
+}
+.gt-modal-input:focus {
+    border-color: #00e5ff;
+    box-shadow: 0 0 8px rgba(0,229,255,0.3);
+}
+
+/* ลบลูกศรปรับเลขขึ้นลง เพื่อความคลีนของ UI */
+.gt-modal-input[type="number"]::-webkit-inner-spin-button,
+.gt-modal-input[type="number"]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+.gt-modal-input[type="number"] {
+    -moz-appearance: textfield;
+}
+
+.gt-modal-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+}
+.gt-btn-cancel,
+.gt-btn-confirm,
+.gt-btn-danger {
+    flex: 1;
+    padding: 12px;
+    border: none;
+    border-radius: 8px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: 0.2s;
+    font-size: 0.85rem;
+}
+.gt-btn-cancel {
+    background: #2a2a35;
+    color: #aaa;
+}
+.gt-btn-cancel:active {
+    background: #353545;
+}
+.gt-btn-confirm {
+    background: #00e5ff;
+    color: #000;
+}
+.gt-btn-confirm:active {
+    background: #00b3cc;
+}
+.gt-btn-danger {
+    background: #ff2a2a;
+    color: #fff;
+}
+.gt-btn-danger:active {
+    background: #cc0000;
+}
