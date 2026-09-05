@@ -45,7 +45,6 @@ jobs:
           cp icon.png assets/logo.png
           cp icon.png assets/icon-only.png
           cp icon.png assets/icon-foreground.png
-
           npx @capacitor/assets generate --android --iconBackgroundColor '#121218'
 
           cat << 'EOF' > patch-manifest.py
@@ -56,13 +55,19 @@ jobs:
           permissions = '\n'.join([
               '    <uses-permission android:name="android.permission.WAKE_LOCK" />',
               '    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />',
+              '    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />',
               '    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />',
               '    <uses-permission android:name="android.permission.READ_MEDIA_AUDIO" />',
               '    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />'
           ])
 
-          if '<application' in content:
-              content = content.replace('<application', permissions + '\n    <application', 1)
+          service_tag = '\n'.join([
+              '        <service',
+              '            android:name="com.gt.soundmaster.MediaPlaybackService"',
+              '            android:enabled="true"',
+              '            android:exported="false"',
+              '            android:foregroundServiceType="mediaPlayback" />'
+          ])
 
           music_intent_filters = '\n'.join([
               '            <intent-filter>',
@@ -80,57 +85,61 @@ jobs:
               '            </intent-filter>'
           ])
 
+          if '<application' in content:
+              content = content.replace('<application', permissions + '\n    <application', 1)
+
           content = content.replace('</activity>', music_intent_filters + '\n        </activity>', 1)
+
+          if '</application>' in content:
+              content = content.replace('</application>', service_tag + '\n    </application>', 1)
 
           with open(manifest_path, 'w', encoding='utf-8') as f:
               f.write(content)
-          print('Successfully injected Music intent filters and permissions into AndroidManifest.xml')
+          print('Successfully injected Service, Music intent filters and permissions into AndroidManifest.xml')
           EOF
           python3 patch-manifest.py
 
-          cat << 'EOF' > android/app/src/main/java/com/gt/soundmaster/MainActivity.java
+          cat << 'EOF' > android/app/src/main/java/com/gt/soundmaster/MediaPlaybackService.java
           package com.gt.soundmaster;
 
           import android.app.Notification;
           import android.app.NotificationChannel;
           import android.app.NotificationManager;
           import android.app.PendingIntent;
+          import android.app.Service;
           import android.content.BroadcastReceiver;
           import android.content.Context;
           import android.content.Intent;
           import android.content.IntentFilter;
-          import android.content.pm.PackageManager;
-          import android.database.Cursor;
+          import android.content.pm.ServiceInfo;
           import android.graphics.Bitmap;
           import android.graphics.BitmapFactory;
           import android.graphics.drawable.Icon;
           import android.media.MediaMetadata;
           import android.media.session.MediaSession;
           import android.media.session.PlaybackState;
-          import android.net.Uri;
           import android.os.Build;
-          import android.os.Bundle;
+          import android.os.IBinder;
+          import android.os.PowerManager;
           import android.os.SystemClock;
-          import android.provider.OpenableColumns;
-          import android.view.WindowManager;
-          import android.webkit.JavascriptInterface;
-          import android.webkit.WebView;
-          import com.getcapacitor.Bridge;
-          import com.getcapacitor.BridgeActivity;
-          import java.io.File;
-          import java.io.FileOutputStream;
-          import java.io.InputStream;
-          import java.io.OutputStream;
-          import java.util.ArrayList;
-          import java.util.List;
 
-          public class MainActivity extends BridgeActivity {
-              private static final String CHANNEL_ID = "gt_soundmaster_playback";
-              private static final int NOTIFICATION_ID = 1001;
+          public class MediaPlaybackService extends Service {
+              public static final String CHANNEL_ID = "gt_soundmaster_playback";
+              public static final int NOTIFICATION_ID = 1001;
+
+              public static final String ACTION_UPDATE_PLAYBACK = "com.gt.soundmaster.UPDATE_PLAYBACK";
+              public static final String ACTION_CLEAR_PLAYBACK = "com.gt.soundmaster.CLEAR_PLAYBACK";
+
+              public static final String EXTRA_TITLE = "title";
+              public static final String EXTRA_ARTIST = "artist";
+              public static final String EXTRA_IS_PLAYING = "is_playing";
+              public static final String EXTRA_POS_SEC = "pos_sec";
+              public static final String EXTRA_DUR_SEC = "dur_sec";
 
               private MediaSession mediaSession;
               private NotificationManager notificationManager;
-              private String pendingTrackJson = null;
+              private PowerManager.WakeLock wakeLock;
+              private boolean isForeground = false;
 
               private final BroadcastReceiver mediaReceiver = new BroadcastReceiver() {
                   @Override
@@ -142,184 +151,53 @@ jobs:
                           else if (action.endsWith(".PLAYPAUSE")) cmd = "window.mediaControlAction('playpause');";
                           else if (action.endsWith(".NEXT")) cmd = "window.mediaControlAction('next');";
                           else cmd = null;
-
                           if (cmd != null) {
-                              sendJsCommand(cmd);
+                              MainActivity.sendJsCommandToWebview(cmd);
                           }
                       }
                   }
               };
 
               @Override
-              public void onCreate(Bundle savedInstanceState) {
-                  super.onCreate(savedInstanceState);
-                  setupWindowAppearance();
-                  checkAndRequestPermissions();
-
+              public void onCreate() {
+                  super.onCreate();
                   notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
                   createNotificationChannel();
                   setupMediaSession();
                   registerMediaReceiver();
 
-                  WebView webView = getAppWebView();
-                  if (webView != null) {
-                      webView.addJavascriptInterface(new WebAppInterface(), "AndroidBridge");
+                  PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
+                  if (pm != null) {
+                      wakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "GTSoundMaster::PlaybackWakeLock");
+                      wakeLock.setReferenceCounted(false);
                   }
-
-                  handleIntent(getIntent());
               }
 
               @Override
-              public void onNewIntent(Intent intent) {
-                  super.onNewIntent(intent);
-                  setIntent(intent);
-                  handleIntent(intent);
-              }
-
-              @Override
-              public void onDestroy() {
-                  super.onDestroy();
-                  try {
-                      unregisterReceiver(mediaReceiver);
-                  } catch (Exception ignored) {}
-
-                  if (mediaSession != null) {
-                      mediaSession.setActive(false);
-                      mediaSession.release();
-                  }
-                  if (notificationManager != null) {
-                      notificationManager.cancel(NOTIFICATION_ID);
-                  }
-              }
-
-              private void setupWindowAppearance() {
-                  if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                      getWindow().setStatusBarColor(0xFF121218);
-                      getWindow().setNavigationBarColor(0xFF121218);
-                  }
-
-                  if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                      WindowManager.LayoutParams lp = getWindow().getAttributes();
-                      lp.layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES;
-                      getWindow().setAttributes(lp);
-                  }
-
-                  if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                      android.view.WindowInsetsController controller = getWindow().getInsetsController();
-                      if (controller != null) {
-                          controller.setSystemBarsAppearance(0, android.view.WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS | android.view.WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS);
-                      }
-                  } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                      getWindow().getDecorView().setSystemUiVisibility(
-                          getWindow().getDecorView().getSystemUiVisibility() & ~android.view.View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
-                      );
-                  }
-              }
-
-              private void checkAndRequestPermissions() {
-                  if (Build.VERSION.SDK_INT >= 33) {
-                      List<String> perms = new ArrayList<>();
-                      if (checkSelfPermission("android.permission.READ_MEDIA_AUDIO") != PackageManager.PERMISSION_GRANTED) {
-                          perms.add("android.permission.READ_MEDIA_AUDIO");
-                      }
-                      if (checkSelfPermission("android.permission.POST_NOTIFICATIONS") != PackageManager.PERMISSION_GRANTED) {
-                          perms.add("android.permission.POST_NOTIFICATIONS");
-                      }
-                      if (!perms.isEmpty()) {
-                          requestPermissions(perms.toArray(new String[0]), 101);
-                      }
-                  } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                      if (checkSelfPermission("android.permission.READ_EXTERNAL_STORAGE") != PackageManager.PERMISSION_GRANTED) {
-                          requestPermissions(new String[]{"android.permission.READ_EXTERNAL_STORAGE"}, 101);
+              public int onStartCommand(Intent intent, int flags, int startId) {
+                  if (intent != null) {
+                      String action = intent.getAction();
+                      if (ACTION_UPDATE_PLAYBACK.equals(action)) {
+                          String title = intent.getStringExtra(EXTRA_TITLE);
+                          if (title == null) title = "GT Track";
+                          String artist = intent.getStringExtra(EXTRA_ARTIST);
+                          if (artist == null) artist = "GT SoundMaster";
+                          boolean isPlaying = intent.getBooleanExtra(EXTRA_IS_PLAYING, false);
+                          double posSec = intent.getDoubleExtra(EXTRA_POS_SEC, 0.0);
+                          double durSec = intent.getDoubleExtra(EXTRA_DUR_SEC, 0.0);
+                          handlePlaybackUpdate(title, artist, isPlaying, posSec, durSec);
+                      } else if (ACTION_CLEAR_PLAYBACK.equals(action)) {
+                          handleClear();
                       }
                   }
+                  return START_NOT_STICKY;
               }
 
-              private WebView getAppWebView() {
-                  Bridge bridge = getBridge();
-                  return bridge != null ? bridge.getWebView() : null;
-              }
-
-              private void createNotificationChannel() {
-                  if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && notificationManager != null) {
-                      NotificationChannel channel = new NotificationChannel(
-                          CHANNEL_ID,
-                          "GT SoundMaster Playback",
-                          NotificationManager.IMPORTANCE_LOW
-                      );
-                      channel.setDescription("Music playback controls");
-                      channel.setShowBadge(false);
-                      channel.setLockscreenVisibility(Notification.VISIBILITY_PUBLIC);
-                      notificationManager.createNotificationChannel(channel);
-                  }
-              }
-
-              private void setupMediaSession() {
-                  mediaSession = new MediaSession(this, "GT_SoundMaster_Session");
-                  mediaSession.setCallback(new MediaSession.Callback() {
-                      @Override
-                      public void onPlay() {
-                          sendJsCommand("window.mediaControlAction('play');");
-                      }
-                      @Override
-                      public void onPause() {
-                          sendJsCommand("window.mediaControlAction('pause');");
-                      }
-                      @Override
-                      public void onSkipToNext() {
-                          sendJsCommand("window.mediaControlAction('next');");
-                      }
-                      @Override
-                      public void onSkipToPrevious() {
-                          sendJsCommand("window.mediaControlAction('prev');");
-                      }
-                      @Override
-                      public void onSeekTo(long pos) {
-                          double sec = Math.max(0, pos / 1000.0);
-                          sendJsCommand("window.mediaControlAction('seekto', " + sec + ");");
-                      }
-                  });
-                  mediaSession.setFlags(MediaSession.FLAG_HANDLES_MEDIA_BUTTONS | MediaSession.FLAG_HANDLES_TRANSPORT_CONTROLS);
-                  mediaSession.setActive(true);
-              }
-
-              private void registerMediaReceiver() {
-                  IntentFilter filter = new IntentFilter();
-                  filter.addAction("com.gt.soundmaster.PREV");
-                  filter.addAction("com.gt.soundmaster.PLAYPAUSE");
-                  filter.addAction("com.gt.soundmaster.NEXT");
-
-                  if (Build.VERSION.SDK_INT >= 33) {
-                      registerReceiver(mediaReceiver, filter, 4);
-                  } else {
-                      registerReceiver(mediaReceiver, filter);
-                  }
-              }
-
-              private void sendJsCommand(String cmd) {
-                  runOnUiThread(() -> {
-                      WebView webView = getAppWebView();
-                      if (webView != null) {
-                          webView.evaluateJavascript(cmd, null);
-                      }
-                  });
-              }
-
-              private PendingIntent getBroadcastPendingIntent(String action, int requestCode) {
-                  Intent intent = new Intent(action);
-                  intent.setPackage(getPackageName());
-                  int flags = PendingIntent.FLAG_UPDATE_CURRENT;
-                  if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                      flags |= PendingIntent.FLAG_IMMUTABLE;
-                  }
-                  return PendingIntent.getBroadcast(this, requestCode, intent, flags);
-              }
-
-              private void showNotification(String title, String artist, boolean isPlaying, double positionSec, double durationSec) {
+              private void handlePlaybackUpdate(String title, String artist, boolean isPlaying, double posSec, double durSec) {
                   if (notificationManager == null || mediaSession == null) return;
 
-                  long posMs = (long) (Math.max(0, positionSec) * 1000);
-                  long durMs = (long) (Math.max(0, durationSec) * 1000);
+                  long posMs = (long) (Math.max(0, posSec) * 1000);
+                  long durMs = (long) (Math.max(0, durSec) * 1000);
                   if (durMs <= 0) durMs = 1;
                   if (posMs > durMs) posMs = durMs;
 
@@ -369,12 +247,10 @@ jobs:
                       iconPrev, "Previous",
                       getBroadcastPendingIntent("com.gt.soundmaster.PREV", 1)
                   ).build();
-
                   Notification.Action playPauseAction = new Notification.Action.Builder(
                       iconPlay, isPlaying ? "Pause" : "Play",
                       getBroadcastPendingIntent("com.gt.soundmaster.PLAYPAUSE", 2)
                   ).build();
-
                   Notification.Action nextAction = new Notification.Action.Builder(
                       iconNext, "Next",
                       getBroadcastPendingIntent("com.gt.soundmaster.NEXT", 3)
@@ -409,20 +285,264 @@ jobs:
                       }
                   } catch (Exception ignored) {}
 
-                  notificationManager.notify(NOTIFICATION_ID, builder.build());
+                  Notification notification = builder.build();
+
+                  if (isPlaying) {
+                      if (wakeLock != null && !wakeLock.isHeld()) {
+                          try { wakeLock.acquire(12 * 60 * 60 * 1000L); } catch (Exception ignored) {}
+                      }
+                      if (Build.VERSION.SDK_INT >= 34) {
+                          startForeground(NOTIFICATION_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK);
+                      } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                          startForeground(NOTIFICATION_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK);
+                      } else {
+                          startForeground(NOTIFICATION_ID, notification);
+                      }
+                      isForeground = true;
+                  } else {
+                      if (wakeLock != null && wakeLock.isHeld()) {
+                          try { wakeLock.release(); } catch (Exception ignored) {}
+                      }
+                      if (isForeground) {
+                          if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                              stopForeground(STOP_FOREGROUND_DETACH);
+                          } else {
+                              stopForeground(false);
+                          }
+                          isForeground = false;
+                      }
+                      notificationManager.notify(NOTIFICATION_ID, notification);
+                  }
               }
 
-              private void removeNotification() {
+              private void handleClear() {
+                  if (wakeLock != null && wakeLock.isHeld()) {
+                      try { wakeLock.release(); } catch (Exception ignored) {}
+                  }
+                  if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                      stopForeground(STOP_FOREGROUND_REMOVE);
+                  } else {
+                      stopForeground(true);
+                  }
+                  isForeground = false;
                   if (notificationManager != null) {
                       notificationManager.cancel(NOTIFICATION_ID);
                   }
+                  stopSelf();
+              }
+
+              private PendingIntent getBroadcastPendingIntent(String action, int requestCode) {
+                  Intent intent = new Intent(action);
+                  intent.setPackage(getPackageName());
+                  int flags = PendingIntent.FLAG_UPDATE_CURRENT;
+                  if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                      flags |= PendingIntent.FLAG_IMMUTABLE;
+                  }
+                  return PendingIntent.getBroadcast(this, requestCode, intent, flags);
+              }
+
+              private void createNotificationChannel() {
+                  if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && notificationManager != null) {
+                      NotificationChannel channel = new NotificationChannel(
+                          CHANNEL_ID,
+                          "GT SoundMaster Playback",
+                          NotificationManager.IMPORTANCE_LOW
+                      );
+                      channel.setDescription("Music playback foreground service");
+                      channel.setShowBadge(false);
+                      channel.setLockscreenVisibility(Notification.VISIBILITY_PUBLIC);
+                      notificationManager.createNotificationChannel(channel);
+                  }
+              }
+
+              private void setupMediaSession() {
+                  mediaSession = new MediaSession(this, "GT_SoundMaster_Session");
+                  mediaSession.setCallback(new MediaSession.Callback() {
+                      @Override
+                      public void onPlay() {
+                          MainActivity.sendJsCommandToWebview("window.mediaControlAction('play');");
+                      }
+                      @Override
+                      public void onPause() {
+                          MainActivity.sendJsCommandToWebview("window.mediaControlAction('pause');");
+                      }
+                      @Override
+                      public void onSkipToNext() {
+                          MainActivity.sendJsCommandToWebview("window.mediaControlAction('next');");
+                      }
+                      @Override
+                      public void onSkipToPrevious() {
+                          MainActivity.sendJsCommandToWebview("window.mediaControlAction('prev');");
+                      }
+                      @Override
+                      public void onSeekTo(long pos) {
+                          double sec = Math.max(0, pos / 1000.0);
+                          MainActivity.sendJsCommandToWebview("window.mediaControlAction('seekto', " + sec + ");");
+                      }
+                  });
+                  mediaSession.setFlags(MediaSession.FLAG_HANDLES_MEDIA_BUTTONS | MediaSession.FLAG_HANDLES_TRANSPORT_CONTROLS);
+                  mediaSession.setActive(true);
+              }
+
+              private void registerMediaReceiver() {
+                  IntentFilter filter = new IntentFilter();
+                  filter.addAction("com.gt.soundmaster.PREV");
+                  filter.addAction("com.gt.soundmaster.PLAYPAUSE");
+                  filter.addAction("com.gt.soundmaster.NEXT");
+                  if (Build.VERSION.SDK_INT >= 33) {
+                      registerReceiver(mediaReceiver, filter, Context.RECEIVER_NOT_EXPORTED);
+                  } else {
+                      registerReceiver(mediaReceiver, filter);
+                  }
+              }
+
+              @Override
+              public void onDestroy() {
+                  super.onDestroy();
+                  try { unregisterReceiver(mediaReceiver); } catch (Exception ignored) {}
+                  if (wakeLock != null && wakeLock.isHeld()) {
+                      try { wakeLock.release(); } catch (Exception ignored) {}
+                  }
+                  if (mediaSession != null) {
+                      mediaSession.setActive(false);
+                      mediaSession.release();
+                  }
+                  if (notificationManager != null) {
+                      notificationManager.cancel(NOTIFICATION_ID);
+                  }
+              }
+
+              @Override
+              public IBinder onBind(Intent intent) {
+                  return null;
+              }
+          }
+          EOF
+
+          cat << 'EOF' > android/app/src/main/java/com/gt/soundmaster/MainActivity.java
+          package com.gt.soundmaster;
+
+          import android.content.Context;
+          import android.content.Intent;
+          import android.content.pm.PackageManager;
+          import android.database.Cursor;
+          import android.net.Uri;
+          import android.os.Build;
+          import android.os.Bundle;
+          import android.provider.OpenableColumns;
+          import android.view.WindowManager;
+          import android.webkit.JavascriptInterface;
+          import android.webkit.WebView;
+          import com.getcapacitor.Bridge;
+          import com.getcapacitor.BridgeActivity;
+          import java.io.File;
+          import java.io.FileOutputStream;
+          import java.io.InputStream;
+          import java.io.OutputStream;
+          import java.lang.ref.WeakReference;
+          import java.util.ArrayList;
+          import java.util.List;
+
+          public class MainActivity extends BridgeActivity {
+              private static WeakReference<MainActivity> instanceRef;
+              private String pendingTrackJson = null;
+
+              @Override
+              public void onCreate(Bundle savedInstanceState) {
+                  super.onCreate(savedInstanceState);
+                  instanceRef = new WeakReference<>(this);
+                  setupWindowAppearance();
+                  checkAndRequestPermissions();
+                  WebView webView = getAppWebView();
+                  if (webView != null) {
+                      webView.addJavascriptInterface(new WebAppInterface(), "AndroidBridge");
+                  }
+                  handleIntent(getIntent());
+              }
+
+              @Override
+              public void onNewIntent(Intent intent) {
+                  super.onNewIntent(intent);
+                  setIntent(intent);
+                  handleIntent(intent);
+              }
+
+              @Override
+              public void onDestroy() {
+                  super.onDestroy();
+                  if (instanceRef != null && instanceRef.get() == this) {
+                      instanceRef = null;
+                  }
+              }
+
+              public static void sendJsCommandToWebview(String cmd) {
+                  if (instanceRef != null) {
+                      MainActivity activity = instanceRef.get();
+                      if (activity != null) {
+                          activity.sendJsCommand(cmd);
+                      }
+                  }
+              }
+
+              public void sendJsCommand(String cmd) {
+                  runOnUiThread(() -> {
+                      WebView webView = getAppWebView();
+                      if (webView != null) {
+                          webView.evaluateJavascript(cmd, null);
+                      }
+                  });
+              }
+
+              private void setupWindowAppearance() {
+                  if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                      getWindow().setStatusBarColor(0xFF121218);
+                      getWindow().setNavigationBarColor(0xFF121218);
+                  }
+                  if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                      WindowManager.LayoutParams lp = getWindow().getAttributes();
+                      lp.layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES;
+                      getWindow().setAttributes(lp);
+                  }
+                  if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                      android.view.WindowInsetsController controller = getWindow().getInsetsController();
+                      if (controller != null) {
+                          controller.setSystemBarsAppearance(0, android.view.WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS | android.view.WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS);
+                      }
+                  } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                      getWindow().getDecorView().setSystemUiVisibility(
+                          getWindow().getDecorView().getSystemUiVisibility() & ~android.view.View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
+                      );
+                  }
+              }
+
+              private void checkAndRequestPermissions() {
+                  if (Build.VERSION.SDK_INT >= 33) {
+                      List<String> perms = new ArrayList<>();
+                      if (checkSelfPermission("android.permission.READ_MEDIA_AUDIO") != PackageManager.PERMISSION_GRANTED) {
+                          perms.add("android.permission.READ_MEDIA_AUDIO");
+                      }
+                      if (checkSelfPermission("android.permission.POST_NOTIFICATIONS") != PackageManager.PERMISSION_GRANTED) {
+                          perms.add("android.permission.POST_NOTIFICATIONS");
+                      }
+                      if (!perms.isEmpty()) {
+                          requestPermissions(perms.toArray(new String[0]), 101);
+                      }
+                  } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                      if (checkSelfPermission("android.permission.READ_EXTERNAL_STORAGE") != PackageManager.PERMISSION_GRANTED) {
+                          requestPermissions(new String[]{"android.permission.READ_EXTERNAL_STORAGE"}, 101);
+                      }
+                  }
+              }
+
+              private WebView getAppWebView() {
+                  Bridge bridge = getBridge();
+                  return bridge != null ? bridge.getWebView() : null;
               }
 
               private void handleIntent(Intent intent) {
                   if (intent == null || !Intent.ACTION_VIEW.equals(intent.getAction()) || intent.getData() == null) {
                       return;
                   }
-
                   Uri uri = intent.getData();
                   String fileName = "External Audio";
                   if ("content".equals(uri.getScheme())) {
@@ -437,7 +557,6 @@ jobs:
                   } else if (uri.getLastPathSegment() != null) {
                       fileName = uri.getLastPathSegment();
                   }
-
                   try {
                       File cacheDir = new File(getCacheDir(), "incoming_audio");
                       if (!cacheDir.exists()) cacheDir.mkdirs();
@@ -450,12 +569,10 @@ jobs:
                               out.write(buf, 0, len);
                           }
                       }
-
                       String localUrl = "https://localhost/_capacitor_file_" + destFile.getAbsolutePath();
                       String cleanName = fileName.replace("\"", "").replace("'", "").replace("\\", "");
                       String json = "{\"name\":\"" + cleanName + "\",\"url\":\"" + localUrl + "\"}";
                       this.pendingTrackJson = json;
-
                       sendJsCommand("if (typeof window.handleExternalTrack === 'function') { window.handleExternalTrack(" + json + "); }");
                   } catch (Exception e) {
                       e.printStackTrace();
@@ -465,12 +582,26 @@ jobs:
               public class WebAppInterface {
                   @JavascriptInterface
                   public void updatePlayback(String title, String artist, boolean isPlaying, double positionSec, double durationSec) {
-                      runOnUiThread(() -> showNotification(title, artist, isPlaying, positionSec, durationSec));
+                      Intent serviceIntent = new Intent(MainActivity.this, MediaPlaybackService.class);
+                      serviceIntent.setAction(MediaPlaybackService.ACTION_UPDATE_PLAYBACK);
+                      serviceIntent.putExtra(MediaPlaybackService.EXTRA_TITLE, title);
+                      serviceIntent.putExtra(MediaPlaybackService.EXTRA_ARTIST, artist);
+                      serviceIntent.putExtra(MediaPlaybackService.EXTRA_IS_PLAYING, isPlaying);
+                      serviceIntent.putExtra(MediaPlaybackService.EXTRA_POS_SEC, positionSec);
+                      serviceIntent.putExtra(MediaPlaybackService.EXTRA_DUR_SEC, durationSec);
+
+                      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                          startForegroundService(serviceIntent);
+                      } else {
+                          startService(serviceIntent);
+                      }
                   }
 
                   @JavascriptInterface
                   public void clearPlayback() {
-                      runOnUiThread(() -> removeNotification());
+                      Intent serviceIntent = new Intent(MainActivity.this, MediaPlaybackService.class);
+                      serviceIntent.setAction(MediaPlaybackService.ACTION_CLEAR_PLAYBACK);
+                      startService(serviceIntent);
                   }
 
                   @JavascriptInterface

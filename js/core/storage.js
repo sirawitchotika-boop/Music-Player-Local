@@ -1,6 +1,7 @@
 const DB_NAME = 'LocalMusicDB';
-const DB_VERSION = 3;
+const DB_VERSION = 4;
 const STORE_NAME = 'audioTracks';
+const BLOB_STORE = 'audioBlobs';
 const EQ_STORE = 'eqPresets';
 const TIMER_STORE = 'timerPresets';
 
@@ -12,7 +13,7 @@ class StorageManager {
   async initDB() {
     return new Promise((resolve, reject) => {
       const request = indexedDB.open(DB_NAME, DB_VERSION);
-      request.onerror = (e) => reject(new Error("[DB] การเชื่อมต่อ IndexedDB ล้มเหลว"));
+      request.onerror = (e) => reject(new Error("[DB] เปิดฐานข้อมูล IndexedDB ล้มเหลว"));
       request.onsuccess = (e) => {
         this.db = e.target.result;
         resolve(this.db);
@@ -21,6 +22,9 @@ class StorageManager {
         const db = e.target.result;
         if (!db.objectStoreNames.contains(STORE_NAME)) {
           db.createObjectStore(STORE_NAME, { keyPath: 'id', autoIncrement: true });
+        }
+        if (!db.objectStoreNames.contains(BLOB_STORE)) {
+          db.createObjectStore(BLOB_STORE, { keyPath: 'id' });
         }
         if (!db.objectStoreNames.contains(EQ_STORE)) {
           db.createObjectStore(EQ_STORE, { keyPath: 'id' });
@@ -39,6 +43,8 @@ class StorageManager {
       const file = fileList[i];
       if (file.type && (file.type.startsWith('audio/') || allowedTypes.includes(file.type))) {
         validFiles.push(file);
+      } else if (!file.type && /\.(mp3|wav|ogg|flac|aac|m4a)$/i.test(file.name)) {
+        validFiles.push(file);
       }
     }
     return validFiles;
@@ -47,15 +53,17 @@ class StorageManager {
   async saveFiles(fileList) {
     if (!this.db) await this.initDB();
     const validFiles = this.validateAudioFiles(fileList);
-    if (validFiles.length === 0) throw new Error("[FS] ไม่พบไฟล์เสียงที่ระบบรองรับ");
+    if (validFiles.length === 0) throw new Error("[FS] ไม่มีไฟล์เสียงที่รองรับ");
     
+    // ตรวจสอบไฟล์ซ้ำด้วย Metadata น้ำหนักเบา ไม่โหลด Blob ใหญ่ขึ้น RAM
     const existingTracks = await this.getAllTracks();
     const existingMap = new Map();
     existingTracks.forEach(t => existingMap.set(`${t.name}_${t.size}`, t));
     
     return new Promise((resolve, reject) => {
-      const tx = this.db.transaction([STORE_NAME], 'readwrite');
-      const store = tx.objectStore(STORE_NAME);
+      const tx = this.db.transaction([STORE_NAME, BLOB_STORE], 'readwrite');
+      const trackStore = tx.objectStore(STORE_NAME);
+      const blobStore = tx.objectStore(BLOB_STORE);
       let addedCount = 0;
       let skippedCount = 0;
       const processedTracks = [];
@@ -71,9 +79,9 @@ class StorageManager {
       
       tx.onerror = (e) => {
         if (e.target.error && e.target.error.name === 'QuotaExceededError') {
-          reject(new Error("[FS] หน่วยความจำอุปกรณ์เต็ม (QuotaExceeded)"));
+          reject(new Error("[FS] พื้นที่จัดเก็บไม่เพียงพอ (QuotaExceeded)"));
         } else {
-          reject(new Error("[FS] การเขียนข้อมูลลงฐานข้อมูลล้มเหลว"));
+          reject(new Error("[FS] เกิดข้อผิดพลาดในการบันทึกไฟล์"));
         }
       };
       
@@ -93,17 +101,19 @@ class StorageManager {
           return;
         }
         
-        const trackData = {
+        const metadata = {
           name: file.name,
-          type: file.type,
+          type: file.type || 'audio/mpeg',
           size: file.size,
-          blob: file,
           addedAt: Date.now()
         };
-        const req = store.add(trackData);
+        
+        const req = trackStore.add(metadata);
         req.onsuccess = (e) => {
           addedCount++;
-          const savedTrack = { ...trackData, id: e.target.result };
+          const id = e.target.result;
+          const savedTrack = { ...metadata, id };
+          blobStore.put({ id, blob: file });
           existingMap.set(key, savedTrack);
           processedTracks.push({
             track: savedTrack,
@@ -119,18 +129,55 @@ class StorageManager {
     return new Promise((resolve, reject) => {
       const tx = this.db.transaction([STORE_NAME], 'readonly');
       const req = tx.objectStore(STORE_NAME).getAll();
-      req.onsuccess = () => resolve(req.result || []);
-      req.onerror = () => reject(new Error("[DB] ไม่สามารถอ่านข้อมูลแทร็กเสียงได้"));
+      req.onsuccess = () => {
+        // คืนค่าเฉพาะ Metadata สำหรับแสดงผล ไม่โหลด Blob ทั้งหมดขึ้น RAM
+        const tracks = (req.result || []).map(t => ({
+          id: t.id,
+          name: t.name,
+          type: t.type,
+          size: t.size,
+          addedAt: t.addedAt,
+          blob: t.blob || null
+        }));
+        resolve(tracks);
+      };
+      req.onerror = () => reject(new Error("[DB] โหลดรายชื่อเพลงล้มเหลว"));
+    });
+  }
+  
+  async getTrackBlob(id) {
+    if (!this.db) await this.initDB();
+    return new Promise((resolve) => {
+      try {
+        const tx = this.db.transaction([BLOB_STORE, STORE_NAME], 'readonly');
+        const blobReq = tx.objectStore(BLOB_STORE).get(id);
+        blobReq.onsuccess = () => {
+          if (blobReq.result && blobReq.result.blob) {
+            resolve(blobReq.result.blob);
+          } else {
+            // ระบบ Fallback รองรับข้อมูลที่บันทึกก่อนหน้า (v3)
+            const trackReq = tx.objectStore(STORE_NAME).get(id);
+            trackReq.onsuccess = () => {
+              resolve(trackReq.result && trackReq.result.blob ? trackReq.result.blob : null);
+            };
+            trackReq.onerror = () => resolve(null);
+          }
+        };
+        blobReq.onerror = () => resolve(null);
+      } catch (e) {
+        resolve(null);
+      }
     });
   }
   
   async deleteTrack(id) {
     if (!this.db) await this.initDB();
     return new Promise((resolve, reject) => {
-      const tx = this.db.transaction([STORE_NAME], 'readwrite');
-      const req = tx.objectStore(STORE_NAME).delete(id);
-      req.onsuccess = () => resolve(true);
-      req.onerror = () => reject(new Error("[DB] ไม่สามารถลบแทร็กเสียงได้"));
+      const tx = this.db.transaction([STORE_NAME, BLOB_STORE], 'readwrite');
+      tx.objectStore(STORE_NAME).delete(id);
+      tx.objectStore(BLOB_STORE).delete(id);
+      tx.oncomplete = () => resolve(true);
+      tx.onerror = () => reject(new Error("[DB] ลบเพลงล้มเหลว"));
     });
   }
   
@@ -140,7 +187,7 @@ class StorageManager {
       const tx = this.db.transaction([storeName], 'readonly');
       const req = tx.objectStore(storeName).getAll();
       req.onsuccess = () => resolve(req.result || []);
-      req.onerror = () => reject(new Error(`[DB] อ่านข้อมูลจาก ${storeName} ล้มเหลว`));
+      req.onerror = () => reject(new Error(`[DB] ดึงข้อมูลจาก ${storeName} ล้มเหลว`));
     });
   }
   

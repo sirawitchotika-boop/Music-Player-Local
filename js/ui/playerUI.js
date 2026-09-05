@@ -1,5 +1,6 @@
 import { modalUI } from './modalUI.js';
 import { mediaSessionManager } from '../core/mediaSessionManager.js';
+import { storage } from '../core/storage.js';
 
 export class PlayerUI {
   constructor(stateManager, audioEngine) {
@@ -90,7 +91,7 @@ export class PlayerUI {
   
   handleLikeClick() {
     if (!this.audioEl.src || this.state.currentTrackIndex === -1) {
-      this.showToast('[ERROR] ไม่พบข้อมูลแทร็กเสียง', 'error');
+      this.showToast('[ERROR] ไม่พบเพลงที่กำลังเล่น', 'error');
       return;
     }
     
@@ -102,7 +103,7 @@ export class PlayerUI {
     
     if (willLike) {
       this.favoriteBtn.classList.add('active');
-      this.showToast('[FAVORITE] บันทึกลงในรายการโปรด', 'info');
+      this.showToast('[FAVORITE] เพิ่มในรายการโปรด', 'info');
     } else {
       this.favoriteBtn.classList.remove('active');
       this.showToast('[FAVORITE] นำออกจากรายการโปรด', 'error');
@@ -181,24 +182,29 @@ export class PlayerUI {
   async playNext() {
     const track = this.state.nextTrack();
     if (track) await this.loadAndPlay(track);
-    else this.showToast('[STATUS] สิ้นสุดคิวการเล่น', 'error');
+    else this.showToast('[STATUS] สิ้นสุดคิวเล่นเพลง', 'error');
   }
   
   async playPrev() {
     const track = this.state.prevTrack();
     if (track) await this.loadAndPlay(track);
-    else this.showToast('[STATUS] ไม่พบแทร็กก่อนหน้า', 'error');
+    else this.showToast('[STATUS] จุดเริ่มต้นของคิว', 'error');
   }
   
   async loadAndPlay(track) {
     try {
-      await this.audio.load(track.blob);
+      let blob = track.blob;
+      if (!blob && track.id) {
+        blob = await storage.getTrackBlob(track.id);
+      }
+      if (!blob) throw new Error("Audio blob not found");
+      await this.audio.load(blob);
       await this.audio.play();
       this.updateTitle(track.name.replace(/\.[^/.]+$/, ""));
       this.refreshLikeButtonState();
       mediaSessionManager.updateMetadata(track);
     } catch (error) {
-      this.showToast('[ERROR] ถอดรหัสไฟล์ล้มเหลว กำลังสลับแทร็กถัดไป...', 'error');
+      this.showToast('[ERROR] เล่นเพลงไม่สำเร็จ กำลังข้าม...', 'error');
       setTimeout(() => this.playNext(), 1500);
     }
   }
@@ -217,7 +223,7 @@ export class PlayerUI {
   
   togglePlay() {
     if (!this.audioEl.src) {
-      this.showToast('[WARN] คิวว่าง กรุณาเลือกแทร็กจากเพลย์ลิสต์', 'error');
+      this.showToast('[WARN] ไม่มีเพลงในคิวเล่น', 'error');
       return;
     }
     if (this.audioEl.paused) this.audio.play();

@@ -2,7 +2,9 @@
 export class StateManager {
   constructor() {
     this.isPlaying = false;
-    this.playMode = 0; // 0: Order, 1: Repeat One, 2: Shuffle
+    // โหลดค่าโหมดการเล่นเพลงจาก localStorage โดยตั้งค่าเริ่มต้นเป็น 2 (Shuffle)
+    const savedMode = typeof localStorage !== 'undefined' ? localStorage.getItem('gt_play_mode') : null;
+    this.playMode = savedMode !== null ? parseInt(savedMode, 10) : 2; // 0: Order, 1: Repeat One, 2: Shuffle
     this.currentTrackIndex = -1;
     this.queue = [];
     this.originalQueue = [];
@@ -62,6 +64,9 @@ export class StateManager {
   
   cyclePlayMode() {
     this.playMode = (this.playMode + 1) % 3;
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem('gt_play_mode', this.playMode.toString());
+    }
     const currentTrack = this.queue[this.currentTrackIndex];
     
     if (this.playMode === 2) {
