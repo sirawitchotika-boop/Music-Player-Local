@@ -6,6 +6,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.1.0] - 2026-09-05
+
+### Added
+- **Android Native Foreground Service:** เพิ่มบริการเล่นเพลงเบื้องหลัง `MediaPlaybackService` ที่สืบทอดจาก `android.app.Service` กำหนด `foregroundServiceType="mediaPlayback"` พร้อมถือ CPU `WakeLock` ป้องกันระบบ Android OS และ Battery Optimization สั่ง Freeze หรือ Kill Process ขณะปิดหน้าจอหรือสลับแอป
+- **Active EQ State Persistence:** ระบบบันทึกและกู้คืนสถานะ Active EQ ข้าม Session อัตโนมัติผ่าน `localStorage` ครอบคลุมแถบความถี่ 10-Band, ค่า Pre-Amp Gain, โหมด Pure Direct (Bypass) และชื่อ Preset ล่าสุด
+- **Play Mode Memory:** บันทึกและจดจำโหมดการเล่นเพลงล่าสุดของผู้ใช้ข้าม Session ไม่ให้รีเซ็ตกลับเป็นค่าเริ่มต้น
+
+### Changed
+- **Default Play Mode to Shuffle:** ปรับค่าเริ่มต้นของโหมดเล่นเพลงใน `StateManager` จากเดิมแบบเรียงตามลำดับ (By Order) ให้เป็นแบบสุ่มเพลง (Shuffle Mode) เป็นค่ามาตรฐานทันทีที่เริ่มใช้งาน
+
+### Fixed
+- **Storage Architecture & High I/O Latency:** แก้ไขปัญหาคอขวดการนำเข้าเพลง (ลดเวลานำเข้า 60 เพลงจากเดิม 15 วินาที เหลือประมาณ 7 วินาที) โดยอัปเกรดฐานข้อมูล IndexedDB เป็น Version 4 แยก ObjectStore ระหว่าง Metadata (`audioTracks`) และ Binary Data (`audioBlobs`) ขจัดปัญหาการโหลดไฟล์เสียงทั้งหมดขึ้น RAM จนเครื่องหน่วง และเปลี่ยนไปใช้ระบบสตรีม Blob เฉพาะแทร็กที่กำลังเล่นจริง
+
+---
+
 ## [1.0.0] - 2026-09-04
 
 ### Added
