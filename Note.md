@@ -1,1 +1,0 @@
-เวลาเราจะ update แอพทำตรงส่วน Changelog แล้วก็  Version แอพด้วย มันอยู่ตรงใน .github ที่ build apk 

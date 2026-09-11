@@ -28,7 +28,6 @@ export class PlayerUI {
     this.likedTracks = JSON.parse(localStorage.getItem('gt_liked_tracks')) || [];
     this.likeDebounceTimer = null;
     
-    // ตัวล็อกป้องกันการสั่งเปลี่ยนเพลงซ้อนกัน
     this.isChangingTrack = false;
     
     this.playIcon = '<svg id="icon-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>';
@@ -143,21 +142,15 @@ export class PlayerUI {
     }
   }
 
-  // ระบบดักจับการกดปุ่มแบบป้องกัน Touch + Mouse ชนกัน 100%
   bindHoldToSeek(button, direction) {
     let pressTimer = null;
     let seekInterval = null;
     let isHolding = false;
-    let touchHandled = false;
+    let isTouch = false;
 
-    const startHold = (e) => {
-      // ดักไม่ให้ MouseEvent ทำงานซ้ำถ้าพึ่งแตะผ่าน Touchscreen
-      if (e.type === 'mousedown' && touchHandled) {
-        return;
-      }
-      if (e.type === 'touchstart') {
-        touchHandled = true;
-      }
+    const start = (e) => {
+      if (e.type === 'mousedown' && isTouch) return;
+      if (e.type === 'touchstart') isTouch = true;
 
       isHolding = false;
       pressTimer = setTimeout(() => {
@@ -169,13 +162,12 @@ export class PlayerUI {
             mediaSessionManager.updatePositionState();
           }
         }, 150);
-      }, 400);
+      }, 450);
     };
 
-    const endHold = (e) => {
-      // ถ้าเป็น MouseUp ที่เบิ้ลมาจาก Touch ให้ตัดทิ้ง
-      if (e.type === 'mouseup' && touchHandled) {
-        setTimeout(() => { touchHandled = false; }, 400);
+    const stopAndExecute = (e) => {
+      if (e.type === 'mouseup' && isTouch) {
+        setTimeout(() => { isTouch = false; }, 300);
         return;
       }
 
@@ -192,15 +184,26 @@ export class PlayerUI {
 
       isHolding = false;
       if (e.type === 'touchend') {
-        setTimeout(() => { touchHandled = false; }, 400);
+        setTimeout(() => { isTouch = false; }, 300);
       }
     };
 
-    button.addEventListener('touchstart', startHold, { passive: true });
-    button.addEventListener('touchend', endHold, { passive: true });
-    button.addEventListener('mousedown', startHold);
-    button.addEventListener('mouseup', endHold);
-    button.addEventListener('mouseleave', endHold);
+    const cancelAction = () => {
+      clearTimeout(pressTimer);
+      if (seekInterval) {
+        clearInterval(seekInterval);
+        seekInterval = null;
+      }
+      isHolding = false;
+    };
+
+    button.addEventListener('touchstart', start, { passive: true });
+    button.addEventListener('touchend', stopAndExecute, { passive: true });
+    button.addEventListener('touchcancel', cancelAction, { passive: true });
+
+    button.addEventListener('mousedown', start);
+    button.addEventListener('mouseup', stopAndExecute);
+    button.addEventListener('mouseleave', cancelAction);
   }
 
   async playNext() {
@@ -236,7 +239,6 @@ export class PlayerUI {
       mediaSessionManager.updateMetadata(track);
     } catch (error) {
       this.showToast('[ERROR] Failed to load track', 'error');
-      setTimeout(() => this.playNext(), 1500);
     } finally {
       this.isChangingTrack = false;
     }
@@ -266,10 +268,10 @@ export class PlayerUI {
   updatePlayState(isPlaying) {
     if (this.playBtn) {
       this.playBtn.innerHTML = isPlaying ? this.pauseIcon : this.playIcon;
-      const visualizerRing = document.querySelector('.visualizer-ring');
-      if (visualizerRing) {
-        if (isPlaying) visualizerRing.classList.add('playing');
-        else visualizerRing.classList.remove('playing');
+      const albumDisc = document.querySelector('.album-art-container');
+      if (albumDisc) {
+        if (isPlaying) albumDisc.classList.add('playing');
+        else albumDisc.classList.remove('playing');
       }
     }
   }

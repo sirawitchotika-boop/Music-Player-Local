@@ -1,43 +1,42 @@
 # Changelog
 
 All notable changes to the **GT SoundMaster** project will be documented in this file.
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [1.2.0] - 2026-09-11
+
+### Added
+- **Sample-Accurate Micro-Gain Ramp:** นำระบบ `GainNode` ตัวเดียวมาคุมแรงดันคลื่นเสียงในระดับเสี้ยววินาที (35ms Ramp) ทั้งตอนกด Play, Pause และเปลี่ยนเพลง ป้องกันปัญหา Zero-Crossing Pop และเสียงกึกระดับฮาร์ดแวร์ DAC ได้อย่างสมบูรณ์แบบ เทียบเท่าแอปเล่นเพลง Native ติดเครื่อง
+- **Touch Gesture & Event Guard:** ปรับปรุงตรรกะการสัมผัสปุ่ม Next/Prev ใน `playerUI.js` ใหม่ทั้งหมด ป้องกันปัญหาคำสั่ง Touch ซ้อนกับ MouseEvent (Double Trigger) และเพิ่มระบบยกเลิกคำสั่งอัตโนมัติเมื่อนิ้วเลื่อนหลุดออกจากปุ่ม (Mouseleave/Touchcancel = Cancel) ป้องกันการเปลี่ยนเพลงโดยไม่ตั้งใจ
+- **Minimalist Center Album Art:** ดีไซน์พื้นที่ตรงกลางใหม่ให้เป็นแผ่น Disc สีเข้มเรียบหรู พร้อมไฟสถานะสีแดงส่องสว่างเมื่อเพลงกำลังเล่น สวยงาม คลีนตา และประหยัดแบตเตอรี่
+
+### Removed
+- **Legacy EQ & Heavy Visualizer Pipeline:** ลบโค้ดผี (Zombie Code) ที่เป็นต้นเหตุของ Audio Buffer Underrun ออกจากระบบทั้งหมด ได้แก่ `js/core/audioEffect.js`, `js/ui/eqUI.js`, `css/eq.css`, แท็ก `<canvas>` และหน้าต่าง Modal EQ
+- **Erroneous Auto-Skip Logic:** ตัดคำสั่ง `skipToNext()` อัตโนมัติออกจาก `onerror` และบล็อก `catch` ในคอนโทรลเลอร์ ป้องกันไม่ให้แอปแอบเปลี่ยนเพลงเองเมื่อเกิดข้อผิดพลาดในการโหลด
+- **Redundant 4-Second IPC Call:** ตัดการส่ง Intent ซ้ำซ้อนทุก 4 วินาทีใน `mediaSessionManager.js` ช่วยลดการสะดุดของซีพียูขณะเล่นเพลง
+
+### Changed
+- **System Manual:** อัปเดตเนื้อหาในหน้า Help Modal ให้ตรงกับฟังก์ชันการทำงานจริงในเวอร์ชันปัจจุบัน
+- **App Version:** อัปเกรดเวอร์ชันแอปเป็น `1.2.0` (versionCode `3`) ในระบบ CI/CD GitHub Actions
 
 ---
 
 ## [1.1.0] - 2026-09-05
 
 ### Added
-- **Android Native Foreground Service:** เพิ่มบริการเล่นเพลงเบื้องหลัง `MediaPlaybackService` ที่สืบทอดจาก `android.app.Service` กำหนด `foregroundServiceType="mediaPlayback"` พร้อมถือ CPU `WakeLock` ป้องกันระบบ Android OS และ Battery Optimization สั่ง Freeze หรือ Kill Process ขณะปิดหน้าจอหรือสลับแอป
-- **Active EQ State Persistence:** ระบบบันทึกและกู้คืนสถานะ Active EQ ข้าม Session อัตโนมัติผ่าน `localStorage` ครอบคลุมแถบความถี่ 10-Band, ค่า Pre-Amp Gain, โหมด Pure Direct (Bypass) และชื่อ Preset ล่าสุด
-- **Play Mode Memory:** บันทึกและจดจำโหมดการเล่นเพลงล่าสุดของผู้ใช้ข้าม Session ไม่ให้รีเซ็ตกลับเป็นค่าเริ่มต้น
+- **Android Native Foreground Service:** เพิ่ม `MediaPlaybackService` เพื่อล็อก CPU WakeLock และป้องกันระบบ Android สั่ง Freeze แอป
+- **Active EQ State Persistence:** จดจำการตั้งค่าใน LocalStorage
+- **Play Mode Memory:** จดจำโหมดการเล่นเพลง
 
 ### Changed
-- **Default Play Mode to Shuffle:** ปรับค่าเริ่มต้นของโหมดเล่นเพลงใน `StateManager` จากเดิมแบบเรียงตามลำดับ (By Order) ให้เป็นแบบสุ่มเพลง (Shuffle Mode) เป็นค่ามาตรฐานทันทีที่เริ่มใช้งาน
+- **Default Play Mode to Shuffle:** ตั้งค่าเริ่มต้นการเล่นเพลงเป็นแบบสุ่ม
 
 ### Fixed
-- **Storage Architecture & High I/O Latency:** แก้ไขปัญหาคอขวดการนำเข้าเพลง (ลดเวลานำเข้า 60 เพลงจากเดิม 15 วินาที เหลือประมาณ 7 วินาที) โดยอัปเกรดฐานข้อมูล IndexedDB เป็น Version 4 แยก ObjectStore ระหว่าง Metadata (`audioTracks`) และ Binary Data (`audioBlobs`) ขจัดปัญหาการโหลดไฟล์เสียงทั้งหมดขึ้น RAM จนเครื่องหน่วง และเปลี่ยนไปใช้ระบบสตรีม Blob เฉพาะแทร็กที่กำลังเล่นจริง
+- **Storage Architecture & High I/O Latency:** แยกตารางเก็บข้อมูล IndexedDB เป็น Metadata และ Blob Data เพื่อแก้ปัญหาหน่วง
 
 ---
 
 ## [1.0.0] - 2026-09-04
 
 ### Added
-- **Core DSP & Equalizer:** วงจรกรองความถี่ 10-Band BiquadFilter (32Hz - 16kHz) พร้อมระบบปรับแต่ง Pre-Amp Headroom และ Safety Limiter ป้องกัน Clipping
-- **Pure Direct Mode:** ระบบบายพาสสัญญาณเสียง (Bypass DSP) เพื่อการส่งผ่านสัญญาณแบบ Bit-Perfect
-- **Visualizer Engine:** ระบบประมวลผลสัญญาณเสียง Real-time วิเคราะห์ย่านความถี่ต่ำเพื่อสั่งการ Pulse Ring และแถบความถี่นีออนผ่าน HTML5 Canvas
-- **Sleep Timer Daemon:** ตัวจับเวลาระงับการทำงานอัตโนมัติ พร้อมระบบ Preset, โหมดแก้ไขรายการ, Haptic Feedback และการแจ้งเตือนแบบ Breathe Animation
-- **Persistent Storage:** สถาปัตยกรรมจัดเก็บไฟล์เสียงแบบ Local 100% ด้วย IndexedDB และระบบแคชการตั้งค่าผ่าน LocalStorage
-- **Playlist Management:** ระบบจัดการเพลย์ลิสต์แบบไดนามิก รองรับระบบ Favorites ป้องกันการลบข้อมูล (Protected Pool) และตัวกรองค้นหาแทร็ก
-- **Android Media Bridge:** ผสานการควบคุมระดับ Native OS ผ่าน MediaSession API และ Foreground Notification Service ควบคุมการเล่น กรอแทร็ก (Seekbar) จากหน้าจอล็อค
-
-### Changed
-- ปรับสถาปัตยกรรม UI Dropdown ในโมดูล EQ จาก Native `<select>` เป็น Custom Cyberpunk Dropdown เพื่อขจัดปัญหา White Dialog กวนใจบน Android WebView
-- ปรับสำนวนและข้อความตอบสนองของระบบทั้งหมดเป็น Terminal System Log Format (Robot Tone)
-- ปรับแต่งการแสดงผล Safe Area ให้สอดคล้องกับ Notch และรูกล้อง (Cutout) ของอุปกรณ์แบบ Edge-to-Edge
-
-### Fixed
-- แก้ไขปัญหาคีย์ข้อมูลและไฟล์ซ้ำซ้อนในคลังข้อมูลเสียง (Duplicate Key Collision)
-- แก้ไขสถานะการเล่นและการกดย้ายแทร็กไม่ซิงก์ระหว่าง Notification Controller กับ Audio State ภายในแอปพลิเคชัน
-- แก้ไขปัญหา AudioContext ถูกระงับการทำงาน (Suspended) ขณะสลับหน้าจอหรือพักหน้าจอใน Android WebView
+- เปิดตัวแอปพลิเคชันเวอร์ชันแรก ระบบจัดการเพลงแบบ Local 100% ผ่าน IndexedDB และหน้าต่างเล่นเพลง
