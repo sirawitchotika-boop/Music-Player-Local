@@ -1,36 +1,29 @@
+/* css/player.css - Unified Seamless Player */
 .player-section {
-  background: #111118;
-  padding: 30px 25px 45px 25px;
-  border-radius: 40px 40px 0 0;
-  box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.7);
-  border-top: 1px solid #232332;
+  background: transparent; /* ยกเลิกพื้นหลังสีดำทึบ */
+  padding: 10px 25px 40px 25px;
+  border: none; /* ยกเลิกเส้นขอบตัดทูโทน */
+  box-shadow: none; /* ยกเลิกเงากล่อง */
   position: relative;
   z-index: 10;
+  width: 100%;
 }
 
-/* แถบด้ามจับมินิมอล เนียนไปกับกล่อง ไม่แดงโดด */
+/* ลบแถบด้ามจับส่วนเกินออก ให้หน้าจอคลีนไร้รอยต่อ */
 .player-section::before {
-  content: '';
-  position: absolute;
-  top: 12px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 42px;
-  height: 4px;
-  background: rgba(255, 255, 255, 0.18);
-  border-radius: 2px;
+  display: none;
 }
 
 .track-info {
   text-align: center;
-  margin-bottom: 28px;
+  margin-bottom: 25px;
 }
 
 .track-title {
   font-size: 22px;
   font-weight: 800;
   color: #ffffff;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
   letter-spacing: 0.5px;
   white-space: nowrap;
   overflow: hidden;
@@ -49,7 +42,7 @@
   display: flex;
   align-items: center;
   gap: 15px;
-  margin-bottom: 35px;
+  margin-bottom: 30px;
 }
 
 .time-text {
@@ -63,21 +56,21 @@
 .seek-bar {
   flex-grow: 1;
   -webkit-appearance: none;
-  height: 6px;
-  background: #252535;
+  height: 5px;
+  background: #20202c;
   border-radius: 3px;
   outline: none;
 }
 
 .seek-bar::-webkit-slider-thumb {
   -webkit-appearance: none;
-  width: 18px;
-  height: 18px;
+  width: 16px;
+  height: 16px;
   border-radius: 50%;
   background: #ffffff;
   border: 3px solid #ff2a2a;
   cursor: pointer;
-  box-shadow: 0 0 15px rgba(255, 42, 42, 0.8);
+  box-shadow: 0 0 12px rgba(255, 42, 42, 0.8);
   transition: transform 0.1s;
 }
 
@@ -89,7 +82,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0 5px;
+  padding: 0 10px;
 }
 
 .control-btn {
@@ -121,14 +114,14 @@
 }
 
 .play-pause-btn {
-  width: 75px;
-  height: 75px;
+  width: 74px;
+  height: 74px;
   background: linear-gradient(145deg, #ff3b3b, #e61919);
   border-radius: 50%;
   display: flex;
   justify-content: center;
   align-items: center;
-  box-shadow: 0 10px 25px rgba(255, 42, 42, 0.4), inset 0 2px 5px rgba(255, 255, 255, 0.3);
+  box-shadow: 0 10px 25px rgba(255, 42, 42, 0.35), inset 0 2px 4px rgba(255, 255, 255, 0.3);
   transition: all 0.2s ease;
 }
 
@@ -140,12 +133,10 @@
 
 .play-pause-btn:active {
   transform: scale(0.92);
-  box-shadow: 0 5px 15px rgba(255, 42, 42, 0.6);
+  box-shadow: 0 5px 15px rgba(255, 42, 42, 0.5);
 }
 
-/* =========================================
-   Favorite Button (Like) Styles
-   ========================================= */
+/* Favorite Button */
 .favorite-btn {
   position: absolute;
   bottom: 20px;

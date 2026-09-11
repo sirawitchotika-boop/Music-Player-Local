@@ -48,7 +48,9 @@ jobs:
           npx @capacitor/assets generate --android --iconBackgroundColor '#121218'
 
           cat << 'EOF' > patch-manifest.py
-          # 1. แทรก Service และ Permissions ลงใน AndroidManifest.xml
+          import os
+
+          # 1. แทรก Service และ Permissions ใน AndroidManifest.xml
           manifest_path = 'android/app/src/main/AndroidManifest.xml'
           with open(manifest_path, 'r', encoding='utf-8') as f:
               content = f.read()
@@ -96,9 +98,25 @@ jobs:
 
           with open(manifest_path, 'w', encoding='utf-8') as f:
               f.write(content)
-          print('Successfully injected Service and Permissions into AndroidManifest.xml')
 
-          # 2. แก้ไข build.gradle เพื่ออัปเดต versionCode เป็น 3 และ versionName เป็น 1.2.0
+          # 2. แก้ไข styles.xml ให้เป็น Dark Theme แท้ บังคับ Status Bar ไอคอนเป็นสีขาวสว่าง
+          styles_path = 'android/app/src/main/res/values/styles.xml'
+          if os.path.exists(styles_path):
+              with open(styles_path, 'r', encoding='utf-8') as f:
+                  styles_content = f.read()
+              # บังคับ windowLightStatusBar เป็น false เพื่อให้ไอคอนเป็นสีขาว
+              dark_items = '\n'.join([
+                  '        <item name="android:windowLightStatusBar">false</item>',
+                  '        <item name="android:statusBarColor">#0D0D12</item>',
+                  '        <item name="android:navigationBarColor">#0D0D12</item>'
+              ])
+              if '</style>' in styles_content:
+                  styles_content = styles_content.replace('</style>', dark_items + '\n    </style>', 1)
+                  with open(styles_path, 'w', encoding='utf-8') as f:
+                      f.write(styles_content)
+                  print('Successfully injected Dark Status Bar into styles.xml')
+
+          # 3. แก้ไข build.gradle เพื่ออัปเดต versionCode เป็น 3 และ versionName เป็น 1.2.0
           gradle_path = 'android/app/build.gradle'
           with open(gradle_path, 'r', encoding='utf-8') as f:
               gradle_content = f.read()
@@ -447,6 +465,8 @@ jobs:
           import android.os.Build;
           import android.os.Bundle;
           import android.provider.OpenableColumns;
+          import android.view.View;
+          import android.view.WindowInsetsController;
           import android.view.WindowManager;
           import android.webkit.JavascriptInterface;
           import android.webkit.WebView;
@@ -515,24 +535,28 @@ jobs:
 
               private void setupWindowAppearance() {
                   if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                      getWindow().setStatusBarColor(0xFF121218);
-                      getWindow().setNavigationBarColor(0xFF121218);
+                      getWindow().setStatusBarColor(0xFF0D0D12);
+                      getWindow().setNavigationBarColor(0xFF0D0D12);
                   }
                   if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
                       WindowManager.LayoutParams lp = getWindow().getAttributes();
                       lp.layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES;
                       getWindow().setAttributes(lp);
                   }
-                  if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                      android.view.WindowInsetsController controller = getWindow().getInsetsController();
-                      if (controller != null) {
-                          controller.setSystemBarsAppearance(0, android.view.WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS | android.view.WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS);
+
+                  // รอให้ DecorView แนบกับระบบเสร็จก่อน แล้วบังคับไอคอน Status Bar เป็นสีขาวสว่างบน ColorOS
+                  getWindow().getDecorView().post(() -> {
+                      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                          WindowInsetsController controller = getWindow().getInsetsController();
+                          if (controller != null) {
+                              controller.setSystemBarsAppearance(0, WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS);
+                          }
+                      } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                          int flags = getWindow().getDecorView().getSystemUiVisibility();
+                          flags &= ~View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;
+                          getWindow().getDecorView().setSystemUiVisibility(flags);
                       }
-                  } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                      getWindow().getDecorView().setSystemUiVisibility(
-                          getWindow().getDecorView().getSystemUiVisibility() & ~android.view.View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
-                      );
-                  }
+                  });
               }
 
               private void checkAndRequestPermissions() {
