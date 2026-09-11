@@ -1,73 +1,64 @@
 // js/core/audioEngine.js
-import { audioEffect } from './audioEffect.js';
-
 class AudioEngine {
     constructor() {
-        const AudioContext = window.AudioContext || window.webkitAudioContext;
-        this.context = new AudioContext();
         this.audioElement = new Audio();
-        
-        this.isEffectInitialized = false;
         this.currentObjectUrl = null;
         
         this.audioElement.onerror = (error) => {
-            console.error("เกิดข้อผิดพลาดในการโหลดหรือเล่นไฟล์เสียง:", error);
-            audioEffect.stop();
+            console.error("Audio Error:", error);
             this.skipToNext();
         };
-        
-        this.audioElement.onplay = () => {
-            audioEffect.start();
-        };
-        
-        this.audioElement.onpause = () => {
-            audioEffect.stop();
-        };
-        
-        // ป้องกัน Android WebView สั่ง Suspend AudioContext เมื่อยุบแอพหรือจอดับ
-        document.addEventListener('visibilitychange', async () => {
-            if (this.context && this.context.state === 'suspended' && !this.audioElement.paused) {
-                try {
-                    await this.context.resume();
-                } catch (e) {
-                    console.warn('[AudioEngine] Context resume error on visibility change:', e);
-                }
+    }
+    
+    // ฟังก์ชันลดเสียงลง 0 อย่างนุ่มนวลใน 30ms ป้องกันแรงกระชากของคลื่นเสียง (Zero-Crossing Pop)
+    async microFadeOut(durationMs = 30) {
+        if (!this.audioElement || this.audioElement.paused || this.audioElement.currentTime === 0) return;
+        try {
+            const originalVol = this.audioElement.volume;
+            const steps = 4;
+            const stepTime = durationMs / steps;
+            for (let i = steps - 1; i >= 0; i--) {
+                this.audioElement.volume = Math.max(0, (i / steps) * originalVol);
+                await new Promise(res => setTimeout(res, stepTime));
             }
-        });
+            this.audioElement.pause();
+            this.audioElement.volume = originalVol;
+        } catch (e) {
+            this.audioElement.pause();
+        }
     }
     
     async load(fileOrUrl) {
         try {
+            // ดัก Fade out สั้นๆ ให้คลื่นเสียงแตะ 0 ก่อนตัดไฟล์
+            if (!this.audioElement.paused && this.audioElement.currentTime > 0) {
+                await this.microFadeOut(30);
+            }
+            
             if (typeof fileOrUrl === 'string') {
                 this.audioElement.src = fileOrUrl;
             } else if (fileOrUrl instanceof File || fileOrUrl instanceof Blob) {
-                if (this.currentObjectUrl) {
-                    URL.revokeObjectURL(this.currentObjectUrl);
-                }
+                const oldUrl = this.currentObjectUrl;
                 this.currentObjectUrl = URL.createObjectURL(fileOrUrl);
                 this.audioElement.src = this.currentObjectUrl;
+                
+                // หน่วงเวลาคืน Memory 4 วินาที ไม่ตัดสตรีมเสียงกะทันหัน
+                if (oldUrl) {
+                    setTimeout(() => URL.revokeObjectURL(oldUrl), 4000);
+                }
             }
-            this.audioElement.load();
         } catch (error) {
-            console.error("ไม่สามารถโหลดไฟล์เสียงได้:", error);
+            console.error("Audio Load Error:", error);
             this.skipToNext();
         }
     }
     
     async play() {
-        if (this.context.state === 'suspended') {
-            await this.context.resume();
-        }
-        if (!this.isEffectInitialized) {
-            audioEffect.init(this.context, this.audioElement);
-            this.isEffectInitialized = true;
-        }
-        
         try {
             await this.audioElement.play();
         } catch (error) {
             if (error.name !== 'AbortError') {
-                console.error("เกิดข้อผิดพลาดในการสั่งเล่นเสียง:", error);
+                console.error("Playback Play Error:", error);
             }
         }
     }

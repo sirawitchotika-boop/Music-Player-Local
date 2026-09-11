@@ -5,7 +5,6 @@ import { StateManager } from './core/stateManager.js';
 import { PlaylistUI } from './ui/playlistUI.js';
 import { PlayerUI } from './ui/playerUI.js';
 import { storage } from './core/storage.js';
-import { EqUI } from './ui/eqUI.js';
 import { helpUI } from './ui/helpUI.js';
 import { mediaSessionManager } from './core/mediaSessionManager.js';
 
@@ -18,7 +17,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     const playerUi = new PlayerUI(state, audioEngine);
     const playlistUi = new PlaylistUI(state, audioEngine);
-    const eqUi = new EqUI();
     helpUI.init();
     
     mediaSessionManager.init({
@@ -35,7 +33,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
     
     window.nextTrackFallback = () => {
-      console.log('[App] Track error/fallback. Moving to next track...');
       if (playerUi && typeof playerUi.playNext === 'function') {
         playerUi.playNext();
       }
@@ -44,7 +41,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     const playExternalAudio = async (trackData) => {
       if (!trackData || !trackData.url) return;
       try {
-        console.log('[App] Playing external track:', trackData.name);
         await audioEngine.load(trackData.url);
         await audioEngine.play();
         const cleanName = trackData.name ? trackData.name.replace(/\.[^/.]+$/, "") : "External Track";
@@ -80,6 +76,5 @@ document.addEventListener('DOMContentLoaded', async () => {
     console.log('[App] Initialized Successfully.');
   } catch (error) {
     console.error('[App] Init Error:', error);
-    alert('Failed to initialize application. Please check console.');
   }
 });

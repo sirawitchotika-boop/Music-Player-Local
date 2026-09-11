@@ -1,3 +1,4 @@
+// js/ui/playerUI.js
 import { modalUI } from './modalUI.js';
 import { mediaSessionManager } from '../core/mediaSessionManager.js';
 import { storage } from '../core/storage.js';
@@ -27,6 +28,9 @@ export class PlayerUI {
     this.likedTracks = JSON.parse(localStorage.getItem('gt_liked_tracks')) || [];
     this.likeDebounceTimer = null;
     
+    // ตัวล็อกป้องกันการสั่งเปลี่ยนเพลงซ้อนกัน
+    this.isChangingTrack = false;
+    
     this.playIcon = '<svg id="icon-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>';
     this.pauseIcon = '<svg viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>';
     
@@ -39,12 +43,12 @@ export class PlayerUI {
     this.isDragging = false;
     this.init();
   }
-  
+
   init() {
     this.bindEvents();
     this.updateModeIcon(this.state.playMode);
   }
-  
+
   bindEvents() {
     if (this.playBtn) this.playBtn.addEventListener('click', () => this.togglePlay());
     if (this.playModeBtn) this.playModeBtn.addEventListener('click', () => this.cycleMode());
@@ -88,10 +92,10 @@ export class PlayerUI {
     
     this.audioEl.addEventListener('ended', () => this.playNext());
   }
-  
+
   handleLikeClick() {
     if (!this.audioEl.src || this.state.currentTrackIndex === -1) {
-      this.showToast('[ERROR] ไม่พบเพลงที่กำลังเล่น', 'error');
+      this.showToast('[ERROR] No track playing', 'error');
       return;
     }
     
@@ -103,10 +107,10 @@ export class PlayerUI {
     
     if (willLike) {
       this.favoriteBtn.classList.add('active');
-      this.showToast('[FAVORITE] เพิ่มในรายการโปรด', 'info');
+      this.showToast('[FAVORITE] Added to favorites', 'info');
     } else {
       this.favoriteBtn.classList.remove('active');
-      this.showToast('[FAVORITE] นำออกจากรายการโปรด', 'error');
+      this.showToast('[FAVORITE] Removed from favorites', 'error');
     }
     
     clearTimeout(this.likeDebounceTimer);
@@ -122,7 +126,7 @@ export class PlayerUI {
       window.dispatchEvent(new CustomEvent('gt-liked-updated'));
     }, 400);
   }
-  
+
   refreshLikeButtonState() {
     if (!this.favoriteBtn || this.state.currentTrackIndex === -1) return;
     const currentTrack = this.state.queue[this.state.currentTrackIndex];
@@ -138,14 +142,23 @@ export class PlayerUI {
       this.favoriteBtn.classList.remove('active');
     }
   }
-  
+
+  // ระบบดักจับการกดปุ่มแบบป้องกัน Touch + Mouse ชนกัน 100%
   bindHoldToSeek(button, direction) {
-    let pressTimer;
-    let seekInterval;
+    let pressTimer = null;
+    let seekInterval = null;
     let isHolding = false;
-    
+    let touchHandled = false;
+
     const startHold = (e) => {
-      if (e.cancelable) e.preventDefault();
+      // ดักไม่ให้ MouseEvent ทำงานซ้ำถ้าพึ่งแตะผ่าน Touchscreen
+      if (e.type === 'mousedown' && touchHandled) {
+        return;
+      }
+      if (e.type === 'touchstart') {
+        touchHandled = true;
+      }
+
       isHolding = false;
       pressTimer = setTimeout(() => {
         isHolding = true;
@@ -158,78 +171,98 @@ export class PlayerUI {
         }, 150);
       }, 400);
     };
-    
+
     const endHold = (e) => {
+      // ถ้าเป็น MouseUp ที่เบิ้ลมาจาก Touch ให้ตัดทิ้ง
+      if (e.type === 'mouseup' && touchHandled) {
+        setTimeout(() => { touchHandled = false; }, 400);
+        return;
+      }
+
       clearTimeout(pressTimer);
       if (seekInterval) {
         clearInterval(seekInterval);
         seekInterval = null;
       }
+
       if (!isHolding) {
         if (direction === 'next') this.playNext();
         else this.playPrev();
       }
+
       isHolding = false;
+      if (e.type === 'touchend') {
+        setTimeout(() => { touchHandled = false; }, 400);
+      }
     };
-    
+
+    button.addEventListener('touchstart', startHold, { passive: true });
+    button.addEventListener('touchend', endHold, { passive: true });
     button.addEventListener('mousedown', startHold);
-    button.addEventListener('touchstart', startHold, { passive: false });
     button.addEventListener('mouseup', endHold);
-    button.addEventListener('touchend', endHold);
     button.addEventListener('mouseleave', endHold);
   }
-  
+
   async playNext() {
+    if (this.isChangingTrack) return;
     const track = this.state.nextTrack();
     if (track) await this.loadAndPlay(track);
-    else this.showToast('[STATUS] สิ้นสุดคิวเล่นเพลง', 'error');
+    else this.showToast('[STATUS] End of playlist', 'error');
   }
-  
+
   async playPrev() {
+    if (this.isChangingTrack) return;
     const track = this.state.prevTrack();
     if (track) await this.loadAndPlay(track);
-    else this.showToast('[STATUS] จุดเริ่มต้นของคิว', 'error');
+    else this.showToast('[STATUS] Start of playlist', 'error');
   }
-  
+
   async loadAndPlay(track) {
+    if (this.isChangingTrack) return;
+    this.isChangingTrack = true;
+
     try {
       let blob = track.blob;
       if (!blob && track.id) {
         blob = await storage.getTrackBlob(track.id);
       }
       if (!blob) throw new Error("Audio blob not found");
+      
       await this.audio.load(blob);
       await this.audio.play();
+      
       this.updateTitle(track.name.replace(/\.[^/.]+$/, ""));
       this.refreshLikeButtonState();
       mediaSessionManager.updateMetadata(track);
     } catch (error) {
-      this.showToast('[ERROR] เล่นเพลงไม่สำเร็จ กำลังข้าม...', 'error');
+      this.showToast('[ERROR] Failed to load track', 'error');
       setTimeout(() => this.playNext(), 1500);
+    } finally {
+      this.isChangingTrack = false;
     }
   }
-  
+
   cycleMode() {
     const newMode = this.state.cyclePlayMode();
     this.updateModeIcon(newMode);
   }
-  
+
   updateModeIcon(mode) {
     if (this.playModeBtn) {
       this.playModeBtn.innerHTML = this.modeIcons[mode];
       this.playModeBtn.style.color = mode === 0 ? '#7a7a8c' : '#ffffff';
     }
   }
-  
+
   togglePlay() {
     if (!this.audioEl.src) {
-      this.showToast('[WARN] ไม่มีเพลงในคิวเล่น', 'error');
+      this.showToast('[WARN] No audio selected', 'error');
       return;
     }
     if (this.audioEl.paused) this.audio.play();
     else this.audio.pause();
   }
-  
+
   updatePlayState(isPlaying) {
     if (this.playBtn) {
       this.playBtn.innerHTML = isPlaying ? this.pauseIcon : this.playIcon;
@@ -240,20 +273,20 @@ export class PlayerUI {
       }
     }
   }
-  
+
   formatTime(seconds) {
     if (isNaN(seconds) || !isFinite(seconds)) return '0:00';
     const m = Math.floor(seconds / 60);
     const s = Math.floor(seconds % 60);
     return `${m}:${s < 10 ? '0' : ''}${s}`;
   }
-  
+
   updateDuration() {
     if (this.timeTotal && this.audioEl.duration) {
       this.timeTotal.textContent = this.formatTime(this.audioEl.duration);
     }
   }
-  
+
   updateSeekBar() {
     if (this.seekBar && this.audioEl.duration && !this.isDragging) {
       const progress = (this.audioEl.currentTime / this.audioEl.duration) * 100;
@@ -263,12 +296,12 @@ export class PlayerUI {
       this.timeCurrent.textContent = this.formatTime(this.audioEl.currentTime);
     }
   }
-  
+
   updateTitle(title) {
     if (this.titleDisplay) this.titleDisplay.textContent = title;
     if (this.artistDisplay) this.artistDisplay.textContent = 'LOCAL SOURCE';
   }
-  
+
   showToast(message, type = 'success') {
     modalUI.showToast(message, type);
   }

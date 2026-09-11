@@ -4,6 +4,7 @@
     box-sizing: border-box;
     -webkit-tap-highlight-color: transparent;
 }
+
 html, body {
     width: 100%;
     height: 100dvh;
@@ -17,9 +18,11 @@ html, body {
     display: flex;
     flex-direction: column;
 }
+
 ::-webkit-scrollbar {
     display: none;
 }
+
 .app-container {
     display: flex;
     flex-direction: column;
@@ -27,6 +30,7 @@ html, body {
     position: relative;
     background: radial-gradient(circle at 50% 0%, #1c1c28 0%, #0d0d12 80%);
 }
+
 .top-bar {
     display: flex;
     justify-content: space-between;
@@ -34,6 +38,7 @@ html, body {
     padding: 20px;
     z-index: 10;
 }
+
 .app-title {
     font-size: 16px;
     font-weight: 900;
@@ -41,6 +46,7 @@ html, body {
     color: #fff;
     text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
 }
+
 .icon-btn {
     background: none;
     border: none;
@@ -49,17 +55,23 @@ html, body {
     justify-content: center;
     align-items: center;
 }
+
 .icon-btn svg {
     width: 28px;
     height: 28px;
     fill: #7a7a8c;
     transition: all 0.3s ease;
 }
+
 .icon-btn:active svg {
     fill: #ff2a2a;
     filter: drop-shadow(0 0 12px rgba(255, 42, 42, 0.8));
     transform: scale(0.9);
 }
+
+/* =========================================
+   Visualizer Section: Style A (Cyberpunk EQ)
+   ========================================= */
 .visualizer-section {
     flex: 1 1 50%;
     display: flex;
@@ -69,52 +81,157 @@ html, body {
     position: relative;
     width: 100%;
 }
+
 .visualizer-ring {
     width: 280px;
     height: 280px;
     border-radius: 50%;
-    border: 2px solid #252535;
-    background: radial-gradient(circle, #15151f 0%, #0d0d12 100%);
-    box-shadow: 0 0 40px rgba(0, 0, 0, 0.8), inset 0 0 20px rgba(0, 0, 0, 0.5);
+    border: 2px solid #222230;
+    background: radial-gradient(circle, #161622 0%, #0a0a0f 100%);
+    box-shadow: 0 0 35px rgba(0, 0, 0, 0.9), inset 0 0 25px rgba(0, 0, 0, 0.8);
     display: flex;
     justify-content: center;
     align-items: center;
     position: relative;
-    transition: box-shadow 0.3s ease, border-color 0.3s ease;
-}
-.visualizer-ring.playing {
-    border-color: #ff2a2a;
-    box-shadow: 0 0 40px rgba(255, 42, 42, 0.3), inset 0 0 30px rgba(255, 42, 42, 0.2);
+    transition: all 0.4s ease;
 }
 
-/* ตั้งค่า Canvas ให้ซ้อนทับอยู่บน Ring พอดี */
-#visualizer-canvas {
+/* ขอบวงแหวนนีออนเรืองแสงซ้อน 2 สี */
+.ring-cyber-border {
     position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
+    width: 260px;
+    height: 260px;
     border-radius: 50%;
+    border: 2px solid transparent;
+    border-top-color: #ff2a2a;
+    border-bottom-color: #00ff88;
+    opacity: 0.4;
+    transition: all 0.4s ease;
     pointer-events: none;
-    z-index: 5;
 }
 
-/* เพิ่ม Transition ให้ Core สำหรับรองรับ Bass Pulse */
+/* แผงแท่ง Equalizer สเปกตรัม */
+.eq-bars-spectrum {
+    position: absolute;
+    bottom: 60px;
+    display: flex;
+    align-items: flex-end;
+    gap: 4px;
+    height: 90px;
+    z-index: 5;
+    pointer-events: none;
+}
+
+.eq-bar {
+    width: 5px;
+    height: 6px; /* ตอนหยุดเพลง สูง 6px นิ่งๆ */
+    border-radius: 3px 3px 1px 1px;
+    background: linear-gradient(to top, #00ff88 0%, #ffd000 60%, #ff2a2a 100%);
+    opacity: 0.3;
+    transition: height 0.3s ease, opacity 0.3s ease;
+}
+
+/* Core Icon */
 .visualizer-core {
     z-index: 6;
-    transition: transform 0.08s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     display: flex;
     justify-content: center;
     align-items: center;
-    width: 100%;
-    height: 100%;
+    margin-bottom: 25px;
+    transition: transform 0.3s ease;
 }
 
 .music-icon-placeholder {
-    width: 60px;
-    height: 60px;
-    fill: #252535;
+    width: 52px;
+    height: 52px;
+    fill: #2c2c3e;
+    transition: fill 0.3s ease, filter 0.3s ease;
 }
+
+/* =========================================
+   ตอนกำลังเล่นเพลง (.playing)
+   ========================================= */
+.visualizer-ring.playing {
+    border-color: rgba(255, 42, 42, 0.4);
+    box-shadow: 0 0 45px rgba(255, 42, 42, 0.2), inset 0 0 30px rgba(0, 255, 136, 0.1);
+}
+
+.visualizer-ring.playing .ring-cyber-border {
+    opacity: 1;
+    box-shadow: 0 0 25px rgba(255, 42, 42, 0.6), inset 0 0 15px rgba(0, 255, 136, 0.4);
+    animation: rotateCyberBorder 8s linear infinite;
+}
+
+.visualizer-ring.playing .music-icon-placeholder {
+    fill: #ffffff;
+    filter: drop-shadow(0 0 12px #00ff88);
+    animation: corePulse 1.4s ease-in-out infinite;
+}
+
+.visualizer-ring.playing .eq-bar {
+    opacity: 1;
+    box-shadow: 0 0 10px rgba(0, 255, 136, 0.6);
+}
+
+/* สลับจังหวะเต้นของแท่ง EQ ทั้ง 20 แท่ง (GPU 100%) */
+.visualizer-ring.playing .b1  { animation: eqBounce1 0.7s infinite alternate ease-in-out; }
+.visualizer-ring.playing .b2  { animation: eqBounce2 0.5s infinite alternate ease-in-out 0.1s; }
+.visualizer-ring.playing .b3  { animation: eqBounce3 0.8s infinite alternate ease-in-out 0.15s; }
+.visualizer-ring.playing .b4  { animation: eqBounce4 0.6s infinite alternate ease-in-out 0.05s; }
+.visualizer-ring.playing .b5  { animation: eqBounce2 0.75s infinite alternate ease-in-out 0.2s; }
+.visualizer-ring.playing .b6  { animation: eqBounce5 0.55s infinite alternate ease-in-out 0.12s; }
+.visualizer-ring.playing .b7  { animation: eqBounce3 0.65s infinite alternate ease-in-out 0.08s; }
+.visualizer-ring.playing .b8  { animation: eqBounce5 0.7s infinite alternate ease-in-out 0.25s; }
+.visualizer-ring.playing .b9  { animation: eqBounce4 0.5s infinite alternate ease-in-out 0.18s; }
+.visualizer-ring.playing .b10 { animation: eqBounce1 0.85s infinite alternate ease-in-out 0.04s; }
+.visualizer-ring.playing .b11 { animation: eqBounce5 0.6s infinite alternate ease-in-out 0.22s; }
+.visualizer-ring.playing .b12 { animation: eqBounce3 0.7s infinite alternate ease-in-out 0.1s; }
+.visualizer-ring.playing .b13 { animation: eqBounce4 0.55s infinite alternate ease-in-out 0.3s; }
+.visualizer-ring.playing .b14 { animation: eqBounce2 0.68s infinite alternate ease-in-out 0.14s; }
+.visualizer-ring.playing .b15 { animation: eqBounce5 0.5s infinite alternate ease-in-out 0.05s; }
+.visualizer-ring.playing .b16 { animation: eqBounce1 0.8s infinite alternate ease-in-out 0.2s; }
+.visualizer-ring.playing .b17 { animation: eqBounce3 0.6s infinite alternate ease-in-out 0.12s; }
+.visualizer-ring.playing .b18 { animation: eqBounce4 0.75s infinite alternate ease-in-out 0.28s; }
+.visualizer-ring.playing .b19 { animation: eqBounce2 0.58s infinite alternate ease-in-out 0.09s; }
+.visualizer-ring.playing .b20 { animation: eqBounce1 0.7s infinite alternate ease-in-out 0.16s; }
+
+/* Keyframes ควบคุมความสูงแท่ง EQ (กระจายสูงต่ำสมจริง) */
+@keyframes eqBounce1 {
+    0% { height: 10px; }
+    100% { height: 65px; }
+}
+
+@keyframes eqBounce2 {
+    0% { height: 14px; }
+    100% { height: 80px; }
+}
+
+@keyframes eqBounce3 {
+    0% { height: 8px; }
+    100% { height: 50px; }
+}
+
+@keyframes eqBounce4 {
+    0% { height: 12px; }
+    100% { height: 72px; }
+}
+
+@keyframes eqBounce5 {
+    0% { height: 16px; }
+    100% { height: 85px; }
+}
+
+@keyframes rotateCyberBorder {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+@keyframes corePulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.15); }
+}
+
+/* Favorite Button */
 .favorite-btn {
     position: absolute;
     bottom: -20px;
@@ -132,21 +249,25 @@ html, body {
     transition: all 0.3s ease;
     z-index: 10;
 }
+
 .favorite-btn svg {
     width: 26px;
     height: 26px;
     fill: #555;
     transition: all 0.3s ease;
 }
+
 .favorite-btn.active {
     border-color: #ff2a2a;
     box-shadow: 0 0 15px rgba(255, 42, 42, 0.5), inset 0 0 10px rgba(255, 42, 42, 0.3);
 }
+
 .favorite-btn.active svg {
     fill: #ff2a2a;
     filter: drop-shadow(0 0 12px rgba(255, 42, 42, 0.9));
     transform: scale(1.15);
 }
+
 .favorite-btn:active {
     transform: scale(0.9);
 }

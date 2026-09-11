@@ -3,21 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>GT SoundMaster - Audiophile Music Player</title>
+    <title>GT SoundMaster</title>
     <link rel="icon" type="image/svg+xml" href="icon.svg">
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#121218">
     <link rel="stylesheet" href="css/main.css">
     <link rel="stylesheet" href="css/player.css">
     <link rel="stylesheet" href="css/playlist.css">
-    <link rel="stylesheet" href="css/eq.css">
     <link rel="stylesheet" href="css/timer.css">
     <link rel="stylesheet" href="css/help.css">
 </head>
 <body>
     <div id="toast-container" class="toast-container"></div>
     <div id="gt-modal-root"></div>
-         
+
+    <!-- Help Modal -->
     <div id="help-modal" class="help-modal hidden">
         <div class="help-container">
             <div class="help-header">
@@ -33,9 +33,8 @@
                         <span class="help-badge">FILE SYSTEM</span>
                     </div>
                     <ul class="help-list">
-                        <li class="help-item"><strong>ADD MUSIC:</strong> นำเข้าข้อมูลเสียงลง IndexedDB ทำงานแบบ Local 100%</li>
-                        <li class="help-item"><strong>ADD PLAYLIST:</strong> จัดกลุ่มหมวดหมู่รายการเสียง</li>
-                        <li class="help-item"><strong>FAVORITES:</strong> แทร็กที่ทำเครื่องหมายจะได้รับการป้องกันจากการล้างข้อมูลคลังหลัก</li>
+                        <li class="help-item"><strong>ADD MUSIC:</strong> บันทึกเพลงลง IndexedDB ของเครื่อง 100%</li>
+                        <li class="help-item"><strong>PLAYLIST:</strong> จัดหมวดหมู่และจัดการเพลงโปรด</li>
                     </ul>
                 </div>
                 <div class="help-card">
@@ -44,37 +43,27 @@
                         <span class="help-badge gold">CORE AUDIO</span>
                     </div>
                     <ul class="help-list">
-                        <li class="help-item"><strong>NAVIGATION:</strong> กดค้างที่ปุ่ม Next หรือ Prev เพื่อกรอสัญญาณเสียง (Hold to Seek)</li>
-                        <li class="help-item"><strong>PLAY MODES:</strong> เล่นตามลำดับ, เล่นซ้ำแทร็กเดียว, และสุ่มรายการ (Shuffle)</li>
+                        <li class="help-item"><strong>NAVIGATION:</strong> กดค้าง Next/Prev เพื่อกรอเพลง (Seek)</li>
+                        <li class="help-item"><strong>PURE PLAYBACK:</strong> ถอดรหัสฮาร์ดแวร์โดยตรง ไร้เสียงสะดุด</li>
                     </ul>
                 </div>
                 <div class="help-card">
                     <div class="help-card-title">
-                        <span>MODULE 03: DSP & EQUALIZER</span>
-                        <span class="help-badge">SIGNAL PATH</span>
-                    </div>
-                    <ul class="help-list">
-                        <li class="help-item"><strong>PRE-AMP:</strong> ควบคุม Headroom ป้องกันสัญญาณดิจิทัลคลิปปิ้ง (Clipping)</li>
-                        <li class="help-item"><strong>DIRECT (BYPASS):</strong> ส่งผ่านสัญญาณเสียงแบบ Bit-Perfect ไม่ผ่านวงจรกรองความถี่</li>
-                        <li class="help-item"><strong>10-BAND ISO:</strong> ปรับแต่งความถี่ช่วง 32Hz - 16kHz</li>
-                    </ul>
-                </div>
-                <div class="help-card">
-                    <div class="help-card-title">
-                        <span>MODULE 04: AUTOMATION</span>
+                        <span>MODULE 03: AUTOMATION</span>
                         <span class="help-badge red">DAEMON</span>
                     </div>
                     <ul class="help-list">
-                        <li class="help-item"><strong>SLEEP TIMER:</strong> กำหนดเวลาระงับการทำงานของ Audio Engine อัตโนมัติ</li>
+                        <li class="help-item"><strong>SLEEP TIMER:</strong> ตั้งเวลาปิดเพลงอัตโนมัติ</li>
                     </ul>
                 </div>
             </div>
             <div class="help-footer-note">
-                GT SOUNDMASTER - High Fidelity Local Web Audio Architecture
+                GT SOUNDMASTER - Ultra-Lean High Fidelity Player
             </div>
         </div>
     </div>
 
+    <!-- Sleep Timer Modal -->
     <div id="timer-modal" class="timer-modal hidden">
         <div class="timer-container">
             <div class="timer-header">
@@ -83,7 +72,6 @@
                     <svg viewBox="0 0 24 24" width="24" height="24" fill="#fff"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
                 </button>
             </div>
-                         
             <div class="timer-dial-wrapper">
                 <div id="timer-dial" class="timer-dial">
                     <div class="timer-dial-inner">
@@ -97,11 +85,9 @@
                 <button id="toggle-edit-mode-btn" class="preset-stationed-btn" title="EDIT PRESETS">
                     <svg viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
                 </button>
-                                 
                 <button id="reset-timer-btn" class="preset-stationed-btn" title="RESET">
                     <svg viewBox="0 0 24 24"><path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/></svg>
                 </button>
-                                 
                 <button id="add-timer-preset-btn" class="preset-stationed-btn" title="ADD PRESET">
                     <svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
                 </button>
@@ -115,51 +101,11 @@
             </div>
         </div>
     </div>
-         
-    <div id="eq-modal" class="eq-modal hidden">
-        <div class="eq-container">
-            <div class="eq-header">
-                <h2>AUDIOPHILE EQ</h2>
-                <div class="eq-header-actions">
-                    <button id="eq-bypass-btn" class="eq-bypass-btn" title="Pure Direct / EQ Bypass">DIRECT</button>
-                    <button id="reset-eq-btn" class="icon-btn" title="Reset to Flat">
-                        <svg viewBox="0 0 24 24" width="20" height="20" fill="#00e5ff"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
-                    </button>
-                    <button id="close-eq-btn" class="close-btn">
-                        <svg viewBox="0 0 24 24" width="24" height="24" fill="#fff"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
-                    </button>
-                </div>
-            </div>
-            <div class="eq-controls">
-                <div class="eq-dropdown-wrapper">
-                    <button id="eq-preset-toggle" class="eq-dropdown-btn">
-                        <span id="eq-preset-name">Flat (Reference)</span>
-                        <svg viewBox="0 0 24 24" width="18" height="18" fill="#7a7a8c"><path d="M7 10l5 5 5-5z"/></svg>
-                    </button>
-                    <div id="eq-dropdown-menu" class="eq-dropdown-menu hidden"></div>
-                </div>
-                <button id="eq-save-btn" class="eq-btn save">SAVE</button>
-                <button id="eq-delete-btn" class="eq-btn delete">DEL</button>
-            </div>
-            <div class="eq-workspace">
-                <div class="eq-preamp-column">
-                    <div id="eq-preamp-val" class="eq-value preamp-text">0.0dB</div>
-                    <div class="eq-slider-wrapper">
-                        <input type="range" id="eq-preamp-slider" class="eq-slider preamp" min="-12" max="12" step="0.1" value="0">
-                    </div>
-                    <div class="eq-label preamp-label">PREAMP</div>
-                </div>
-                <div class="eq-divider"></div>
-                <div id="eq-faders-scroll" class="eq-faders-scroll"></div>
-            </div>
-        </div>
-    </div>
 
+    <!-- Main App Container -->
     <main id="app-container" class="app-container">
         <header class="top-bar">
-            <button id="eq-btn" class="icon-btn" title="Equalizer">
-                <svg viewBox="0 0 24 24"><path d="M3 17v2h6v-2H3zM3 5v2h10V5H3zm10 16v-2h8v-2h-8v-2h-2v6h2zM7 9v2H3v2h4v2h2V9H7zm14 4v-2H11v2h10zm-6-4h2V7h4V5h-4V3h-2v6z"/></svg>
-            </button>
+            <div style="width: 28px;"></div>
             <div class="top-center">
                 <span class="app-title">GT SOUNDMASTER</span>
             </div>
@@ -173,53 +119,80 @@
             </div>
         </header>
 
+        <!-- Visualizer Section: Style A (Pure CSS Cyberpunk Spectrum) -->
         <section id="visualizer-section" class="visualizer-section">
             <div class="visualizer-ring">
-                <canvas id="visualizer-canvas" width="280" height="280"></canvas>
+                <!-- ขอบวงแหวนแสงนีออน -->
+                <div class="ring-cyber-border"></div>
+                
+                <!-- แผงแท่ง Equalizer Bars เต้นแบบ Pure CSS -->
+                <div class="eq-bars-spectrum">
+                    <span class="eq-bar b1"></span>
+                    <span class="eq-bar b2"></span>
+                    <span class="eq-bar b3"></span>
+                    <span class="eq-bar b4"></span>
+                    <span class="eq-bar b5"></span>
+                    <span class="eq-bar b6"></span>
+                    <span class="eq-bar b7"></span>
+                    <span class="eq-bar b8"></span>
+                    <span class="eq-bar b9"></span>
+                    <span class="eq-bar b10"></span>
+                    <span class="eq-bar b11"></span>
+                    <span class="eq-bar b12"></span>
+                    <span class="eq-bar b13"></span>
+                    <span class="eq-bar b14"></span>
+                    <span class="eq-bar b15"></span>
+                    <span class="eq-bar b16"></span>
+                    <span class="eq-bar b17"></span>
+                    <span class="eq-bar b18"></span>
+                    <span class="eq-bar b19"></span>
+                    <span class="eq-bar b20"></span>
+                </div>
+
+                <!-- ไอคอนแกนกลาง -->
                 <div id="album-art-core" class="visualizer-core">
                     <svg viewBox="0 0 24 24" class="music-icon-placeholder"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>
                 </div>
             </div>
+
             <button id="favorite-btn" class="favorite-btn">
                 <svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
             </button>
         </section>
-                 
+
+        <!-- Player Section -->
         <section id="player-section" class="player-section">
             <div class="track-info">
                 <h2 id="now-playing-title" class="track-title">SYSTEM STANDBY</h2>
                 <p id="now-playing-artist" class="track-artist">NO AUDIO LOADED</p>
             </div>
-                         
+
             <div class="progress-container">
                 <span id="time-current" class="time-text">0:00</span>
                 <input type="range" id="seek-bar" class="seek-bar" value="0" step="0.1">
                 <span id="time-total" class="time-text">0:00</span>
             </div>
-                         
+
             <div class="controls-row">
                 <button id="play-mode-btn" class="control-btn small-btn">
                     <svg viewBox="0 0 24 24"><path d="M10.59 9.17L5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41l-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z"/></svg>
                 </button>
-                                 
                 <button id="prev-btn" class="control-btn">
                     <svg viewBox="0 0 24 24"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg>
                 </button>
-                                 
                 <button id="play-btn" class="control-btn play-pause-btn">
                     <svg id="icon-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
                 </button>
-                                 
                 <button id="next-btn" class="control-btn">
                     <svg viewBox="0 0 24 24"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg>
                 </button>
-                                 
                 <button id="playlist-toggle-btn" class="control-btn small-btn">
                     <svg viewBox="0 0 24 24"><path d="M15 6H3v2h12V6zm0 4H3v2h12v-2zM3 16h8v-2H3v2zM17 6v8.18c-.31-.11-.65-.18-1-.18-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3V8h3V6h-5z"/></svg>
                 </button>
             </div>
         </section>
-                 
+
+        <!-- Playlist Section -->
         <section id="playlist-section" class="playlist-section hidden">
             <div class="playlist-header">
                 <h2>PLAYLIST</h2>
@@ -261,6 +234,7 @@
             <div id="playlist-container" class="playlist-container"></div>
         </section>
     </main>
+
     <script type="module" src="js/app.js"></script>
 </body>
 </html>

@@ -9,7 +9,6 @@ export class MediaSessionManager {
     this.onNextTrack = null;
     this.onPrevTrack = null;
     this.currentTrack = null;
-    this.lastBridgeUpdateTime = 0;
     
     if (this.isSupported) {
       this._bindAudioEvents();
@@ -20,7 +19,6 @@ export class MediaSessionManager {
     this.onNextTrack = onNext;
     this.onPrevTrack = onPrev;
     
-    // รับคำสั่ง Action สั่งงานจากภายนอก (Lock Screen, Notification Shade และการลาก Seekbar)
     window.mediaControlAction = (action, value) => {
       if (action === 'playpause') {
         this.audioEl.paused ? this.audio.play() : this.audio.pause();
@@ -35,7 +33,6 @@ export class MediaSessionManager {
       } else if (action === 'seekto' && typeof value === 'number') {
         this.audio.seek(value);
         this.updatePositionState();
-        this.syncWithAndroidBridge(true);
       }
     };
     
@@ -47,32 +44,19 @@ export class MediaSessionManager {
     this.audioEl.addEventListener('play', () => {
       this.setPlaybackState('playing');
       this.updatePositionState();
-      this.syncWithAndroidBridge(true);
     });
     
     this.audioEl.addEventListener('pause', () => {
       this.setPlaybackState('paused');
       this.updatePositionState();
-      this.syncWithAndroidBridge(true);
-    });
-    
-    this.audioEl.addEventListener('timeupdate', () => {
-      const now = Date.now();
-      // ลดภาระ IPC: ซิงค์ตำแหน่งเวลากับ Native Android ทุกๆ 4 วินาทีระหว่างเล่นต่อเนื่อง
-      if (now - this.lastBridgeUpdateTime > 4000) {
-        this.syncWithAndroidBridge(false);
-        this.lastBridgeUpdateTime = now;
-      }
     });
     
     this.audioEl.addEventListener('seeked', () => {
       this.updatePositionState();
-      this.syncWithAndroidBridge(true);
     });
     
     this.audioEl.addEventListener('durationchange', () => {
       this.updatePositionState();
-      this.syncWithAndroidBridge(true);
     });
   }
   
@@ -113,7 +97,6 @@ export class MediaSessionManager {
       if (details.seekTime !== undefined && details.seekTime !== null) {
         this.audio.seek(details.seekTime);
         this.updatePositionState();
-        this.syncWithAndroidBridge(true);
       }
     });
     
@@ -121,14 +104,12 @@ export class MediaSessionManager {
       const offset = details.seekOffset || 10;
       this.audio.seek(this.audio.currentTime + offset);
       this.updatePositionState();
-      this.syncWithAndroidBridge(true);
     });
     
     registerHandler('seekbackward', (details) => {
       const offset = details.seekOffset || 10;
       this.audio.seek(Math.max(0, this.audio.currentTime - offset));
       this.updatePositionState();
-      this.syncWithAndroidBridge(true);
     });
     
     registerHandler('stop', () => {
@@ -151,7 +132,6 @@ export class MediaSessionManager {
     
     try {
       window.AndroidBridge.updatePlayback(cleanTitle, 'GT SoundMaster', isPlaying, posSec, durSec);
-      this.lastBridgeUpdateTime = Date.now();
     } catch (e) {
       console.warn('[MediaSession] AndroidBridge sync error:', e);
     }
@@ -163,7 +143,7 @@ export class MediaSessionManager {
     
     const cleanTitle = track.name ? track.name.replace(/\.[^/.]+$/, '') : 'GT Track';
     
-    // ซิงค์ตรงเข้าสู่ Native Android System UI พร้อมตำแหน่งเวลาจริง
+    // ส่งสัญญาณไปฝั่ง Android Native รอบเดียวตอนเปลี่ยนเพลงอย่างมั่นคง
     this.syncWithAndroidBridge(true);
     
     if (this.isSupported) {
@@ -190,9 +170,6 @@ export class MediaSessionManager {
   }
   
   setPlaybackState(state) {
-    const isPlaying = state === 'playing';
-    this.syncWithAndroidBridge(true);
-    
     if (!this.isSupported) return;
     try {
       navigator.mediaSession.playbackState = state;
@@ -213,9 +190,7 @@ export class MediaSessionManager {
         playbackRate: this.audioEl.playbackRate || 1.0,
         position: Math.min(this.audio.currentTime, duration)
       });
-    } catch (e) {
-      // ป้องกันข้อผิดพลาดระหว่าง reset audio buffer
-    }
+    } catch (e) {}
   }
 }
 
