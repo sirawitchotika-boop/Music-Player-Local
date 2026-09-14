@@ -170,25 +170,11 @@ export class PlaylistUI {
         } else {
           modalUI.showToast('[WARN] ไม่มีเพลงใหม่ถูกเพิ่ม (ไฟล์ซ้ำ)', 'info');
         }
-      } else if (this.currentPlaylistId === 'favorites') {
-        let addedToFav = 0;
-        let dupInFav = 0;
-        processed.forEach(({ track }) => {
-          if (this.likedTracks.includes(track.id)) {
-            dupInFav++;
-          } else {
-            this.likedTracks.push(track.id);
-            addedToFav++;
-          }
-        });
-        if (addedToFav > 0) {
-          localStorage.setItem('gt_liked_tracks', JSON.stringify(this.likedTracks));
-          window.dispatchEvent(new Event('gt-liked-updated'));
-          const dupText = dupInFav > 0 ? ` (ซ้ำใน Favorites ${dupInFav} เพลง)` : '';
-          modalUI.showToast(`[STATUS] เพิ่มเข้า Favorites ${addedToFav} เพลง${dupText}`);
-        } else {
-          modalUI.showToast('[WARN] เพลงทั้งหมดมีใน Favorites แล้ว', 'info');
-        }
+} else if (this.currentPlaylistId === 'favorites') {
+        // [ตู้เซฟระดับ Controller] บล็อกการ Add เพลงเข้า Favorites แบบ Manual
+        modalUI.showToast('[REJECT] เพลย์ลิสต์นี้รับเฉพาะเพลงที่กดหัวใจเท่านั้น', 'error');
+        event.target.value = ''; // รีเซ็ต Input ป้องกันไฟล์ค้าง
+        return; // ตัดจบวงจรการแอดเพลงทันที
       } else {
         const targetPl = this.playlists.find(p => p.id === this.currentPlaylistId);
         if (targetPl) {
