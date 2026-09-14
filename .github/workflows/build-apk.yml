@@ -117,7 +117,7 @@ jobs:
                   with open(styles_path, 'w', encoding='utf-8') as f:
                       f.write(styles_content)
                   print('Successfully injected Dark Status Bar into styles.xml')
-
+                  
           # 3. แก้ไข build.gradle เพื่ออัปเดต versionCode เป็น 4 และ versionName เป็น 1.2.1
           gradle_path = 'android/app/build.gradle'
           with open(gradle_path, 'r', encoding='utf-8') as f:
