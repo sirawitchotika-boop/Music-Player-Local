@@ -99,19 +99,21 @@ jobs:
           with open(manifest_path, 'w', encoding='utf-8') as f:
               f.write(content)
 
-          # 2. แก้ไข styles.xml ให้เป็น Dark Theme แท้ บังคับ Status Bar ไอคอนเป็นสีขาวสว่าง
+# 2. แก้ไข styles.xml ให้เป็น Dark Theme แท้ บังคับ Status Bar ไอคอนเป็นสีขาวสว่าง
           styles_path = 'android/app/src/main/res/values/styles.xml'
           if os.path.exists(styles_path):
               with open(styles_path, 'r', encoding='utf-8') as f:
                   styles_content = f.read()
-              # บังคับ windowLightStatusBar เป็น false เพื่อให้ไอคอนเป็นสีขาว
+              # บังคับ windowLightStatusBar เป็น false และยัด Background ดำป้องกันสีขาวทะลุ
               dark_items = '\n'.join([
                   '        <item name="android:windowLightStatusBar">false</item>',
                   '        <item name="android:statusBarColor">#0D0D12</item>',
-                  '        <item name="android:navigationBarColor">#0D0D12</item>'
+                  '        <item name="android:navigationBarColor">#0D0D12</item>',
+                  '        <item name="android:windowBackground">#0D0D12</item>'
               ])
               if '</style>' in styles_content:
-                  styles_content = styles_content.replace('</style>', dark_items + '\n    </style>', 1)
+                  # ถอดเลข 1 ออก เพื่อ Inject ค่าลงทุก <style> ปิดตายบัค Status Bar ขาว
+                  styles_content = styles_content.replace('</style>', dark_items + '\n    </style>')
                   with open(styles_path, 'w', encoding='utf-8') as f:
                       f.write(styles_content)
                   print('Successfully injected Dark Status Bar into styles.xml')
