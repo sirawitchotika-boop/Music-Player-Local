@@ -116,17 +116,17 @@ jobs:
                       f.write(styles_content)
                   print('Successfully injected Dark Status Bar into styles.xml')
 
-          # 3. แก้ไข build.gradle เพื่ออัปเดต versionCode เป็น 3 และ versionName เป็น 1.2.0
+          # 3. แก้ไข build.gradle เพื่ออัปเดต versionCode เป็น 4 และ versionName เป็น 1.2.1
           gradle_path = 'android/app/build.gradle'
           with open(gradle_path, 'r', encoding='utf-8') as f:
               gradle_content = f.read()
 
-          gradle_content = gradle_content.replace('versionCode 1', 'versionCode 3')
-          gradle_content = gradle_content.replace('versionName "1.0"', 'versionName "1.2.0"')
+          gradle_content = gradle_content.replace('versionCode 1', 'versionCode 4')
+          gradle_content = gradle_content.replace('versionName "1.0"', 'versionName "1.2.1"')
 
           with open(gradle_path, 'w', encoding='utf-8') as f:
               f.write(gradle_content)
-          print('Successfully updated app version to 1.2.0 (versionCode 3)')
+          print('Successfully updated app version to 1.2.1 (versionCode 4)')
           EOF
           python3 patch-manifest.py
 

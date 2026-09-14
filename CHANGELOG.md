@@ -3,6 +3,11 @@
 All notable changes to the **GT SoundMaster** project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.1] - 2026-09-14
+
+### Fixed
+- **Favorites Playlist UX/Logic:** บล็อกการเพิ่มเพลงเข้า "Favorites [PROTECTED]" แบบ Manual ผ่านปุ่ม Add Music โดยเพิ่มการดักจับระดับ Controller ใน `playlistUI.js` (Defense in Depth) หากพบว่าผู้ใช้พยายามเพิ่มเพลงเข้าเพลย์ลิสต์นี้ ระบบจะแจ้งเตือนและตัดจบการทำงานทันทีเพื่อรักษาโครงสร้างข้อมูลให้ถูกต้อง
+
 ## [1.2.0] - 2026-09-11
 
 ### Added
