@@ -99,9 +99,10 @@ jobs:
           with open(manifest_path, 'w', encoding='utf-8') as f:
               f.write(content)
 
-# 2. แก้ไข styles.xml ให้เป็น Dark Theme แท้ บังคับ Status Bar ไอคอนเป็นสีขาวสว่าง
+          # 2. แก้ไข styles.xml ให้เป็น Dark Theme แท้ บังคับ Status Bar ไอคอนเป็นสีขาวสว่าง
           styles_path = 'android/app/src/main/res/values/styles.xml'
-          if os.path.exists(styles_path with open(styles_path, 'r', encoding='ut-8) as f:
+          if os.path.exists(styles_path):
+              with open(styles_path, 'r', encoding='utf-8') as f:
                   styles_content = f.read()
               # บังคับ windowLightStatusBar เป็น false และยัด Background ดำป้องกันสีขาวทะลุ
               dark_items = '\n'.join([
@@ -116,7 +117,7 @@ jobs:
                   with open(styles_path, 'w', encoding='utf-8') as f:
                       f.write(styles_content)
                   print('Successfully injected Dark Status Bar into styles.xml')
-                  
+
           # 3. แก้ไข build.gradle เพื่ออัปเดต versionCode เป็น 4 และ versionName เป็น 1.2.1
           gradle_path = 'android/app/build.gradle'
           with open(gradle_path, 'r', encoding='utf-8') as f:
