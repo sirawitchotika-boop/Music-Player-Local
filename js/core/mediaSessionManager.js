@@ -10,6 +10,9 @@ export class MediaSessionManager {
     this.onPrevTrack = null;
     this.currentTrack = null;
     
+    this._syncTimer = null;
+    this._bindNativeSync();
+    
     if (this.isSupported) {
       this._bindAudioEvents();
     }
@@ -116,6 +119,27 @@ export class MediaSessionManager {
       this.audio.pause();
       this.setPlaybackState('none');
     });
+  }
+  
+  // Android เดินเวลาในการ์ดต่อเองจาก "ภาพนิ่งล่าสุด" ที่เราส่งไป
+  // จึงต้องส่งภาพนิ่งใหม่ทุกครั้งที่ เล่น/หยุด/เลื่อนเวลา/จบเพลง ไม่งั้นการ์ดจะเดินเองไม่ตรงกับเพลงจริง
+  _bindNativeSync() {
+    const nowSync = () => this._queueSync(0);
+    const laterSync = () => this._queueSync(150);
+    this.audioEl.addEventListener('play', nowSync);
+    this.audioEl.addEventListener('pause', nowSync);
+    this.audioEl.addEventListener('ended', nowSync);
+    this.audioEl.addEventListener('seeked', laterSync);
+    this.audioEl.addEventListener('durationchange', laterSync);
+  }
+  
+  // รวมเหตุการณ์ที่มาติด ๆ กัน (เช่นลาก Seeker) ให้ส่งไป Android แค่ครั้งเดียว อ่านค่าสดตอนส่ง
+  _queueSync(delayMs) {
+    if (this._syncTimer) clearTimeout(this._syncTimer);
+    this._syncTimer = setTimeout(() => {
+      this._syncTimer = null;
+      this.syncWithAndroidBridge();
+    }, delayMs);
   }
   
   syncWithAndroidBridge(force = false) {

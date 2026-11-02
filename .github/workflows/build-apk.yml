@@ -664,11 +664,13 @@ jobs:
                       serviceIntent.putExtra(MediaPlaybackService.EXTRA_POS_SEC, positionSec);
                       serviceIntent.putExtra(MediaPlaybackService.EXTRA_DUR_SEC, durationSec);
 
-                      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                          startForegroundService(serviceIntent);
-                      } else {
-                          startService(serviceIntent);
-                      }
+                      try {
+                          if (isPlaying && Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                              startForegroundService(serviceIntent);
+                          } else {
+                              startService(serviceIntent);
+                          }
+                      } catch (Exception ignored) {}
                   }
 
                   @JavascriptInterface
