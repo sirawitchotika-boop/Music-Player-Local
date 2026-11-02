@@ -183,6 +183,7 @@ jobs:
                           if (action.endsWith(".PREV")) cmd = "window.mediaControlAction('prev');";
                           else if (action.endsWith(".PLAYPAUSE")) cmd = "window.mediaControlAction('playpause');";
                           else if (action.endsWith(".NEXT")) cmd = "window.mediaControlAction('next');";
+                          else if (android.media.AudioManager.ACTION_AUDIO_BECOMING_NOISY.equals(action)) cmd = "window.mediaControlAction('pause');";
                           else cmd = null;
 
                           if (cmd != null) {
@@ -426,6 +427,7 @@ jobs:
                   filter.addAction("com.gt.soundmaster.PREV");
                   filter.addAction("com.gt.soundmaster.PLAYPAUSE");
                   filter.addAction("com.gt.soundmaster.NEXT");
+                  filter.addAction(android.media.AudioManager.ACTION_AUDIO_BECOMING_NOISY);
                   if (Build.VERSION.SDK_INT >= 33) {
                       registerReceiver(mediaReceiver, filter, Context.RECEIVER_NOT_EXPORTED);
                   } else {
