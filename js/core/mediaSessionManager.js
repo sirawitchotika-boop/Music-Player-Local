@@ -43,13 +43,11 @@ export class MediaSessionManager {
   _bindAudioEvents() {
     this.audioEl.addEventListener('play', () => {
       this.setPlaybackState('playing');
-      this.syncWithAndroidBridge();
       this.updatePositionState();
     });
     
     this.audioEl.addEventListener('pause', () => {
       this.setPlaybackState('paused');
-      this.syncWithAndroidBridge();
       this.updatePositionState();
     });
     

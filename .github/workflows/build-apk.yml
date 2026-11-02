@@ -173,6 +173,9 @@ jobs:
               private NotificationManager notificationManager;
               private PowerManager.WakeLock wakeLock;
               private boolean isForeground = false;
+              private String lastTitle = "GT Track";
+              private String lastArtist = "GT SoundMaster";
+              private double lastDurSec = 0.0;
 
               private final BroadcastReceiver mediaReceiver = new BroadcastReceiver() {
                   @Override
@@ -180,6 +183,7 @@ jobs:
                       String action = intent.getAction();
                       if (action != null) {
                           final String cmd;
+                          if (android.media.AudioManager.ACTION_AUDIO_BECOMING_NOISY.equals(action)) pauseNativeState();
                           if (action.endsWith(".PREV")) cmd = "window.mediaControlAction('prev');";
                           else if (action.endsWith(".PLAYPAUSE")) cmd = "window.mediaControlAction('playpause');";
                           else if (action.endsWith(".NEXT")) cmd = "window.mediaControlAction('next');";
@@ -230,6 +234,9 @@ jobs:
 
               private void handlePlaybackUpdate(String title, String artist, boolean isPlaying, double posSec, double durSec) {
                   if (notificationManager == null || mediaSession == null) return;
+                  lastTitle = title;
+                  lastArtist = artist;
+                  lastDurSec = durSec;
 
                   long posMs = (long) (Math.max(0, posSec) * 1000);
                   long durMs = (long) (Math.max(0, durSec) * 1000);
@@ -420,6 +427,19 @@ jobs:
                   });
                   mediaSession.setFlags(MediaSession.FLAG_HANDLES_MEDIA_BUTTONS | MediaSession.FLAG_HANDLES_TRANSPORT_CONTROLS);
                   mediaSession.setActive(true);
+              }
+
+              private void pauseNativeState() {
+                  if (mediaSession == null) return;
+                  long posMs = 0;
+                  PlaybackState cur = mediaSession.getController().getPlaybackState();
+                  if (cur != null) {
+                      posMs = cur.getPosition();
+                      if (cur.getState() == PlaybackState.STATE_PLAYING) {
+                          posMs += (long) ((SystemClock.elapsedRealtime() - cur.getLastPositionUpdateTime()) * cur.getPlaybackSpeed());
+                      }
+                  }
+                  handlePlaybackUpdate(lastTitle, lastArtist, false, posMs / 1000.0, lastDurSec);
               }
 
               private void registerMediaReceiver() {
