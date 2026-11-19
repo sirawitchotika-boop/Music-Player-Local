@@ -2,6 +2,7 @@
 import { modalUI } from './modalUI.js';
 import { mediaSessionManager } from '../core/mediaSessionManager.js';
 import { storage } from '../core/storage.js';
+import { sessionMemory } from '../core/sessionMemory.js';
 
 export class PlayerUI {
   constructor(stateManager, audioEngine) {
@@ -233,11 +234,19 @@ export class PlayerUI {
       
       await this.audio.load(blob);
       await this.audio.play();
-      
+      this.state.selectedTrackId = track.id;
+      this.state.loadedTrackId = track.id;
+      this.state.restoringSession = false;
+      sessionMemory.saveSelection(track.id, this.state.playlistId, this.state.queue,
+        this.audioEl.currentTime);
+
       this.updateTitle(track.name.replace(/\.[^/.]+$/, ""));
       this.refreshLikeButtonState();
       mediaSessionManager.updateMetadata(track);
     } catch (error) {
+      this.state.selectedTrackId = this.state.loadedTrackId;
+      this.state.currentTrackIndex = this.state.queue.findIndex(
+        item => item.id === this.state.loadedTrackId);
       this.showToast('[ERROR] Failed to load track', 'error');
     } finally {
       this.isChangingTrack = false;

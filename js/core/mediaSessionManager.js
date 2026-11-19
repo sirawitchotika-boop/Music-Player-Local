@@ -243,14 +243,14 @@ export class MediaSessionManager {
     }
   }
   
-  updateMetadata(track) {
+  updateMetadata(track, { syncAndroid = true } = {}) {
     if (!track) return;
     this.currentTrack = track;
     
     const cleanTitle = track.name ? track.name.replace(/\.[^/.]+$/, '') : 'GT Track';
     
-    // ส่งสัญญาณไปฝั่ง Android Native รอบเดียวตอนเปลี่ยนเพลงอย่างมั่นคง
-    this.syncWithAndroidBridge(true);
+    // Silent session restoration sets metadata but doesn't start Android playback.
+    if (syncAndroid) this.syncWithAndroidBridge(true);
     
     if (this.isSupported) {
       const pngArtworkUrl = new URL('icon.png', window.location.href).href;
