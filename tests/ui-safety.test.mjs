@@ -142,3 +142,34 @@ test('track selection uses stable ID; missing audio and playback errors fail saf
     mediaSessionManager.updateMetadata = originalMetadata;
   }
 });
+
+test('custom playlist removal and clear never delete underlying audio', async () => {
+  const originalDelete = storage.deleteTrack;
+  const originalConfirm = modalUI.showConfirm;
+  const originalToast = modalUI.showToast;
+  let deletions = 0;
+  storage.deleteTrack = async () => { deletions++; };
+  modalUI.showConfirm = async () => true;
+  modalUI.showToast = () => {};
+  try {
+    const ui = Object.create(PlaylistUI.prototype);
+    ui.currentPlaylistId = 'mix';
+    ui.playlists = [{ id: 'mix', name: 'My Mix', tracks: [42] }];
+    ui.state = { queue: [{ id: 42 }] };
+    ui.savePlaylists = () => {};
+    ui.loadPlaylist = async () => {};
+
+    await ui.deleteTrack(42);
+    assert.deepEqual(ui.playlists[0].tracks, []);
+    assert.equal(deletions, 0);
+
+    ui.playlists[0].tracks = [42];
+    await ui.handleClearPlaylist();
+    assert.deepEqual(ui.playlists[0].tracks, []);
+    assert.equal(deletions, 0);
+  } finally {
+    storage.deleteTrack = originalDelete;
+    modalUI.showConfirm = originalConfirm;
+    modalUI.showToast = originalToast;
+  }
+});
