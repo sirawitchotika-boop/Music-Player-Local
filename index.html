@@ -6,7 +6,7 @@
     <title>GT SoundMaster</title>
     <link rel="icon" type="image/svg+xml" href="icon.svg">
     <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#121218">
+    <meta name="theme-color" content="#12090d">
     <meta name="color-scheme" content="dark">
     <link rel="stylesheet" href="css/main.css">
     <link rel="stylesheet" href="css/player.css">
@@ -19,59 +19,64 @@
     <div id="gt-modal-root"></div>
 
     <!-- Help Modal -->
-    <div id="help-modal" class="help-modal hidden">
+    <div id="help-modal" class="help-modal hidden" role="dialog" aria-modal="true" aria-labelledby="help-title">
         <div class="help-container">
             <div class="help-header">
-                <h2>SYSTEM MANUAL</h2>
-                <button id="close-help-btn" class="close-btn">
+                <div>
+                    <p class="help-eyebrow">GT SOUNDMASTER</p>
+                    <h2 id="help-title">HOW TO USE</h2>
+                </div>
+                <button id="close-help-btn" class="close-btn" type="button" aria-label="Close help">
                     <svg viewBox="0 0 24 24" width="24" height="24" fill="#fff"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
                 </button>
             </div>
             <div class="help-content-scroll">
-                <div class="help-card">
-                    <div class="help-card-title">
-                        <span>MODULE 01: STORAGE & LIBRARY</span>
-                        <span class="help-badge">FILE SYSTEM</span>
-                    </div>
+                <section class="help-card">
+                    <div class="help-card-title"><span>YOUR MUSIC</span><span class="help-badge">LIBRARY</span></div>
                     <ul class="help-list">
-                        <li class="help-item"><strong>ADD MUSIC:</strong> นำเข้าและบันทึกเพลงลง IndexedDB ในเครื่อง 100%</li>
-                        <li class="help-item"><strong>PLAYLIST:</strong> จัดหมวดหมู่และจัดการเพลงส่วนตัว</li>
-                        <li class="help-item"><strong>FAVORITES:</strong> กดไอคอนหัวใจเพื่อบันทึกเพลงโปรด</li>
+                        <li class="help-item"><strong>Add music:</strong> Open Playlist, tap Add Music, and choose your audio files. Imported songs are saved in this app on this device.</li>
+                        <li class="help-item"><strong>Make a playlist:</strong> Tap Add Playlist, enter a name, then choose it from the playlist list.</li>
+                        <li class="help-item"><strong>Favorites:</strong> Tap the heart on the record to add or remove the selected song.</li>
+                        <li class="help-item"><strong>Remove songs carefully:</strong> Deleting a song from All Tracks removes its stored audio. Removing a song from a custom playlist or Favorites only removes it from that list.</li>
                     </ul>
-                </div>
-                <div class="help-card">
-                    <div class="help-card-title">
-                        <span>MODULE 02: PLAYBACK CONTROL</span>
-                        <span class="help-badge gold">CORE AUDIO</span>
-                    </div>
+                </section>
+                <section class="help-card">
+                    <div class="help-card-title"><span>PLAYBACK</span><span class="help-badge">CONTROLS</span></div>
                     <ul class="help-list">
-                        <li class="help-item"><strong>NAVIGATION:</strong> แตะเพื่อเปลี่ยนเพลง หรือกดค้าง Next/Prev เพื่อกรอเพลง (Seek)</li>
-                        <li class="help-item"><strong>PLAY MODES:</strong> เล่นวนปกติ, วนเพลงเดียว, หรือสุ่มเพลง (Shuffle)</li>
-                        <li class="help-item"><strong>SMOOTH TRANSITION:</strong> ระบบ Micro-Gain Ramp ป้องกันเสียงกึกตอน Play/Pause และสลับเพลง</li>
+                        <li class="help-item"><strong>Play and skip:</strong> Tap Play or Pause to control music. Tap Previous or Next to change songs.</li>
+                        <li class="help-item"><strong>Rewind and fast-forward:</strong> Press and hold Previous or Next.</li>
+                        <li class="help-item"><strong>Song position:</strong> Drag the progress bar to move to another part of the song.</li>
+                        <li class="help-item"><strong>Play mode:</strong> Tap the play-mode button to switch between Normal, Repeat One, and Shuffle.</li>
+                        <li class="help-item"><strong>Lock screen:</strong> You can also use the Android lock-screen and notification controls.</li>
                     </ul>
-                </div>
-                <div class="help-card">
-                    <div class="help-card-title">
-                        <span>MODULE 03: AUTOMATION</span>
-                        <span class="help-badge red">DAEMON</span>
-                    </div>
+                </section>
+                <section class="help-card">
+                    <div class="help-card-title"><span>BLUETOOTH AND RESTART</span><span class="help-badge">PLAYBACK</span></div>
                     <ul class="help-list">
-                        <li class="help-item"><strong>SLEEP TIMER:</strong> ตั้งเวลาปิดเพลงอัตโนมัติ พร้อมระบบตัดเสียงนุ่มนวล</li>
+                        <li class="help-item"><strong>Bluetooth:</strong> If your headphones disconnect, playback pauses. Reconnecting does not restart music. Press Play when you are ready.</li>
+                        <li class="help-item"><strong>Open the app again:</strong> Your last selected song and saved position are restored. Playback stays paused until you press Play.</li>
                     </ul>
-                </div>
+                </section>
+                <section class="help-card">
+                    <div class="help-card-title"><span>SLEEP TIMER</span><span class="help-badge">TIMER</span></div>
+                    <ul class="help-list">
+                        <li class="help-item"><strong>Set a timer:</strong> Tap the clock at the top, choose a saved time, or tap the number to enter minutes. Then tap Start.</li>
+                        <li class="help-item"><strong>Manage the timer:</strong> Tap Stop to cancel or Reset to clear the selected time. You can add and edit saved timer presets.</li>
+                        <li class="help-item"><strong>When time is up:</strong> The player pauses when the countdown finishes. For the most reliable countdown, keep the app open.</li>
+                    </ul>
+                </section>
+                <div class="help-safety-note"><strong>Keep your music safe.</strong> Your imported songs are stored inside this app on this device. Keep backup copies of your original audio files. Clearing app storage or uninstalling the app can remove your imported music.</div>
             </div>
-            <div class="help-footer-note">
-                GT SOUNDMASTER - Minimalist High Fidelity Player
-            </div>
+            <div class="help-footer-note">GT SOUNDMASTER · LOCAL MUSIC PLAYER</div>
         </div>
     </div>
 
     <!-- Sleep Timer Modal -->
-    <div id="timer-modal" class="timer-modal hidden">
+    <div id="timer-modal" class="timer-modal hidden" role="dialog" aria-modal="true" aria-labelledby="timer-title">
         <div class="timer-container">
             <div class="timer-header">
-                <h2>SLEEP TIMER</h2>
-                <button id="close-timer-btn" class="close-btn">
+                <h2 id="timer-title">SLEEP TIMER</h2>
+                <button id="close-timer-btn" class="close-btn" type="button" aria-label="Close sleep timer">
                     <svg viewBox="0 0 24 24" width="24" height="24" fill="#fff"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
                 </button>
             </div>
@@ -84,14 +89,15 @@
                     <div id="timer-dial-indicator" class="timer-dial-indicator"></div>
                 </div>
             </div>
+            <p class="timer-help-text">Tap the number to enter a time in minutes.</p>
             <div class="timer-status-row">
-                <button id="toggle-edit-mode-btn" class="preset-stationed-btn" title="EDIT PRESETS">
+                <button id="toggle-edit-mode-btn" class="preset-stationed-btn" type="button" title="Edit timer presets" aria-label="Edit timer presets">
                     <svg viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
                 </button>
-                <button id="reset-timer-btn" class="preset-stationed-btn" title="RESET">
+                <button id="reset-timer-btn" class="preset-stationed-btn" type="button" title="Reset timer" aria-label="Reset timer">
                     <svg viewBox="0 0 24 24"><path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/></svg>
                 </button>
-                <button id="add-timer-preset-btn" class="preset-stationed-btn" title="ADD PRESET">
+                <button id="add-timer-preset-btn" class="preset-stationed-btn" type="button" title="Add timer preset" aria-label="Add timer preset">
                     <svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
                 </button>
             </div>
@@ -99,8 +105,8 @@
                 <div id="timer-presets-list" class="timer-presets-list"></div>
             </div>
             <div class="timer-actions">
-                <button id="timer-start-btn" class="timer-btn primary">START</button>
-                <button id="timer-stop-btn" class="timer-btn danger">STOP</button>
+                <button id="timer-start-btn" class="timer-btn primary" type="button">START</button>
+                <button id="timer-stop-btn" class="timer-btn danger" type="button">STOP</button>
             </div>
         </div>
     </div>
@@ -110,13 +116,13 @@
         <header class="top-bar">
             <div style="width: 28px;"></div>
             <div class="top-center">
-                <span class="app-title">GT SOUNDMASTER</span>
+                <span class="app-title"><span class="brand-mark">GT</span> SOUNDMASTER</span>
             </div>
             <div class="top-right-actions">
-                <button id="help-btn" class="icon-btn" title="System Manual">
+                <button id="help-btn" class="icon-btn" type="button" title="Help and instructions" aria-label="Open help and instructions">
                     <svg viewBox="0 0 24 24"><path d="M11 18h2v-2h-2v2zm1-16C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm0-14c-2.21 0-4 1.79-4 4h2c0-1.1.9-2 2-2s2 .9 2 2c0 2-3 1.75-3 5h2c0-2.25 3-2.5 3-5 0-2.21-1.79-4-4-4z"/></svg>
                 </button>
-                <button id="sleep-timer-btn" class="icon-btn" title="Sleep Timer">
+                <button id="sleep-timer-btn" class="icon-btn" type="button" title="Sleep timer" aria-label="Open sleep timer">
                     <svg viewBox="0 0 24 24"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg>
                 </button>
             </div>
@@ -126,41 +132,41 @@
         <section id="visualizer-section" class="visualizer-section">
             <div class="album-art-container">
                 <div class="album-art-disc">
-                    <svg viewBox="0 0 24 24" class="music-icon-placeholder"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>
+                    <svg viewBox="0 0 24 24" class="music-icon-placeholder" aria-hidden="true"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>
                 </div>
+                <button id="favorite-btn" class="favorite-btn" type="button" title="Add or remove favorite" aria-label="Toggle favorite for the selected song">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+                </button>
             </div>
-            <button id="favorite-btn" class="favorite-btn">
-                <svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
-            </button>
         </section>
 
         <!-- Player Section -->
         <section id="player-section" class="player-section">
             <div class="track-info">
-                <h2 id="now-playing-title" class="track-title">SYSTEM STANDBY</h2>
-                <p id="now-playing-artist" class="track-artist">NO AUDIO LOADED</p>
+                <h2 id="now-playing-title" class="track-title">NOTHING PLAYING</h2>
+                <p id="now-playing-artist" class="track-artist">CHOOSE A SONG TO START</p>
             </div>
 
             <div class="progress-container">
                 <span id="time-current" class="time-text">0:00</span>
-                <input type="range" id="seek-bar" class="seek-bar" value="0" step="0.1">
+                <input type="range" id="seek-bar" class="seek-bar" value="0" min="0" max="100" step="0.1" aria-label="Song progress">
                 <span id="time-total" class="time-text">0:00</span>
             </div>
 
             <div class="controls-row">
-                <button id="play-mode-btn" class="control-btn small-btn">
+                <button id="play-mode-btn" class="control-btn small-btn" type="button" title="Change play mode" aria-label="Change play mode">
                     <svg viewBox="0 0 24 24"><path d="M10.59 9.17L5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41l-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z"/></svg>
                 </button>
-                <button id="prev-btn" class="control-btn">
+                <button id="prev-btn" class="control-btn" type="button" title="Previous song. Press and hold to rewind" aria-label="Previous song. Press and hold to rewind">
                     <svg viewBox="0 0 24 24"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg>
                 </button>
-                <button id="play-btn" class="control-btn play-pause-btn">
+                <button id="play-btn" class="control-btn play-pause-btn" type="button" title="Play or pause" aria-label="Play or pause">
                     <svg id="icon-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
                 </button>
-                <button id="next-btn" class="control-btn">
+                <button id="next-btn" class="control-btn" type="button" title="Next song. Press and hold to fast-forward" aria-label="Next song. Press and hold to fast-forward">
                     <svg viewBox="0 0 24 24"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg>
                 </button>
-                <button id="playlist-toggle-btn" class="control-btn small-btn">
+                <button id="playlist-toggle-btn" class="control-btn small-btn" type="button" title="Open playlist" aria-label="Open playlist">
                     <svg viewBox="0 0 24 24"><path d="M15 6H3v2h12V6zm0 4H3v2h12v-2zM3 16h8v-2H3v2zM17 6v8.18c-.31-.11-.65-.18-1-.18-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3V8h3V6h-5z"/></svg>
                 </button>
             </div>
@@ -169,8 +175,8 @@
         <!-- Playlist Section -->
         <section id="playlist-section" class="playlist-section hidden">
             <div class="playlist-header">
-                <h2>PLAYLIST</h2>
-                <button id="close-playlist-btn" class="close-btn">
+                <h2>YOUR MUSIC</h2>
+                <button id="close-playlist-btn" class="close-btn" type="button" aria-label="Close music library">
                     <svg viewBox="0 0 24 24" width="28" height="28" fill="#fff"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
                 </button>
             </div>
@@ -189,10 +195,10 @@
                 <div class="control-col">
                     <div class="search-box">
                         <svg viewBox="0 0 24 24" class="search-icon"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
-                        <input type="text" id="search-input" class="search-input" placeholder="Filter library...">
+                        <input type="text" id="search-input" class="search-input" placeholder="Search songs..." aria-label="Search songs">
                     </div>
                     <div class="dropdown-wrapper">
-                        <button id="playlist-dropdown-toggle" class="dropdown-btn">
+                        <button id="playlist-dropdown-toggle" class="dropdown-btn" type="button" aria-label="Choose a playlist">
                             <span id="current-playlist-name" style="pointer-events: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 85%;">All Tracks</span>
                             <svg viewBox="0 0 24 24" width="20" height="20" fill="#7a7a8c" style="pointer-events: none;"><path d="M7 10l5 5 5-5z"/></svg>
                         </button>
@@ -200,7 +206,7 @@
                     </div>
                 </div>
                 <div class="action-col">
-                    <button id="clear-playlist-btn" class="danger-btn" style="height: 100%;">
+                    <button id="clear-playlist-btn" class="danger-btn" type="button" title="Clear the current list" aria-label="Clear the current list" style="height: 100%;">
                         <svg viewBox="0 0 24 24" width="22" height="22" fill="#ff2a2a"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
                     </button>
                 </div>

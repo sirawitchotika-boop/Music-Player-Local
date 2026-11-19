@@ -280,7 +280,7 @@
 }
 .gt-modal-box {
     background: rgba(20, 20, 25, 0.95);
-    border: 1px solid rgba(0, 229, 255, 0.3);
+    border: 1px solid rgba(240, 68, 80, 0.28);
     border-radius: 16px;
     padding: 24px;
     width: 85%;
@@ -309,7 +309,7 @@
     width: 100%;
     background: #1a1a24;
     border: 1px solid #444;
-    color: #00e5ff;
+    color: #ff5964;
     padding: 12px;
     border-radius: 8px;
     margin-bottom: 20px;
@@ -320,8 +320,8 @@
     transition: 0.3s;
 }
 .gt-modal-input:focus {
-    border-color: #00e5ff;
-    box-shadow: 0 0 8px rgba(0,229,255,0.3);
+    border-color: #ff5964;
+    box-shadow: 0 0 8px rgba(240,68,80,0.28);
 }
 
 /* ลบลูกศรปรับเลขขึ้นลง เพื่อความคลีนของ UI */
@@ -359,11 +359,11 @@
     background: #353545;
 }
 .gt-btn-confirm {
-    background: #00e5ff;
+    background: #ff5964;
     color: #000;
 }
 .gt-btn-confirm:active {
-    background: #00b3cc;
+    background: #c92736;
 }
 .gt-btn-danger {
     background: #ff2a2a;
@@ -371,4 +371,20 @@
 }
 .gt-btn-danger:active {
     background: #cc0000;
+}
+
+
+/* Clear keyboard focus without changing the touch layout. */
+button:focus-visible,
+input:focus-visible,
+label:focus-visible {
+    outline: 2px solid #ff6872;
+    outline-offset: 3px;
+}
+.gt-btn-confirm {
+    background: linear-gradient(145deg, #ef4652, #c92736);
+    color: #fff;
+}
+.gt-btn-confirm:active {
+    background: #a91e2a;
 }

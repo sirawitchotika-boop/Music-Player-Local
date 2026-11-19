@@ -143,9 +143,9 @@ export class ModalUI {
       const isInfo = type === 'info';
       const isWarning = type === 'warning';
       
-      const bgColor = isError ? 'rgba(255, 42, 42, 0.2)' : isInfo ? 'rgba(0, 229, 255, 0.18)' : isWarning ? 'rgba(255, 200, 0, 0.2)' : 'rgba(26, 26, 36, 0.9)';
-      const borderColor = isError ? 'rgba(255, 42, 42, 0.5)' : isInfo ? 'rgba(0, 229, 255, 0.4)' : isWarning ? 'rgba(255, 200, 0, 0.5)' : 'rgba(0, 229, 255, 0.3)';
-      const textColor = isError ? '#ff7878' : isInfo ? '#6bedff' : isWarning ? '#ffe57f' : '#00e5ff';
+      const bgColor = isError ? 'rgba(255, 42, 42, 0.2)' : isInfo ? 'rgba(201, 39, 54, 0.14)' : isWarning ? 'rgba(255, 200, 0, 0.2)' : 'rgba(26, 26, 36, 0.9)';
+      const borderColor = isError ? 'rgba(255, 42, 42, 0.5)' : isInfo ? 'rgba(240, 68, 80, 0.32)' : isWarning ? 'rgba(255, 200, 0, 0.5)' : 'rgba(0, 229, 255, 0.3)';
+      const textColor = isError ? '#ff7878' : isInfo ? '#f08b93' : isWarning ? '#ffe0a3' : '#f0b3b8';
       const shadowColor = isError ? 'rgba(255, 42, 42, 0.3)' : 'rgba(0, 0, 0, 0.6)';
       
       // Toast ขนาดกะทัดรัด ไม่ชนขอบจอมือถือ
