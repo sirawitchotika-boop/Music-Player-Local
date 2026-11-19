@@ -2,6 +2,9 @@ name: Build Android APK
 
 on:
   workflow_dispatch:
+  pull_request:
+    paths:
+      - '.github/workflows/build-apk.yml'
 
 jobs:
   build:
@@ -27,13 +30,13 @@ jobs:
           npm init -y
           npm install @capacitor/core@latest @capacitor/cli@latest @capacitor/android@latest @capacitor/assets@latest sharp@latest
 
-          cat << 'EOF' > generate-icon.js
+          cat << 'EOF' > generate-icon.cjs
           const sharp = require('sharp');
           sharp('icon.svg').resize(512, 512).png().toFile('icon.png')
             .then(() => console.log('Generated icon.png successfully.'))
             .catch(err => { console.error(err); process.exit(1); });
           EOF
-          node generate-icon.js
+          node generate-icon.cjs
 
           mkdir -p www
           cp -r index.html css js manifest.json icon.svg icon.png www/
@@ -169,6 +172,12 @@ jobs:
               public static final String EXTRA_POS_SEC = "pos_sec";
               public static final String EXTRA_DUR_SEC = "dur_sec";
 
+              // A route-loss pause must survive a temporarily unavailable WebView.
+              public static final String ROUTE_PAUSE_PREFS = "gt_soundmaster_media";
+              public static final String ROUTE_PAUSE_SEQ = "route_pause_seq";
+              public static final String ROUTE_PAUSE_ACK_SEQ = "route_pause_ack_seq";
+              public static final String ROUTE_PAUSE_CONFIRM_SEQ = "route_pause_confirm_seq";
+
               private MediaSession mediaSession;
               private NotificationManager notificationManager;
               private PowerManager.WakeLock wakeLock;
@@ -182,12 +191,19 @@ jobs:
                   public void onReceive(Context context, Intent intent) {
                       String action = intent.getAction();
                       if (action != null) {
+                          if (android.media.AudioManager.ACTION_AUDIO_BECOMING_NOISY.equals(action)) {
+                              markPendingRoutePause();
+                              pauseNativeState();
+                              MainActivity.sendJsCommandToWebview(
+                                  "if (typeof window.gtHandleNativeRoutePause === 'function') { " +
+                                  "window.gtHandleNativeRoutePause(); } else { " +
+                                  "window.__gtPendingNativeRoutePause = true; }");
+                              return;
+                          }
                           final String cmd;
-                          if (android.media.AudioManager.ACTION_AUDIO_BECOMING_NOISY.equals(action)) pauseNativeState();
                           if (action.endsWith(".PREV")) cmd = "window.mediaControlAction('prev');";
                           else if (action.endsWith(".PLAYPAUSE")) cmd = "window.mediaControlAction('playpause');";
                           else if (action.endsWith(".NEXT")) cmd = "window.mediaControlAction('next');";
-                          else if (android.media.AudioManager.ACTION_AUDIO_BECOMING_NOISY.equals(action)) cmd = "window.mediaControlAction('pause');";
                           else cmd = null;
 
                           if (cmd != null) {
@@ -222,6 +238,19 @@ jobs:
                           String artist = intent.getStringExtra(EXTRA_ARTIST);
                           if (artist == null) artist = "GT SoundMaster";
                           boolean isPlaying = intent.getBooleanExtra(EXTRA_IS_PLAYING, false);
+                          if (hasPendingRoutePause()) {
+                              android.content.SharedPreferences prefs =
+                                  getSharedPreferences(ROUTE_PAUSE_PREFS, MODE_PRIVATE);
+                              int pending = prefs.getInt(ROUTE_PAUSE_SEQ, 0);
+                              int confirmed = prefs.getInt(ROUTE_PAUSE_CONFIRM_SEQ, 0);
+                              if (!isPlaying && confirmed >= pending) {
+                                  // Only a confirmed paused WebView snapshot clears the latch.
+                                  prefs.edit().putInt(ROUTE_PAUSE_ACK_SEQ, pending).commit();
+                              } else if (isPlaying) {
+                                  // Ignore any in-flight pre-disconnect Play snapshot.
+                                  isPlaying = false;
+                              }
+                          }
                           double posSec = intent.getDoubleExtra(EXTRA_POS_SEC, 0.0);
                           double durSec = intent.getDoubleExtra(EXTRA_DUR_SEC, 0.0);
                           handlePlaybackUpdate(title, artist, isPlaying, posSec, durSec);
@@ -429,6 +458,18 @@ jobs:
                   mediaSession.setActive(true);
               }
 
+              private boolean hasPendingRoutePause() {
+                  android.content.SharedPreferences prefs = getSharedPreferences(ROUTE_PAUSE_PREFS, MODE_PRIVATE);
+                  return prefs.getInt(ROUTE_PAUSE_SEQ, 0) > prefs.getInt(ROUTE_PAUSE_ACK_SEQ, 0);
+              }
+
+              private void markPendingRoutePause() {
+                  android.content.SharedPreferences prefs = getSharedPreferences(ROUTE_PAUSE_PREFS, MODE_PRIVATE);
+                  int next = prefs.getInt(ROUTE_PAUSE_SEQ, 0) + 1;
+                  // Commit before reporting the pause to the WebView.
+                  prefs.edit().putInt(ROUTE_PAUSE_SEQ, next).commit();
+              }
+
               private void pauseNativeState() {
                   if (mediaSession == null) return;
                   long posMs = 0;
@@ -537,6 +578,26 @@ jobs:
                   if (instanceRef != null && instanceRef.get() == this) {
                       instanceRef = null;
                   }
+              }
+
+              @Override
+              public void onResume() {
+                  super.onResume();
+                  if (getPendingRoutePauseSequence() > 0) {
+                      // Recheck when WebView returns after route loss.
+                      sendJsCommand(
+                          "if (typeof window.gtHandleNativeRoutePause === 'function') { " +
+                          "window.gtHandleNativeRoutePause(); } else { " +
+                          "window.__gtPendingNativeRoutePause = true; }");
+                  }
+              }
+
+              private int getPendingRoutePauseSequence() {
+                  android.content.SharedPreferences prefs = getSharedPreferences(
+                      MediaPlaybackService.ROUTE_PAUSE_PREFS, MODE_PRIVATE);
+                  int sequence = prefs.getInt(MediaPlaybackService.ROUTE_PAUSE_SEQ, 0);
+                  int acknowledged = prefs.getInt(MediaPlaybackService.ROUTE_PAUSE_ACK_SEQ, 0);
+                  return sequence > acknowledged ? sequence : 0;
               }
 
               public static void sendJsCommandToWebview(String cmd) {
@@ -681,6 +742,23 @@ jobs:
                   }
 
                   @JavascriptInterface
+                  public int getPendingRoutePauseSequence() {
+                      return MainActivity.this.getPendingRoutePauseSequence();
+                  }
+
+                  @JavascriptInterface
+                  public void acknowledgeRoutePause(int sequence) {
+                      android.content.SharedPreferences prefs = getSharedPreferences(
+                          MediaPlaybackService.ROUTE_PAUSE_PREFS, MODE_PRIVATE);
+                      int last = prefs.getInt(MediaPlaybackService.ROUTE_PAUSE_SEQ, 0);
+                      int acknowledged = prefs.getInt(MediaPlaybackService.ROUTE_PAUSE_ACK_SEQ, 0);
+                      if (sequence > acknowledged && sequence <= last) {
+                          // The service clears the latch only after it receives a paused snapshot.
+                          prefs.edit().putInt(MediaPlaybackService.ROUTE_PAUSE_CONFIRM_SEQ, sequence).commit();
+                      }
+                  }
+
+                  @JavascriptInterface
                   public String getPendingTrack() {
                       String data = pendingTrackJson;
                       pendingTrackJson = null;
@@ -698,6 +776,7 @@ jobs:
           ./gradlew assembleDebug
 
       - name: Upload APK Artifact
+        if: github.event_name == 'workflow_dispatch'
         uses: actions/upload-artifact@v4
         with:
           name: GT-SoundMaster-APK

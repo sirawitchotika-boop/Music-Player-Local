@@ -55,10 +55,46 @@ export class MediaSessionManager {
       }
     };
     
+    // The native service may have received a route-loss event before JS was ready.
+    window.gtHandleNativeRoutePause = () => this._handleNativeRoutePause();
+    this._handleNativeRoutePause();
+
     if (!this.isSupported) return;
     this._setupActionHandlers();
   }
   
+  async _handleNativeRoutePause() {
+    const bridge = window.AndroidBridge;
+    let sequence = 0;
+    try {
+      if (bridge && typeof bridge.getPendingRoutePauseSequence === 'function') {
+        sequence = bridge.getPendingRoutePauseSequence();
+        if (!Number.isInteger(sequence) || sequence <= 0) {
+          window.__gtPendingNativeRoutePause = false;
+          return;
+        }
+      } else if (window.__gtPendingNativeRoutePause !== true) {
+        return;
+      }
+    } catch (error) {
+      console.warn('[MediaSession] Unable to read pending route pause:', error);
+      return;
+    }
+
+    window.__gtPendingNativeRoutePause = false;
+    try {
+      // Immediately invalidate any in-flight Play and pause the real audio element.
+      await this.audio.pause(true);
+      if (this.audioEl.paused && sequence > 0) {
+        bridge?.acknowledgeRoutePause?.(sequence);
+      }
+    } catch (error) {
+      // No acknowledgement: Android must continue to reject stale "playing" snapshots.
+      console.warn('[MediaSession] Unable to apply native route pause:', error);
+    }
+    this._queueSync(0);
+  }
+
   _bindAudioEvents() {
     for (const event of ['play', 'pause', 'seeked', 'durationchange']) {
       this.audioEl.addEventListener(event, () => this.updatePositionState());
