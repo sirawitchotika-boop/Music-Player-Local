@@ -1,5 +1,20 @@
 # Changelog
 
+## [1.2.2] - 2026-11-20
+
+### Added
+- Added a collapsed-by-default **What's New** section inside Help. It does not open automatically or interrupt playback.
+
+### Changed
+- Refreshed the player interface with the M5 vinyl artwork, restrained red accents, improved mobile spacing, and accessible control labels.
+- Updated the Help guide and replaced technical playlist and timer messages with clearer English.
+- Centralized the Android version name and version code in app-version.json and aligned the build and isolated-test scripts with it.
+- Updated web app metadata and theme colors to match the current local music player.
+
+### Fixed
+- Removed outdated README and manifest claims about a 10-band EQ and pre-amp that are not part of the current player interface.
+
+
 All notable changes to the **GT SoundMaster** project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 

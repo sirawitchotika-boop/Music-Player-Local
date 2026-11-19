@@ -1,12 +1,12 @@
 {
-  "name": "GT SoundMaster - Audiophile Player",
+  "name": "GT SoundMaster",
   "short_name": "SoundMaster",
-  "description": "Premium Local Music Player with 10-Band Audiophile EQ, Pre-Amp and Sleep Timer",
+  "description": "Local music player with playlists, Favorites, playback controls, and a sleep timer.",
   "start_url": "./index.html",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#121218",
-  "theme_color": "#121218",
+  "background_color": "#0b090c",
+  "theme_color": "#12090d",
   "icons": [
     {
       "src": "icon.png",

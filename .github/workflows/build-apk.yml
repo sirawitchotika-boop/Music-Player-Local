@@ -96,10 +96,13 @@ jobs:
           cp icon.png assets/logo.png
           cp icon.png assets/icon-only.png
           cp icon.png assets/icon-foreground.png
-          npx @capacitor/assets generate --android --iconBackgroundColor '#121218'
+          npx @capacitor/assets generate --android --iconBackgroundColor '#0b090c'
 
           cat << 'EOF' > patch-manifest.py
+          import json
           import os
+          import re
+          from pathlib import Path
 
           # 1. แทรก Service และ Permissions ใน AndroidManifest.xml
           manifest_path = 'android/app/src/main/AndroidManifest.xml'
@@ -169,17 +172,36 @@ jobs:
                       f.write(styles_content)
                   print('Successfully injected Dark Status Bar into styles.xml')
 
-          # 3. แก้ไข build.gradle เพื่ออัปเดต versionCode เป็น 4 และ versionName เป็น 1.2.1
+          # 3. Apply the repository's single source of truth for the Android app version.
+          version_config = json.loads(Path('app-version.json').read_text(encoding='utf-8'))
+          version_name = version_config.get('versionName')
+          version_code = version_config.get('versionCode')
+          if not isinstance(version_name, str) or not re.fullmatch(r'\d+\.\d+\.\d+', version_name):
+              raise SystemExit('Invalid versionName in app-version.json')
+          if isinstance(version_code, bool) or not isinstance(version_code, int) or version_code < 1:
+              raise SystemExit('Invalid versionCode in app-version.json')
+
           gradle_path = 'android/app/build.gradle'
           with open(gradle_path, 'r', encoding='utf-8') as f:
               gradle_content = f.read()
 
-          gradle_content = gradle_content.replace('versionCode 1', 'versionCode 4')
-          gradle_content = gradle_content.replace('versionName "1.0"', 'versionName "1.2.1"')
+          gradle_content, code_count = re.subn(
+              r'(?m)^(\s*versionCode\s+)1(\s*)$',
+              lambda match: f'{match.group(1)}{version_code}{match.group(2)}',
+              gradle_content,
+          )
+          gradle_content, name_count = re.subn(
+              r'(?m)^(\s*versionName\s+")1\.0(")',
+              lambda match: f'{match.group(1)}{version_name}{match.group(2)}',
+              gradle_content,
+          )
+          if code_count != 1 or name_count != 1:
+              raise SystemExit('Expected exactly one default Android versionCode and versionName')
 
           with open(gradle_path, 'w', encoding='utf-8') as f:
               f.write(gradle_content)
-          print('Successfully updated app version to 1.2.1 (versionCode 4)')
+          print(f'Successfully updated app version to {version_name} (versionCode {version_code})')
+
           EOF
           python3 patch-manifest.py
 

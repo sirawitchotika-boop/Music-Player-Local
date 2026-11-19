@@ -32,9 +32,10 @@ def prepare(root, signing_test=False):
     strings = root / "android/app/src/main/res/values/strings.xml"
     activity = root / "android/app/src/main/java/com/gt/soundmaster/MainActivity.java"
     service = root / "android/app/src/main/java/com/gt/soundmaster/MediaPlaybackService.java"
+    version_path = root / "app-version.json"
 
     # Check every input before writing, avoiding a partially converted app.
-    for path in [gradle, manifest, strings, activity, service]:
+    for path in [gradle, manifest, strings, activity, service, version_path]:
         if not path.is_file():
             raise ValueError(f"Missing generated Android file: {path}")
     if "package com.gt.soundmaster;" not in activity.read_text(encoding="utf-8"):
@@ -42,13 +43,27 @@ def prepare(root, signing_test=False):
     if "package com.gt.soundmaster;" not in service.read_text(encoding="utf-8"):
         raise ValueError("Unexpected playback service namespace")
 
+    version_config = json.loads(version_path.read_text(encoding="utf-8"))
+    version_name = version_config.get("versionName")
+    version_code = version_config.get("versionCode")
+    if not isinstance(version_name, str) or not re.fullmatch(r"\d+\.\d+\.\d+", version_name):
+        raise ValueError("Invalid versionName in app-version.json")
+    if isinstance(version_code, bool) or not isinstance(version_code, int) or version_code < 1:
+        raise ValueError("Invalid versionCode in app-version.json")
+
     updated = {}
+    gradle_source = gradle.read_text(encoding="utf-8")
     updated_gradle = change_once(
-        gradle.read_text(encoding="utf-8"),
+        gradle_source,
         r'(?m)^(\s*applicationId\s+["\x27])com\.gt\.soundmaster(["\x27])',
         lambda match: match.group(1) + target_id + match.group(2),
         "original Android applicationId",
     )
+    expected_code = rf"(?m)^\s*versionCode\s+{version_code}\s*$"
+    expected_name = rf'(?m)^\s*versionName\s+["\x27]{re.escape(version_name)}["\x27]\s*$'
+    if not re.search(expected_code, gradle_source) or not re.search(expected_name, gradle_source):
+        raise ValueError("Generated Android app version does not match app-version.json")
+
     if signing_test:
         # Only the isolated signing-test app gets an increasing version code.
         import os
@@ -57,13 +72,15 @@ def prepare(root, signing_test=False):
             raise ValueError("Invalid signing-test build number")
         number = int(number_text)
         updated_gradle = change_once(
-            updated_gradle, r'(?m)^(\s*versionCode\s+)4(\s*)$',
+            updated_gradle,
+            rf"(?m)^(\s*versionCode\s+){version_code}(\s*)$",
             lambda match: match.group(1) + str(10000 + number) + match.group(2),
             "signing-test versionCode",
         )
         updated_gradle = change_once(
-            updated_gradle, r'(?m)^(\s*versionName\s+["\x27])1\.2\.1(["\x27])',
-            lambda match: match.group(1) + "1.2.1-st." + str(number) + match.group(2),
+            updated_gradle,
+            rf'(?m)^(\s*versionName\s+["\x27]){re.escape(version_name)}(["\x27])',
+            lambda match: match.group(1) + f"{version_name}-st.{number}" + match.group(2),
             "signing-test versionName",
         )
     updated[gradle] = updated_gradle
