@@ -37,7 +37,10 @@ test('left header column remains free for a future control', () => {
   assert.match(rule('.top-bar'), /grid-template-columns:\s*minmax\(0,\s*1fr\)\s+auto\s+minmax\(0,\s*1fr\)/);
 });
 
-test('brand title remains in the centered header column', () => {
-  assert.match(header, /class="top-center"[\s\S]*class="app-title"/);
-  assert.match(header, /GT<\/span>\s*SOUNDMASTER/);
+test('brand title remains centered and scales down on narrow phones', () => {
+  assert.match(header, /class="top-center"[\\s\\S]*class="app-title"/);
+  assert.match(header, /GT<\\/span>\\s*SOUNDMASTER/);
+  assert.match(rule('.app-title'), /white-space:\\s*nowrap/);
+  assert.match(css, /@media \\(max-width:\\s*360px\\)[\\s\\S]*font-size:\\s*11\\.5px/);
+  assert.match(css, /@media \\(max-width:\\s*340px\\)[\\s\\S]*font-size:\\s*10px/);
 });
