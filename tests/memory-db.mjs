@@ -70,6 +70,11 @@ export class MemoryDB {
         };
       }
     };
+    // IndexedDB also completes a readwrite transaction with no requests
+    // (for example, when every imported file was already present).
+    queueMicrotask(() => {
+      if (!tx.pending) tx.oncomplete?.();
+    });
     return tx;
   }
 }
