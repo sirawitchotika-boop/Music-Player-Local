@@ -377,8 +377,10 @@ export class PlaylistUI {
       modalUI.showToast(`[PLAYBACK] เล่น: ${track.name}`);
       window.dispatchEvent(new Event('gt-liked-updated'));
       mediaSessionManager.updateMetadata(track);
+      return true;
     } catch (error) {
       modalUI.showToast('[ERROR] เล่นเพลงไม่สำเร็จ', 'error');
+      return false;
     }
   }
 

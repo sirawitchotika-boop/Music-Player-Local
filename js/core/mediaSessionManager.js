@@ -11,6 +11,8 @@ export class MediaSessionManager {
     this.currentTrack = null;
     
     this._syncTimer = null;
+    this._lastBridgeSyncAt = 0;
+    this._buffering = false;
     this._bindNativeSync();
     
     if (this.isSupported) {
@@ -22,13 +24,27 @@ export class MediaSessionManager {
     this.onNextTrack = onNext;
     this.onPrevTrack = onPrev;
     
+    // Native play requests must never claim success before the audio element plays.
+    const requestPlay = () => {
+      try {
+        Promise.resolve(this.audio.play()).catch(error => {
+          console.warn('[MediaSession] Play command failed:', error);
+          this._queueSync(0);
+        });
+      } catch (error) {
+        console.warn('[MediaSession] Play command failed:', error);
+        this._queueSync(0);
+      }
+    };
     window.mediaControlAction = (action, value) => {
       if (action === 'playpause') {
-        this.audioEl.paused ? this.audio.play() : this.audio.pause();
+        if (this.audioEl.paused) requestPlay();
+        else this.audio.pause(true);
       } else if (action === 'play') {
-        this.audio.play();
+        requestPlay();
       } else if (action === 'pause') {
-        this.audio.pause();
+        // Route loss and lock-screen pause must stop audio immediately.
+        this.audio.pause(true);
       } else if (action === 'next') {
         if (typeof this.onNextTrack === 'function') this.onNextTrack();
       } else if (action === 'prev') {
@@ -44,23 +60,9 @@ export class MediaSessionManager {
   }
   
   _bindAudioEvents() {
-    this.audioEl.addEventListener('play', () => {
-      this.setPlaybackState('playing');
-      this.updatePositionState();
-    });
-    
-    this.audioEl.addEventListener('pause', () => {
-      this.setPlaybackState('paused');
-      this.updatePositionState();
-    });
-    
-    this.audioEl.addEventListener('seeked', () => {
-      this.updatePositionState();
-    });
-    
-    this.audioEl.addEventListener('durationchange', () => {
-      this.updatePositionState();
-    });
+    for (const event of ['play', 'pause', 'seeked', 'durationchange']) {
+      this.audioEl.addEventListener(event, () => this.updatePositionState());
+    }
   }
   
   _setupActionHandlers() {
@@ -75,13 +77,16 @@ export class MediaSessionManager {
     };
     
     registerHandler('play', async () => {
-      await this.audio.play();
-      this.setPlaybackState('playing');
+      try {
+        await this.audio.play();
+      } catch (error) {
+        console.warn('[MediaSession] Play action failed:', error);
+        this._queueSync(0);
+      }
     });
     
     registerHandler('pause', () => {
-      this.audio.pause();
-      this.setPlaybackState('paused');
+      this.audio.pause(true);
     });
     
     registerHandler('previoustrack', () => {
@@ -116,24 +121,64 @@ export class MediaSessionManager {
     });
     
     registerHandler('stop', () => {
-      this.audio.pause();
+      this.audio.pause(true);
       this.setPlaybackState('none');
     });
   }
   
   // Android เดินเวลาในการ์ดต่อเองจาก "ภาพนิ่งล่าสุด" ที่เราส่งไป
   // จึงต้องส่งภาพนิ่งใหม่ทุกครั้งที่ เล่น/หยุด/เลื่อนเวลา/จบเพลง ไม่งั้นการ์ดจะเดินเองไม่ตรงกับเพลงจริง
-  _bindNativeSync() {
-    const nowSync = () => this._queueSync(0);
-    const laterSync = () => this._queueSync(150);
-    this.audioEl.addEventListener('play', nowSync);
-    this.audioEl.addEventListener('pause', nowSync);
-    this.audioEl.addEventListener('ended', nowSync);
-    this.audioEl.addEventListener('seeked', laterSync);
-    this.audioEl.addEventListener('durationchange', laterSync);
+  // Only the HTML audio element may declare whether playback is advancing.
+  _isAdvancing() {
+    return !this.audioEl.paused && !this.audioEl.ended &&
+      !this.audioEl.seeking && !this._buffering;
   }
-  
-  // รวมเหตุการณ์ที่มาติด ๆ กัน (เช่นลาก Seeker) ให้ส่งไป Android แค่ครั้งเดียว อ่านค่าสดตอนส่ง
+
+  _refreshPlaybackState() {
+    this.setPlaybackState(this._isAdvancing() ? 'playing' : 'paused');
+  }
+
+  _bindNativeSync() {
+    const nowSync = () => {
+      this._refreshPlaybackState();
+      this._queueSync(0);
+    };
+    const laterSync = () => this._queueSync(150);
+
+    this.audioEl.addEventListener('play', nowSync);
+    this.audioEl.addEventListener('pause', () => {
+      this._buffering = false;
+      nowSync();
+    });
+    this.audioEl.addEventListener('ended', nowSync);
+    this.audioEl.addEventListener('waiting', () => {
+      this._buffering = true;
+      nowSync();
+    });
+    this.audioEl.addEventListener('stalled', () => {
+      this._buffering = true;
+      nowSync();
+    });
+    this.audioEl.addEventListener('playing', () => {
+      this._buffering = false;
+      nowSync();
+    });
+    this.audioEl.addEventListener('seeking', nowSync);
+    this.audioEl.addEventListener('seeked', () => {
+      this._refreshPlaybackState();
+      laterSync();
+    });
+    this.audioEl.addEventListener('durationchange', laterSync);
+
+    // Correct native clock drift during actual playback, but avoid constant IPC.
+    this.audioEl.addEventListener('timeupdate', () => {
+      if (this._isAdvancing() && Date.now() - this._lastBridgeSyncAt >= 2000) {
+        this._queueSync(0);
+      }
+    });
+  }
+
+    // รวมเหตุการณ์ที่มาติด ๆ กัน (เช่นลาก Seeker) ให้ส่งไป Android แค่ครั้งเดียว อ่านค่าสดตอนส่ง
   _queueSync(delayMs) {
     if (this._syncTimer) clearTimeout(this._syncTimer);
     this._syncTimer = setTimeout(() => {
@@ -146,7 +191,7 @@ export class MediaSessionManager {
     if (!window.AndroidBridge || typeof window.AndroidBridge.updatePlayback !== 'function') return;
     
     const cleanTitle = this.currentTrack ? (this.currentTrack.name || '').replace(/\.[^/.]+$/, '') : 'GT Track';
-    const isPlaying = !this.audioEl.paused;
+    const isPlaying = this._isAdvancing();
     const posSec = isFinite(this.audioEl.currentTime) && !isNaN(this.audioEl.currentTime) && this.audioEl.currentTime >= 0 ?
       this.audioEl.currentTime :
       0;
@@ -156,6 +201,7 @@ export class MediaSessionManager {
     
     try {
       window.AndroidBridge.updatePlayback(cleanTitle, 'GT SoundMaster', isPlaying, posSec, durSec);
+      this._lastBridgeSyncAt = Date.now();
     } catch (e) {
       console.warn('[MediaSession] AndroidBridge sync error:', e);
     }
@@ -188,7 +234,7 @@ export class MediaSessionManager {
         console.warn('[MediaSession] Metadata update error:', e);
       }
       
-      this.setPlaybackState('playing');
+      this._refreshPlaybackState();
       this.updatePositionState();
     }
   }
@@ -206,13 +252,14 @@ export class MediaSessionManager {
     if (!this.isSupported || !('setPositionState' in navigator.mediaSession)) return;
     
     const duration = this.audio.duration;
-    if (!duration || isNaN(duration) || duration <= 0) return;
+    if (!Number.isFinite(duration) || duration <= 0) return;
     
     try {
       navigator.mediaSession.setPositionState({
         duration: duration,
         playbackRate: this.audioEl.playbackRate || 1.0,
-        position: Math.min(this.audio.currentTime, duration)
+        position: Number.isFinite(this.audio.currentTime) && this.audio.currentTime >= 0 ?
+          Math.min(this.audio.currentTime, duration) : 0
       });
     } catch (e) {}
   }

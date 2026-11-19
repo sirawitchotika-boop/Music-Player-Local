@@ -26,10 +26,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     const originalPlay = playlistUi.playTrack.bind(playlistUi);
     playlistUi.playTrack = async (track) => {
-      await originalPlay(track);
-      const trackName = track.name.replace(/\.[^/.]+$/, "");
-      playerUi.updateTitle(trackName);
-      mediaSessionManager.updateMetadata(track);
+      const played = await originalPlay(track);
+      if (played) {
+        const trackName = track.name.replace(/\.[^/.]+$/, "");
+        playerUi.updateTitle(trackName);
+      }
+      return played;
     };
     
     window.nextTrackFallback = () => {

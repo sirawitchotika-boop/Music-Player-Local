@@ -256,13 +256,17 @@ export class PlayerUI {
     }
   }
 
-  togglePlay() {
+  async togglePlay() {
     if (!this.audioEl.src) {
       this.showToast('[WARN] No audio selected', 'error');
       return;
     }
-    if (this.audioEl.paused) this.audio.play();
-    else this.audio.pause();
+    try {
+      if (this.audioEl.paused) await this.audio.play();
+      else await this.audio.pause();
+    } catch (error) {
+      this.showToast('[ERROR] Playback could not start', 'error');
+    }
   }
 
   updatePlayState(isPlaying) {
