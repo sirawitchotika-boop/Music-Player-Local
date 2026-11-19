@@ -126,7 +126,10 @@ test('CI compiles signing-test identity without secrets on PR, manual signing is
   assert.match(build, /apksigner/);
   assert.match(build, /package: name='com\.gt\.soundmaster\.signingtest'/);
   assert.match(build, /application-label:'GT SoundMaster SIGN TEST'/);
-  assert.match(build, /ACTUAL.*EXPECTED/);
+  assert.match(build, /"\$APKSIGNER" verify --print-certs "\$APK" \|\s*\n\s*python3 scripts\/verify-signing-test-cert-output\.py/);
+  assert.match(build, /set -euo pipefail/);
+  assert.doesNotMatch(build, /ACTUAL.*EXPECTED/);
+  assert.doesNotMatch(build, /sed -n 's\/\^Signer #1 certificate SHA-256 digest/);
   assert.match(build, /env\.GT_GATE1_ISOLATED != 'true' && env\.GT_SIGNING_TEST_APP != 'true'/);
   assert.match(build, /if: github\.event_name == 'workflow_dispatch' && env\.GT_SIGNING_TEST_SIGNED == 'true'/);
   assert.match(build, /retention-days: 7/);
