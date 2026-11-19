@@ -11,11 +11,13 @@ const prepare = join(root, 'scripts/prepare-gate1-build.py');
 const signingScript = join(root, 'scripts/prepare-signing-test.sh');
 const originalId = 'com.gt.soundmaster';
 const signId = 'com.gt.soundmaster.signingtest';
+const appVersion = JSON.parse(readFileSync(join(root, 'app-version.json'), 'utf8'));
 
 function fixture() {
   const folder = mkdtempSync(join(tmpdir(), 'gt-m4-signing-fixture-'));
   const files = {
-    'android/app/build.gradle': 'android {\n defaultConfig {\n  applicationId "com.gt.soundmaster"\n  versionCode 4\n  versionName "1.2.1"\n }\n}\n',
+    'app-version.json': JSON.stringify(appVersion),
+    'android/app/build.gradle': `android {\n defaultConfig {\n  applicationId "com.gt.soundmaster"\n  versionCode ${appVersion.versionCode}\n  versionName "${appVersion.versionName}"\n }\n}\n`,
     'android/app/src/main/AndroidManifest.xml':
       '<manifest><application android:label="@string/app_name"><activity android:name=".MainActivity"/><service android:name="com.gt.soundmaster.MediaPlaybackService"/></application></manifest>',
     'android/app/src/main/res/values/strings.xml':
@@ -46,7 +48,7 @@ test('signing-test identity is separate from original and Gate 1 TEST installati
     const gradle = f.read('android/app/build.gradle');
     assert.match(gradle, /applicationId "com\.gt\.soundmaster\.signingtest"/);
     assert.match(gradle, /versionCode 10019/);
-    assert.match(gradle, /versionName "1\.2\.1-st\.19"/);
+    assert.ok(gradle.includes(`versionName "${appVersion.versionName}-st.19"`));
     assert.match(f.read('android/app/src/main/AndroidManifest.xml'),
       /android:name="com\.gt\.soundmaster\.MainActivity"/);
     assert.match(f.read('android/app/src/main/AndroidManifest.xml'),

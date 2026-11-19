@@ -10,11 +10,13 @@ const root = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const prepare = join(root, 'scripts/prepare-gate1-build.py');
 const original = 'com.gt.soundmaster';
 const gate1 = 'com.gt.soundmaster.gate1';
+const appVersion = JSON.parse(readFileSync(join(root, 'app-version.json'), 'utf8'));
 
 function fixture(configType = 'json') {
   const folder = mkdtempSync(join(tmpdir(), 'gt-gate1-fixture-'));
   const files = {
-    'android/app/build.gradle': 'android {\n defaultConfig {\n  applicationId "com.gt.soundmaster"\n }\n}',
+    'app-version.json': JSON.stringify(appVersion),
+    'android/app/build.gradle': `android {\n defaultConfig {\n  applicationId "com.gt.soundmaster"\n  versionCode ${appVersion.versionCode}\n  versionName "${appVersion.versionName}"\n }\n}`,
     'android/app/src/main/AndroidManifest.xml':
       '<manifest><application android:label="@string/app_name"><activity android:name=".MainActivity"/><service android:name="com.gt.soundmaster.MediaPlaybackService"/></application></manifest>',
     'android/app/src/main/res/values/strings.xml':

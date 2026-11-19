@@ -1,81 +1,72 @@
-# 🎵 GT SoundMaster (v1.2.0)
+# GT SoundMaster (v1.2.2)
 
-> **Ultra-Lean & High-Fidelity Local Music Player for Android**  
-> แอปเล่นเพลงออฟไลน์ระดับ Audiophile เน้นความเสถียรสูงสุด เสียงใส ไร้เสียงสะดุด ไม่เปลืองแบตเตอรี่ และทำงานร่วมกับระบบ Android ได้อย่างสมบูรณ์แบบ
+A local music player for Android. Imported audio and music-library data are stored on the device.
 
----
+## Features
 
-## 🌟 ฟีเจอร์หลัก (Key Features)
+- **Local music library:** Import audio files into the app. Track details and audio blobs are stored in IndexedDB.
+- **Playlists and Favorites:** Create playlists and manage Favorites with the heart button. Songs cannot be added to Favorites through the bulk-import action.
+- **Playback controls:** Play, pause, skip, seek, rewind, fast-forward, and choose Normal, Repeat One, or Shuffle mode.
+- **Paused session restore:** The app remembers the last selected song and playback position. Reopening the app restores that selection without starting playback; press Play when ready.
+- **Android media controls:** Use supported lock-screen and notification controls through the Android media session.
+- **Bluetooth route safety:** Losing the connected audio route pauses playback. Reconnecting does not automatically resume music.
+- **Sleep timer:** Set a countdown, use saved presets, and pause playback when the timer finishes.
+- **Help and release notes:** The Help screen includes usage and data-safety guidance plus a collapsed-by-default What's New section.
 
-- 🎧 **Zero-Click Micro-Gain Engine:** ระบบจัดการแรงดันคลื่นเสียงด้วย `GainNode` ระดับฮาร์ดแวร์ ป้องกันปัญหาเสียง "กึก" (Zero-Crossing Pop) ตอนกด Play, Pause และเปลี่ยนเพลง ทำงานนุ่มนวลเทียบเท่าแอปเครื่องเล่นเพลง Native ของระบบ Android
-- 📱 **Android Native Media Service:** รองรับการควบคุมผ่านหน้าจอล็อก (Lock Screen) และแถบการแจ้งเตือน (Notification Shade) พร้อมแถบ Seekbar แบบสองทาง (Two-way synchronization)
-- 🔒 **100% Client-Side Local Storage:** เก็บเพลงและเพลย์ลิสต์ทั้งหมดไว้ในเครื่องผ่าน **IndexedDB** ปลอดภัย ออฟไลน์ 100% ไม่ต้องต่อเน็ต และไม่ส่งข้อมูลออกนอกเครื่อง
-- 🌙 **Sleep Timer Daemon:** ระบบตั้งเวลาหยุดเล่นเพลงอัตโนมัติ พร้อมการตัดเสียงแบบนุ่มนวล ไม่ทำให้ตกใจตื่น และมีระบบสั่น Haptic Feedback
-- ⚡ **Ultra-Lean & Battery Saving:** ปราศจากโค้ดขยะ (Zero Zombie Code) ตัดการเรนเดอร์ Canvas หนักๆ ออก เพื่อให้ชิปประมวลผลและชิปเสียงทำงานได้เต็มประสิทธิภาพโดยไม่กระตุกแม้สลับแอปไปมา
-- 🎨 **Minimalist Cyberpunk UI:** ดีไซน์หน้าจอสีเข้ม Dark Theme เรียบหรู ถนอมสายตา พร้อมไอคอนแสดงสถานะเรืองแสงเบาๆ เมื่อเพลงกำลังเล่น
+## App version
 
----
+The Android app version has one source of truth: app-version.json.
 
-## 🛠️ เทคโนโลยีที่ใช้ (Tech Stack)
+| Field | Current value |
+| --- | --- |
+| Version name | 1.2.2 |
+| Version code | 5 |
 
-| ส่วนประกอบ | เทคโนโลยี |
-| :--- | :--- |
-| **Frontend UI** | HTML5, CSS3 (Modern Glassmorphism & Cyberpunk Accent) |
-| **Core Architecture** | Vanilla JavaScript (ES6 Modules) |
-| **Audio Core** | HTML5 Audio + Web Audio API (`GainNode` Sample Ramp) |
-| **Local Database** | IndexedDB API (แยกตาราง Metadata & Blobs) |
-| **Native Bridge** | Capacitor Android SDK, MediaSession API |
-| **Android Framework** | `MediaSession`, `Notification.MediaStyle`, `ForegroundService` (Type: `mediaPlayback`), `WakeLock` |
-| **Automation CI/CD** | GitHub Actions (Ubuntu, Java JDK 21 Zulu, Node.js 22, Gradle) |
+The Android build workflow reads this file when generating the app's Gradle configuration. The isolated Gate 1 and signing-test build preparation script validates the same values before changing the generated app identity.
 
----
+package.json is used for the Node.js safety-test runner; it is not the Android app version.
 
-## 📁 โครงสร้างโปรเจกต์ (Project Structure)
+## Technology
 
-```text
-/ (Root)
-|-- .github/workflows/
-|   `-- build-apk.yml          # CI/CD Automated Android APK Builder
-|-- css/
-|   |-- help.css               # สไตล์หน้าต่างคู่มือระบบ
-|   |-- main.css               # สไตล์โครงสร้างหลักและแผ่น Disc
-|   |-- player.css             # สไตล์ปุ่มควบคุมและ Seekbar
-|   |-- playlist.css           # สไตล์หน้าต่างเพลย์ลิสต์และค้นหาเพลง
-|   `-- timer.css              # สไตล์หน้าปัดนาฬิกา Sleep Timer
-|-- js/
-|   |-- app.js                 # จุดเริ่มต้นแอปพลิเคชัน (Bootstrap)
-|   |-- core/
-|   |   |-- audioEngine.js     # เอนจินเสียง Micro-Gain Ramp
-|   |   |-- mediaSessionManager.js # เชื่อมต่อระบบแจ้งเตือน Android
-|   |   |-- stateManager.js    # คิวเพลงและโหมดการเล่น (Shuffle/Repeat)
-|   |   `-- storage.js         # ระบบจัดการฐานข้อมูล IndexedDB
-|   `-- ui/
-|       |-- helpUI.js          # จัดการหน้าต่างคู่มือ
-|       |-- modalUI.js         # ระบบแจ้งเตือน Dialog และ Toast
-|       |-- playerUI.js        # ตัวควบคุมหน้าเครื่องเล่นเพลง
-|       |-- playlistUI.js      # ตัวควบคุมคลังเพลงและเพลย์ลิสต์
-|       `-- timerUI.js         # ตัวควบคุม Sleep Timer
-|-- icon.svg                   # ไอคอนหลักความละเอียดสูง
-|-- index.html                 # หน้าจอหลัก Single Page Application
-|-- manifest.json              # Web App Manifest สำหรับ PWA/Capacitor
-|-- CHANGELOG.md               # บันทึกประวัติการพัฒนาแต่ละเวอร์ชัน
-`-- Structure file.md          # ผังความสัมพันธ์ของโมดูลในระบบ
-```
+- **User interface:** HTML, CSS, and vanilla JavaScript ES modules
+- **Audio:** HTML Audio and Web Audio API with a short GainNode ramp for smoother play/pause transitions
+- **Local storage:** IndexedDB
+- **Android integration:** Capacitor, Android media session, notification controls, and a media-playback foreground service
+- **Automation:** GitHub Actions, Java 21, and Node.js 22
 
----
+## Repository layout
 
-## 🚀 วิธีการ Build เป็น Android APK
+    .github/workflows/       Android build and safety-test workflows
+    css/                     Player, playlist, timer, and Help styles
+    docs/                    Isolated test-build and signing-test guidance
+    js/core/                 Audio, storage, state, session, and media-session logic
+    js/ui/                   Player, playlist, timer, modal, and Help interfaces
+    scripts/                 Isolated-build and signing verification helpers
+    tests/                   Node.js regression and safety tests
+    app-version.json         Android version name and version code
+    CHANGELOG.md             Version history
+    index.html               Main application interface
+    manifest.json            Web app metadata
+    Structure file.md        Module relationship reference
 
-โปรเจกต์นี้มีระบบ **Autonomous CI/CD** ผ่าน GitHub Actions ในตัว คุณสามารถสร้างไฟล์ APK ได้โดยไม่ต้องติดตั้ง Android Studio บนคอมพิวเตอร์:
+## Run the automated tests
 
-1. Push โค้ดทั้งหมดขึ้นบน GitHub Repository ของคุณ
-2. ไปที่แท็บ **Actions** บนหน้า GitHub
-3. เลือก Workflow **Build Android APK**
-4. กดปุ่ม **Run workflow**
-5. เมื่อ Build เสร็จสิ้น สามารถดาวน์โหลดไฟล์ติดตั้งได้จากส่วน **Artifacts** (`GT-SoundMaster-APK`)
+Use Node.js 22 or newer and run: npm test
 
----
+The test suite runs without installing application dependencies.
 
-## 📄 ใบอนุญาต (License)
+## Build an Android APK
 
-โปรเจกต์นี้สร้างขึ้นเพื่อการใช้งานส่วนตัวและการศึกษา (Personal Audiophile Local Player) ใช้งานฟรีและเป็นแบบ Open-Source 100%
+1. Push the reviewed source to GitHub.
+2. Open the repository's Actions tab.
+3. Select Build Android APK.
+4. Choose Run workflow.
+5. Download the GT-SoundMaster-APK artifact when the workflow succeeds.
+
+**Signing and installation safety:** The default workflow creates a debug-signed APK using the app package ID com.gt.soundmaster. It is not a production-signed release. Do not assume it can update an existing installation: Android requires the signing certificate to match. If Android reports a signature conflict, stop. Do not uninstall the existing app or clear its data as a workaround.
+
+The separate Gate 1 TEST and SIGN TEST workflows use different package IDs. They are disposable test identities and must not be used to update the original app.
+
+## License
+
+No LICENSE file is currently included. Do not assume that this repository has been granted a particular open-source license.

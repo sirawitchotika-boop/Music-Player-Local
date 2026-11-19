@@ -178,3 +178,40 @@
         padding: 12px;
     }
 }
+
+
+/* Keep release notes available without taking space until the user opens them. */
+.whats-new-card {
+    padding: 12px 15px;
+}
+
+.whats-new-summary {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: #f0b1b7;
+    cursor: pointer;
+    font-size: 0.82rem;
+    font-weight: 800;
+    letter-spacing: 0.9px;
+    list-style: none;
+}
+
+.whats-new-summary::-webkit-details-marker {
+    display: none;
+}
+
+.whats-new-summary::after {
+    content: "+";
+    margin-left: auto;
+    color: #e98b93;
+    font-size: 1.1rem;
+}
+
+.whats-new-card[open] .whats-new-summary::after {
+    content: "−";
+}
+
+.whats-new-list {
+    margin-top: 12px;
+}
