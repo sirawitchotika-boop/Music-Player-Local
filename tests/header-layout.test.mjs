@@ -37,10 +37,10 @@ test('left header column remains free for a future control', () => {
   assert.match(rule('.top-bar'), /grid-template-columns:\s*minmax\(0,\s*1fr\)\s+auto\s+minmax\(0,\s*1fr\)/);
 });
 
-test('brand title remains centered and scales down on narrow phones', () => {
-  assert.match(header, /class="top-center"[\\s\\S]*class="app-title"/);
-  assert.match(header, /GT<\\/span>\\s*SOUNDMASTER/);
-  assert.match(rule('.app-title'), /white-space:\\s*nowrap/);
-  assert.match(css, /@media \\(max-width:\\s*360px\\)[\\s\\S]*font-size:\\s*11\\.5px/);
-  assert.match(css, /@media \\(max-width:\\s*340px\\)[\\s\\S]*font-size:\\s*10px/);
+test('brand title remains centered, single-line, and responsive', () => {
+  assert.match(header, /class="top-center"[\s\S]*class="app-title"/);
+  assert.match(header, /GT<\/span>\s*SOUNDMASTER/);
+  assert.match(rule('.app-title'), /font-size:\s*clamp\(10px,\s*3vw,\s*16px\)/);
+  assert.match(rule('.app-title'), /letter-spacing:\s*clamp\(0\.2px,\s*0\.15vw,\s*1\.5px\)/);
+  assert.match(rule('.app-title'), /white-space:\s*nowrap/);
 });

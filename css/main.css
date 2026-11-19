@@ -81,9 +81,9 @@ button {
 }
 
 .app-title {
-    font-size: clamp(13px, 3.8vw, 16px);
+    font-size: clamp(10px, 3vw, 16px);
     font-weight: 750;
-    letter-spacing: 2px;
+    letter-spacing: clamp(0.2px, 0.15vw, 1.5px);
     color: #f7f3f4;
     white-space: nowrap;
 }
@@ -260,20 +260,6 @@ button {
 :focus-visible {
     outline: 2px solid #ff6872;
     outline-offset: 3px;
-}
-
-@media (max-width: 360px) {
-    .app-title {
-        font-size: 11.5px;
-        letter-spacing: 0.5px;
-    }
-}
-
-@media (max-width: 340px) {
-    .app-title {
-        font-size: 10px;
-        letter-spacing: 0.25px;
-    }
 }
 
 @media (max-height: 720px) {
