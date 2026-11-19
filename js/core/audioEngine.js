@@ -53,14 +53,15 @@ class AudioEngine {
             if (error.name !== 'AbortError') {
                 console.error("Playback Play Error:", error);
             }
+            throw error;
         }
     }
     
-    async pause() {
+    async pause(immediate = false) {
         if (!this.audioElement || this.audioElement.paused) return;
         try {
             // หรี่คลื่นเสียงลงเป็น 0 ใน 35ms ก่อนสั่ง Pause ป้องกันลำโพงดีดตัวกะทันหัน
-            if (this.gainNode && this.audioCtx && this.audioCtx.state === 'running') {
+            if (!immediate && this.gainNode && this.audioCtx && this.audioCtx.state === 'running') {
                 const now = this.audioCtx.currentTime;
                 this.gainNode.gain.cancelScheduledValues(now);
                 this.gainNode.gain.setValueAtTime(this.gainNode.gain.value, now);
@@ -69,6 +70,7 @@ class AudioEngine {
             }
             this.audioElement.pause();
             if (this.gainNode && this.audioCtx) {
+                this.gainNode.gain.cancelScheduledValues(this.audioCtx.currentTime);
                 this.gainNode.gain.setValueAtTime(1.0, this.audioCtx.currentTime);
             }
         } catch (e) {
@@ -85,7 +87,8 @@ class AudioEngine {
             
             if (typeof fileOrUrl === 'string') {
                 this.audioElement.src = fileOrUrl;
-            } else if (fileOrUrl instanceof File || fileOrUrl instanceof Blob) {
+            } else if ((typeof File !== 'undefined' && fileOrUrl instanceof File) ||
+                       (typeof Blob !== 'undefined' && fileOrUrl instanceof Blob)) {
                 const oldUrl = this.currentObjectUrl;
                 this.currentObjectUrl = URL.createObjectURL(fileOrUrl);
                 this.audioElement.src = this.currentObjectUrl;
@@ -93,9 +96,12 @@ class AudioEngine {
                 if (oldUrl) {
                     setTimeout(() => URL.revokeObjectURL(oldUrl), 4000);
                 }
+            } else {
+                throw new TypeError('Unsupported audio source');
             }
         } catch (error) {
             console.error("Audio Load Error:", error);
+            throw error;
         }
     }
     
