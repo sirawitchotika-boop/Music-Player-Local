@@ -6,6 +6,7 @@ class AudioEngine {
         this.audioCtx = null;
         this.gainNode = null;
         this.isAudioCtxInit = false;
+        this._playRequestVersion = 0;
         
         this.audioElement.onerror = (error) => {
             console.warn("Audio Element Warning:", error);
@@ -29,11 +30,14 @@ class AudioEngine {
     }
     
     async play() {
+        const version = ++this._playRequestVersion;
+        const cancelled = () => Object.assign(new Error('Playback interrupted'), { name: 'AbortError' });
         try {
             this._initAudioContext();
             if (this.audioCtx && this.audioCtx.state === 'suspended') {
                 await this.audioCtx.resume();
             }
+            if (version !== this._playRequestVersion) throw cancelled();
             
             // เริ่มต้นที่ 0 แล้วไล่ระดับเสียงขึ้นใน 35ms (ป้องกันเสียงกึกตอนเริ่มเล่นเพลงจาก YouTube)
             if (this.gainNode && this.audioCtx) {
@@ -43,6 +47,10 @@ class AudioEngine {
             }
             
             await this.audioElement.play();
+            if (version !== this._playRequestVersion) {
+                this.audioElement.pause();
+                throw cancelled();
+            }
             
             if (this.gainNode && this.audioCtx) {
                 const now = this.audioCtx.currentTime;
@@ -58,6 +66,8 @@ class AudioEngine {
     }
     
     async pause(immediate = false) {
+        // Invalidate a pending Play even if the element is still reporting paused.
+        ++this._playRequestVersion;
         if (!this.audioElement || this.audioElement.paused) return;
         try {
             // หรี่คลื่นเสียงลงเป็น 0 ใน 35ms ก่อนสั่ง Pause ป้องกันลำโพงดีดตัวกะทันหัน
@@ -79,6 +89,7 @@ class AudioEngine {
     }
     
     async load(fileOrUrl) {
+        ++this._playRequestVersion;
         try {
             // หรี่เสียงเพลงเดิมลงก่อนสลับไฟล์
             if (!this.audioElement.paused) {
