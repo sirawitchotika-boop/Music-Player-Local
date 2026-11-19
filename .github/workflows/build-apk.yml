@@ -885,17 +885,10 @@ jobs:
           if [ "$GT_SIGNING_TEST_SIGNED" = "true" ]; then
             APKSIGNER="$(find "${ANDROID_HOME}/build-tools" -maxdepth 2 -type f -name apksigner | sort -V | tail -n 1)"
             test -x "$APKSIGNER"
-            EXPECTED="$(printf '%s' "$GT_SIGNING_TEST_EXPECTED_CERT" | tr -d ':[:space:]' | tr '[:upper:]' '[:lower:]')"
-            if ! [[ "$EXPECTED" =~ ^[0-9a-f]{64}$ ]]; then
-              echo "Signing test not configured: expected SHA-256 fingerprint is invalid." >&2
-              exit 1
-            fi
-            SIGNERS="$("$APKSIGNER" verify --print-certs "$APK")"
-            ACTUAL="$(printf '%s\n' "$SIGNERS" | sed -n 's/^Signer #1 certificate SHA-256 digest: //p' | tr -d ':[:space:]' | tr '[:upper:]' '[:lower:]')"
-            if [[ "$ACTUAL" != "$EXPECTED" ]] || [[ "$SIGNERS" == *"Signer #2 certificate"* ]]; then
-              echo "Signed APK certificate did not match expected signing-test certificate. No artifact uploaded." >&2
-              exit 1
-            fi
+            # Both apksigner and the parser must pass; never print key material
+            # or certificate digests to CI logs.
+            "$APKSIGNER" verify --print-certs "$APK" |
+              python3 scripts/verify-signing-test-cert-output.py
             echo "Verified release APK signed with the expected signing-test certificate."
           fi
           echo "Verified isolated signing-test APK identity."
