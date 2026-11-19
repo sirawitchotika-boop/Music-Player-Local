@@ -95,7 +95,7 @@ export class PlayerUI {
 
   handleLikeClick() {
     if (!this.audioEl.src || this.state.currentTrackIndex === -1) {
-      this.showToast('[ERROR] No track playing', 'error');
+      this.showToast('Select a song before adding it to Favorites.', 'error');
       return;
     }
     
@@ -107,10 +107,10 @@ export class PlayerUI {
     
     if (willLike) {
       this.favoriteBtn.classList.add('active');
-      this.showToast('[FAVORITE] Added to favorites', 'info');
+      this.showToast('Added to Favorites.', 'info');
     } else {
       this.favoriteBtn.classList.remove('active');
-      this.showToast('[FAVORITE] Removed from favorites', 'error');
+      this.showToast('Removed from Favorites.', 'error');
     }
     
     clearTimeout(this.likeDebounceTimer);
@@ -156,7 +156,7 @@ export class PlayerUI {
       isHolding = false;
       pressTimer = setTimeout(() => {
         isHolding = true;
-        this.showToast(direction === 'next' ? '[SEEK] Fast Forward >>>' : '[SEEK] <<< Rewind', 'info');
+        this.showToast(direction === 'next' ? 'Fast-forwarding' : 'Rewinding', 'info');
         seekInterval = setInterval(() => {
           if (this.audioEl.duration) {
             this.audioEl.currentTime += (direction === 'next' ? 3 : -3);
@@ -211,14 +211,14 @@ export class PlayerUI {
     if (this.isChangingTrack) return;
     const track = this.state.nextTrack();
     if (track) await this.loadAndPlay(track);
-    else this.showToast('[STATUS] End of playlist', 'error');
+    else this.showToast('No more songs in this list.', 'error');
   }
 
   async playPrev() {
     if (this.isChangingTrack) return;
     const track = this.state.prevTrack();
     if (track) await this.loadAndPlay(track);
-    else this.showToast('[STATUS] Start of playlist', 'error');
+    else this.showToast('You are at the first song in this list.', 'error');
   }
 
   async loadAndPlay(track) {
@@ -247,7 +247,7 @@ export class PlayerUI {
       this.state.selectedTrackId = this.state.loadedTrackId;
       this.state.currentTrackIndex = this.state.queue.findIndex(
         item => item.id === this.state.loadedTrackId);
-      this.showToast('[ERROR] Failed to load track', 'error');
+      this.showToast('Could not load this song.', 'error');
     } finally {
       this.isChangingTrack = false;
     }
@@ -267,14 +267,14 @@ export class PlayerUI {
 
   async togglePlay() {
     if (!this.audioEl.src) {
-      this.showToast('[WARN] No audio selected', 'error');
+      this.showToast('Select a song first.', 'error');
       return;
     }
     try {
       if (this.audioEl.paused) await this.audio.play();
       else await this.audio.pause();
     } catch (error) {
-      this.showToast('[ERROR] Playback could not start', 'error');
+      this.showToast('Playback could not start. Please try again.', 'error');
     }
   }
 
@@ -314,7 +314,7 @@ export class PlayerUI {
 
   updateTitle(title) {
     if (this.titleDisplay) this.titleDisplay.textContent = title;
-    if (this.artistDisplay) this.artistDisplay.textContent = 'LOCAL SOURCE';
+    if (this.artistDisplay) this.artistDisplay.textContent = 'LOCAL MUSIC';
   }
 
   showToast(message, type = 'success') {

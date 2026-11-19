@@ -50,14 +50,14 @@ export class PlaylistUI {
     });
     if (this.addPlaylistBtn) {
       this.addPlaylistBtn.addEventListener('click', async () => {
-        const val = await modalUI.showPrompt('[SYSTEM] สร้าง Playlist ใหม่', 'ชื่อ Playlist:');
+        const val = await modalUI.showPrompt('Create playlist', 'Playlist name:');
         if (val && val.trim()) {
           const newId = 'pl_' + Date.now();
           this.playlists.push({ id: newId, name: val.trim(), tracks: [] });
           this.savePlaylists();
           this.renderDropdown();
           this.selectPlaylist(newId);
-          modalUI.showToast(`[STATUS] สร้าง Playlist "${val.trim()}" สำเร็จ`);
+          modalUI.showToast(`Created playlist "${val.trim()}".`);
         }
       });
     }
@@ -119,7 +119,7 @@ export class PlaylistUI {
       this.dropdownMenu.appendChild(div);
     };
     createItem('all', 'All Tracks', true);
-    createItem('favorites', 'Favorites [PROTECTED]', true);
+    createItem('favorites', 'Favorites', true);
     this.playlists.forEach(pl => createItem(pl.id, pl.name));
   }
 
@@ -129,7 +129,7 @@ export class PlaylistUI {
     if (id === 'all') {
       this.activePlaylistName.textContent = 'All Tracks';
     } else if (id === 'favorites') {
-      this.activePlaylistName.textContent = 'Favorites [PROTECTED]';
+      this.activePlaylistName.textContent = 'Favorites';
     } else {
       const pl = this.playlists.find(p => p.id === id);
       if (pl) this.activePlaylistName.textContent = pl.name;
@@ -140,26 +140,26 @@ export class PlaylistUI {
   async editPlaylist(id) {
     const pl = this.playlists.find(p => p.id === id);
     if (!pl) return;
-    const val = await modalUI.showPrompt('[SYSTEM] แก้ไขชื่อ Playlist', 'ชื่อใหม่:', pl.name);
+    const val = await modalUI.showPrompt('Rename playlist', 'New name:', pl.name);
     if (val && val.trim()) {
       pl.name = val.trim();
       this.savePlaylists();
       this.renderDropdown();
       if (this.currentPlaylistId === id) this.activePlaylistName.textContent = pl.name;
-      modalUI.showToast('[STATUS] แก้ไขชื่อเรียบร้อย');
+      modalUI.showToast('Playlist renamed.');
     }
   }
 
   async deletePlaylist(id) {
     const pl = this.playlists.find(p => p.id === id);
     if (!pl) return;
-    const isConfirmed = await modalUI.showConfirm('[CONFIRM] ลบ Playlist', `ต้องการลบ Playlist "${pl.name}" หรือไม่?`);
+    const isConfirmed = await modalUI.showConfirm('Delete playlist', `Delete "${pl.name}"?`);
     if (isConfirmed) {
       this.playlists = this.playlists.filter(p => p.id !== id);
       this.savePlaylists();
       this.renderDropdown();
       if (this.currentPlaylistId === id) this.selectPlaylist('all');
-      modalUI.showToast('[STATUS] ลบ Playlist เรียบร้อย');
+      modalUI.showToast('Playlist deleted.');
     }
   }
 
@@ -167,19 +167,19 @@ export class PlaylistUI {
     const files = event.target.files;
     if (!files || files.length === 0) return;
     try {
-      modalUI.showToast('[SYSTEM] กำลังนำเข้าเพลง...', 'info');
+      modalUI.showToast('Importing music...', 'info');
       const result = await storage.saveFiles(files);
       const processed = result.processedTracks || [];
       if (this.currentPlaylistId === 'all') {
         if (result.count > 0) {
-          const dupText = result.skipped > 0 ? ` (ซ้ำ ${result.skipped} เพลง)` : '';
-          modalUI.showToast(`[STATUS] นำเข้าสำเร็จ ${result.count} เพลง${dupText}`);
+          const dupText = result.skipped > 0 ? ` (skipped ${result.skipped} duplicate(s))` : '';
+          modalUI.showToast(`Imported ${result.count} song(s)${dupText}.`);
         } else {
-          modalUI.showToast('[WARN] ไม่มีเพลงใหม่ถูกเพิ่ม (ไฟล์ซ้ำ)', 'info');
+          modalUI.showToast('No new songs were added. These files are already in your library.', 'info');
         }
 } else if (this.currentPlaylistId === 'favorites') {
         // [ตู้เซฟระดับ Controller] บล็อกการ Add เพลงเข้า Favorites แบบ Manual
-        modalUI.showToast('[REJECT] เพลย์ลิสต์นี้รับเฉพาะเพลงที่กดหัวใจเท่านั้น', 'error');
+        modalUI.showToast('Favorites can only be changed with the heart button.', 'error');
         event.target.value = ''; // รีเซ็ต Input ป้องกันไฟล์ค้าง
         return; // ตัดจบวงจรการแอดเพลงทันที
       } else {
@@ -199,10 +199,10 @@ export class PlaylistUI {
           targetPl.tracks = [...new Set(targetPl.tracks)];
           this.savePlaylists();
           if (addedToPl > 0) {
-            const dupText = dupInPl > 0 ? ` (ซ้ำ ${dupInPl} เพลง)` : '';
-            modalUI.showToast(`[STATUS] เพิ่มเข้า "${targetPl.name}" ${addedToPl} เพลง${dupText}`);
+            const dupText = dupInPl > 0 ? ` (${dupInPl} already in this playlist)` : '';
+            modalUI.showToast(`Added ${addedToPl} song(s) to "${targetPl.name}"${dupText}.`);
           } else {
-            modalUI.showToast(`[WARN] เพลงทั้งหมดมีใน "${targetPl.name}" แล้ว`, 'info');
+            modalUI.showToast(`All selected songs are already in "${targetPl.name}".`, 'info');
           }
         }
       }
@@ -217,7 +217,7 @@ export class PlaylistUI {
   async loadPlaylist(searchQuery = '') {
     if (!this.playlistContainer) return;
     try {
-      this.playlistContainer.innerHTML = '<div style="text-align: center; padding: 30px; color: #7a7a8c; font-weight: bold;">[SYSTEM] กำลังโหลดเพลง...</div>';
+      this.playlistContainer.innerHTML = '<div style="text-align: center; padding: 30px; color: #7a7a8c; font-weight: bold;">Loading songs...</div>';
       const allTracks = await storage.getAllTracks();
       const trackMap = new Map(allTracks.map(t => [t.id, t]));
       let tracks = [];
@@ -245,14 +245,14 @@ export class PlaylistUI {
       );
       if (filteredTracks.length === 0) {
         const emptyMsg = searchQuery 
-          ? '[SYSTEM] ไม่พบเพลงที่ค้นหา' 
-          : '[SYSTEM] คลังเพลงว่างเปล่า กดปุ่ม ADD MUSIC เพื่อเริ่มนำเข้าเพลง';
+          ? 'No songs match your search.' 
+          : 'Your library is empty. Tap Add Music to import songs.';
         this.playlistContainer.innerHTML = `<div style="text-align: center; padding: 40px; color: #7a7a8c; font-weight: bold;">${emptyMsg}</div>`;
         return;
       }
       this.renderTracks(filteredTracks);
     } catch (error) {
-      this.playlistContainer.innerHTML = '<div style="text-align: center; color: #ff2a2a; padding: 20px;">[ERROR] โหลดเพลย์ลิสต์ไม่สำเร็จ</div>';
+      this.playlistContainer.innerHTML = '<div style="text-align: center; color: #ff2a2a; padding: 20px;">Could not load the playlist.</div>';
     }
   }
 
@@ -262,20 +262,20 @@ export class PlaylistUI {
 
   async handleClearPlaylist() {
     if (!this.state.queue || this.state.queue.length === 0) {
-      modalUI.showToast('[WARN] ไม่มีเพลงให้ล้าง', 'info');
+      modalUI.showToast('There are no songs to clear.', 'info');
       return;
     }
     if (this.currentPlaylistId === 'favorites') {
-      modalUI.showToast('[REJECT] เพลย์ลิสต์ Favorites ได้รับการปกป้อง กรุณาลบทีละเพลง', 'error');
+      modalUI.showToast('Favorites is managed with the heart button. Remove songs one at a time.', 'error');
       return;
     }
-    let title = '[CONFIRM] ล้างเพลงทั้งหมด';
-    let desc = 'ต้องการล้างเพลงทั้งหมดในคลังหรือไม่? (เพลงใน Favorites จะถูกเก็บไว้)';
+    let title = 'Clear All Tracks?';
+    let desc = 'This permanently deletes every song in your local library except Favorites. This cannot be undone.';
     if (this.currentPlaylistId !== 'all') {
       const pl = this.playlists.find(p => p.id === this.currentPlaylistId);
       if (!pl) return;
-      title = `[CONFIRM] ล้างเพลงใน "${pl.name}"`;
-      desc = `ต้องการล้างเพลงออกจาก "${pl.name}" หรือไม่? (ไฟล์ต้นฉบับใน All Tracks จะไม่หาย)`;
+      title = `Clear "${pl.name}"?`;
+      desc = `This removes songs from this playlist only. Your songs in All Tracks will stay in your library.`;
     }
     const isConfirmed = await modalUI.showConfirm(title, desc);
     if (isConfirmed) {
@@ -295,16 +295,16 @@ export class PlaylistUI {
           });
           this.savePlaylists();
           if (keptCount > 0) {
-            modalUI.showToast(`[STATUS] ล้างคลังเรียบร้อย (คงเหลือเพลงใน Favorites ${keptCount} เพลง)`);
+            modalUI.showToast(`Library cleared. ${keptCount} favorite song(s) kept.`);
           } else {
-            modalUI.showToast('[STATUS] ล้างคลังเพลงเรียบร้อย');
+            modalUI.showToast('Library cleared.');
           }
         } else {
           const targetPl = this.playlists.find(p => p.id === this.currentPlaylistId);
           if (targetPl) {
             targetPl.tracks = [];
             this.savePlaylists();
-            modalUI.showToast('[STATUS] ล้างเพลงในเพลย์ลิสต์สำเร็จ');
+            modalUI.showToast('Playlist cleared.');
           }
         }
         await this.loadPlaylist();
@@ -383,14 +383,14 @@ export class PlaylistUI {
       this.state.restoringSession = false;
       sessionMemory.saveSelection(track.id, this.currentPlaylistId, this.state.queue,
         this.audio.audioElement?.currentTime ?? 0);
-      modalUI.showToast(`[PLAYBACK] เล่น: ${track.name}`);
+      modalUI.showToast(`Playing: ${track.name}`);
       window.dispatchEvent(new Event('gt-liked-updated'));
       mediaSessionManager.updateMetadata(track);
       return true;
     } catch (error) {
       this.state.currentTrackIndex = previousIndex;
       this.state.selectedTrackId = previousSelected;
-      modalUI.showToast('[ERROR] เล่นเพลงไม่สำเร็จ', 'error');
+      modalUI.showToast('Could not play this song.', 'error');
       return false;
     }
   }
@@ -398,14 +398,14 @@ export class PlaylistUI {
   async deleteTrack(id) {
     try {
       if (this.currentPlaylistId === 'favorites') {
-        const isConfirmed = await modalUI.showConfirm('[CONFIRM] ยืนยันการลบ', 'ต้องการนำเพลงนี้ออกจาก Favorites หรือไม่?');
+        const isConfirmed = await modalUI.showConfirm('Remove from Favorites?', 'This removes the song from Favorites only. The audio file stays in your library.');
         if (!isConfirmed) return;
         this.likedTracks = this.likedTracks.filter(tid => tid !== id);
         localStorage.setItem('gt_liked_tracks', JSON.stringify(this.likedTracks));
-        modalUI.showToast('[STATUS] ลบออกจาก Favorites เรียบร้อย');
+        modalUI.showToast('Removed from Favorites.');
         window.dispatchEvent(new Event('gt-liked-updated'));
       } else if (this.currentPlaylistId === 'all') {
-        const isConfirmed = await modalUI.showConfirm('[CONFIRM] ยืนยันการลบ', 'ต้องการลบเพลงนี้ออกจากระบบถาวรหรือไม่?');
+        const isConfirmed = await modalUI.showConfirm('Delete song from library?', 'This permanently deletes the stored audio from this app. Keep a backup before continuing.');
         if (!isConfirmed) return;
         await storage.deleteTrack(id);
         sessionMemory.clearForDeletedTrack(id);
@@ -415,19 +415,19 @@ export class PlaylistUI {
         this.likedTracks = this.likedTracks.filter(tid => tid !== id);
         localStorage.setItem('gt_liked_tracks', JSON.stringify(this.likedTracks));
         this.savePlaylists();
-        modalUI.showToast('[STATUS] ลบเพลงสำเร็จ');
+        modalUI.showToast('Song deleted from your library.');
         window.dispatchEvent(new Event('gt-liked-updated'));
       } else {
         const targetPl = this.playlists.find(p => p.id === this.currentPlaylistId);
         if (targetPl) {
           targetPl.tracks = targetPl.tracks.filter(tid => tid !== id);
           this.savePlaylists();
-          modalUI.showToast('[STATUS] นำเพลงออกจากเพลย์ลิสต์สำเร็จ');
+          modalUI.showToast('Removed from playlist.');
         }
       }
       await this.loadPlaylist();
     } catch (error) {
-      modalUI.showToast('[ERROR] ลบเพลงไม่สำเร็จ', 'error');
+      modalUI.showToast('Could not remove the song.', 'error');
     }
   }
 }

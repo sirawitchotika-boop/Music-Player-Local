@@ -131,7 +131,7 @@ test('track selection uses stable ID; missing audio and playback errors fail saf
 
     await ui.playTrack({ id: 305, name: 'Missing.mp3' });
     assert.deepEqual(played, [204, 'play']);
-    assert.ok(messages.some(msg => msg.includes('ERROR')));
+    assert.ok(messages.some(msg => msg.includes('Could not play this song.')));
 
     ui.audio = { load: async () => { throw new Error('Playback failed'); }, play: async () => played.push('unexpected') };
     await ui.playTrack({ id: 204, name: 'Chosen.mp3' });

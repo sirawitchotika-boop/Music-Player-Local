@@ -64,7 +64,7 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  border: 2px solid rgba(0, 229, 255, 0.3);
+  border: 2px solid rgba(240, 68, 80, 0.28);
 }
 
 .timer-dial-inner {
@@ -89,8 +89,8 @@
 .timer-display-mins {
   font-size: 3rem;
   font-weight: 700;
-  color: #00e5ff;
-  text-shadow: 0 0 10px rgba(0, 229, 255, 0.5);
+  color: #ff5964;
+  text-shadow: 0 0 10px rgba(240, 68, 80, 0.4);
   line-height: 1;
   transition: all 0.3s;
 }
@@ -106,12 +106,12 @@
 /* เอฟเฟกต์แปลงร่างตอนเริ่มนับถอยหลัง */
 .timer-display-mins.countdown {
   font-size: 2.2rem;
-  color: #ffd700;
-  text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+  color: #ff9aa1;
+  text-shadow: 0 0 10px rgba(240, 68, 80, 0.34);
 }
 
 .timer-display-label.countdown {
-  color: #ffd700;
+  color: #ff9aa1;
   opacity: 0.8;
 }
 
@@ -133,9 +133,9 @@
   transform: translateX(-50%);
   width: 8px;
   height: 8px;
-  background: #00e5ff;
+  background: #ff5964;
   border-radius: 50%;
-  box-shadow: 0 0 10px #00e5ff, 0 0 20px #00e5ff;
+  box-shadow: 0 0 10px #ff5964, 0 0 20px #ff5964;
 }
 
 /* --- Stationed Controls Row --- */
@@ -175,13 +175,13 @@
 
 /* Edit Mode Active State */
 .preset-stationed-btn.active-edit {
-  background: rgba(0, 229, 255, 0.15);
-  border-color: #00e5ff;
-  box-shadow: 0 0 15px rgba(0, 229, 255, 0.2);
+  background: rgba(201, 39, 54, 0.14);
+  border-color: #ff5964;
+  box-shadow: 0 0 15px rgba(201, 39, 54, 0.18);
 }
 
 .preset-stationed-btn.active-edit svg {
-  fill: #00e5ff;
+  fill: #ff5964;
 }
 
 /* --- Presets List --- */
@@ -218,9 +218,9 @@
 }
 
 .preset-group.active {
-  background: rgba(0, 229, 255, 0.15);
-  border-color: #00e5ff;
-  box-shadow: 0 0 10px rgba(0, 229, 255, 0.2);
+  background: rgba(201, 39, 54, 0.14);
+  border-color: #ff5964;
+  box-shadow: 0 0 10px rgba(201, 39, 54, 0.18);
 }
 
 .preset-chip {
@@ -240,7 +240,7 @@
 }
 
 .preset-group.active .preset-chip {
-  color: #00e5ff;
+  color: #ff5964;
   font-weight: 700;
 }
 
@@ -269,7 +269,7 @@
   transition: fill 0.2s;
 }
 
-.preset-action.edit:active svg { fill: #ffd700; }
+.preset-action.edit:active svg { fill: #ff9aa1; }
 .preset-action.delete:active svg { fill: #ff2a2a; }
 
 /* Edit Mode Active State for List */
@@ -334,14 +334,14 @@
 }
 
 .timer-btn.primary {
-  background: linear-gradient(135deg, #00e5ff, #0077ff);
+  background: linear-gradient(135deg, #ff5964, #a91f2b);
   color: #fff;
-  box-shadow: 0 4px 15px rgba(0, 229, 255, 0.3);
+  box-shadow: 0 4px 15px rgba(240, 68, 80, 0.28);
 }
 
 .timer-btn.primary:active {
   transform: translateY(2px);
-  box-shadow: 0 2px 8px rgba(0, 229, 255, 0.3);
+  box-shadow: 0 2px 8px rgba(240, 68, 80, 0.28);
 }
 
 .timer-btn.danger {
@@ -368,7 +368,7 @@
 
 @keyframes icon-breathe {
     0% { color: #fff; transform: scale(1); }
-    50% { color: #ffd700; transform: scale(1.2); }
+    50% { color: #ff9aa1; transform: scale(1.2); }
     100% { color: #fff; transform: scale(1); }
 }
 
@@ -387,4 +387,24 @@
 @keyframes timer-neon-pulse {
     0% { filter: drop-shadow(0 0 3px rgba(255, 42, 42, 0.5)); transform: scale(1); }
     100% { filter: drop-shadow(0 0 10px rgba(255, 42, 42, 1)) drop-shadow(0 0 20px rgba(255, 42, 42, 0.6)); transform: scale(1.05); }
+}
+
+
+.timer-help-text {
+    margin-top: 12px;
+    color: #a99da3;
+    font-size: 0.78rem;
+    text-align: center;
+}
+
+.timer-container {
+    max-height: calc(100dvh - 28px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+}
+
+button:focus-visible,
+input:focus-visible {
+    outline: 2px solid #ff6872;
+    outline-offset: 3px;
 }

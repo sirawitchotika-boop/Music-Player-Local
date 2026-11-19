@@ -212,7 +212,7 @@ test('playback button reports a failed start instead of pretending to play', asy
   ui.showToast = (msg) => messages.push(msg);
   await ui.togglePlay();
   assert.equal(messages.length, 1);
-  assert.ok(messages[0].includes('ERROR'));
+  assert.ok(messages[0].includes('Playback could not start'));
 });
 
 test('failed track start does not report success or overwrite media metadata', async () => {
@@ -224,7 +224,7 @@ test('failed track start does not report success or overwrite media metadata', a
   let errorCount = 0;
   storage.getTrackBlob = async () => ({ id: 7 });
   mediaSessionManager.updateMetadata = () => { metadataCalls++; };
-  modalUI.showToast = (msg) => { if (msg.includes('ERROR')) errorCount++; };
+  modalUI.showToast = (msg) => { if (msg.includes('Could not play this song.')) errorCount++; };
   try {
     const ui = Object.create(PlaylistUI.prototype);
     ui.state = { currentTrackIndex: -1, queue: [{ id: 7 }] };

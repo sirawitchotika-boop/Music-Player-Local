@@ -1,3 +1,10 @@
+:root {
+    color-scheme: dark;
+    --app-bg: #0b090c;
+    --text-primary: #f7f3f4;
+    --accent-bright: #f04450;
+}
+
 * {
     margin: 0;
     padding: 0;
@@ -5,19 +12,29 @@
     -webkit-tap-highlight-color: transparent;
 }
 
-html, body {
+html,
+body {
     width: 100%;
-    height: 100dvh;
-    background-color: #0d0d12;
-    color: #ffffff;
-    color-scheme: dark;
-    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    height: 100%;
+    min-height: 100dvh;
+    background: var(--app-bg);
+    color: var(--text-primary);
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     overflow: hidden;
     overscroll-behavior: none;
     user-select: none;
     -webkit-user-select: none;
     display: flex;
     flex-direction: column;
+}
+
+button,
+input {
+    font: inherit;
+}
+
+button {
+    color: inherit;
 }
 
 ::-webkit-scrollbar {
@@ -28,76 +45,107 @@ html, body {
     display: flex;
     flex-direction: column;
     height: 100%;
+    min-height: 0;
     position: relative;
-    background: #0d0d12; /* สีเดียวเนียนกริบทั้งหน้าจอ */
+    overflow: hidden;
+    background:
+        radial-gradient(ellipse at 50% 42%, rgba(104, 12, 28, 0.24), transparent 54%),
+        linear-gradient(155deg, #180d12 0%, #0e0b0f 54%, #09090c 100%);
     justify-content: space-between;
 }
 
-/* เว้นระยะ Status Bar ด้านบนไม่ให้บัง */
 .top-bar {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 15px 20px;
-    padding-top: max(25px, env(safe-area-inset-top));
+    padding: 12px 18px;
+    padding-top: max(18px, env(safe-area-inset-top));
     z-index: 10;
+    flex-shrink: 0;
+}
+
+.top-center {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.top-right-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
 
 .app-title {
-    font-size: 15px;
-    font-weight: 800;
-    letter-spacing: 3px;
-    color: #ffffff;
-    text-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
+    font-size: clamp(13px, 3.8vw, 16px);
+    font-weight: 750;
+    letter-spacing: 2px;
+    color: #f7f3f4;
+}
+
+.brand-mark {
+    color: var(--accent-bright);
 }
 
 .icon-btn {
-    background: none;
-    border: none;
+    width: 42px;
+    height: 42px;
+    border: 1px solid transparent;
+    border-radius: 50%;
+    background: transparent;
     cursor: pointer;
     display: flex;
     justify-content: center;
     align-items: center;
+    transition: background 0.2s ease, border-color 0.2s ease;
 }
 
 .icon-btn svg {
-    width: 26px;
-    height: 26px;
-    fill: #8a8a9e;
-    transition: all 0.3s ease;
+    width: 25px;
+    height: 25px;
+    fill: #c4b9be;
+    transition: fill 0.2s ease, transform 0.2s ease;
+}
+
+.icon-btn:active {
+    background: rgba(255, 255, 255, 0.06);
 }
 
 .icon-btn:active svg {
-    fill: #ff2a2a;
-    filter: drop-shadow(0 0 12px rgba(255, 42, 42, 0.8));
-    transform: scale(0.9);
+    fill: var(--accent-bright);
+    transform: scale(0.94);
 }
 
-/* =========================================
-   Center Section: Minimalist Disc
-   ========================================= */
 .visualizer-section {
     flex: 1 1 auto;
+    min-height: 0;
     display: flex;
-    flex-direction: column;
     justify-content: center;
     align-items: center;
     position: relative;
     width: 100%;
+    padding: 8px 0;
 }
 
 .album-art-container {
-    width: 250px;
-    height: 250px;
+    width: min(74vw, 320px);
+    height: auto;
+    aspect-ratio: 1;
     border-radius: 50%;
-    background: radial-gradient(circle at 35% 35%, #181822 0%, #0a0a0f 100%);
-    border: 2px solid #1e1e28;
-    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.9), inset 0 0 30px rgba(0, 0, 0, 0.8);
+    background:
+        radial-gradient(circle at 35% 28%, #30272b 0%, #171216 45%, #08080b 76%);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    box-shadow:
+        0 24px 54px rgba(0, 0, 0, 0.72),
+        inset 0 0 28px rgba(0, 0, 0, 0.88),
+        0 0 0 5px rgba(255, 255, 255, 0.012);
     display: flex;
     justify-content: center;
     align-items: center;
     position: relative;
-    transition: border-color 0.4s ease, box-shadow 0.4s ease;
+    isolation: isolate;
+    overflow: hidden;
+    transition: border-color 0.35s ease, box-shadow 0.35s ease;
 }
 
 .album-art-disc {
@@ -106,63 +154,127 @@ html, body {
     display: flex;
     justify-content: center;
     align-items: center;
+    position: relative;
+    isolation: isolate;
+}
+
+.album-art-disc::before {
+    content: "";
+    position: absolute;
+    inset: 4%;
+    border-radius: 50%;
+    background:
+        radial-gradient(circle, #07070a 0 17%, transparent 17.5%),
+        repeating-radial-gradient(circle, rgba(255, 255, 255, 0.075) 0 1px, rgba(0, 0, 0, 0.18) 1.5px 4px),
+        radial-gradient(circle at 35% 28%, #393337 0%, #171317 52%, #060609 100%);
+    box-shadow:
+        inset 0 0 26px rgba(0, 0, 0, 0.92),
+        0 0 0 1px rgba(255, 255, 255, 0.045);
+}
+
+.album-art-disc::after {
+    content: "";
+    position: absolute;
+    z-index: 1;
+    width: 33%;
+    aspect-ratio: 1;
+    border-radius: 50%;
+    background: radial-gradient(circle at 36% 30%, #292126 0%, #0a090c 72%);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow:
+        0 0 0 5px rgba(0, 0, 0, 0.24),
+        inset 0 0 14px rgba(0, 0, 0, 0.86);
+    pointer-events: none;
 }
 
 .music-icon-placeholder {
-    width: 65px;
-    height: 65px;
-    fill: #2c2c3e;
+    position: relative;
+    z-index: 2;
+    width: 24%;
+    height: auto;
+    fill: #d24a55;
+    filter: drop-shadow(0 2px 8px rgba(201, 39, 54, 0.25));
     transition: fill 0.3s ease, filter 0.3s ease;
 }
 
-/* ไฟสถานะสีแดงส่องสว่างเบาๆ ตอนกำลังเล่น */
 .album-art-container.playing {
-    border-color: rgba(255, 42, 42, 0.4);
-    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.9), 0 0 35px rgba(255, 42, 42, 0.15);
+    border-color: rgba(240, 68, 80, 0.48);
+    box-shadow:
+        0 24px 54px rgba(0, 0, 0, 0.72),
+        0 0 30px rgba(201, 39, 54, 0.16),
+        inset 0 0 28px rgba(0, 0, 0, 0.88);
 }
 
 .album-art-container.playing .music-icon-placeholder {
-    fill: #ff2a2a;
-    filter: drop-shadow(0 0 14px rgba(255, 42, 42, 0.7));
+    fill: #ff5964;
+    filter: drop-shadow(0 0 10px rgba(240, 68, 80, 0.48));
 }
 
-/* Favorite Button */
 .favorite-btn {
     position: absolute;
-    bottom: -15px;
-    right: 25px;
-    background: #14141c;
-    border: 1px solid #252535;
+    z-index: 3;
+    right: 6%;
+    bottom: 6%;
+    width: clamp(48px, 14vw, 58px);
+    height: clamp(48px, 14vw, 58px);
+    border: 1px solid rgba(255, 255, 255, 0.16);
     border-radius: 50%;
-    width: 52px;
-    height: 52px;
+    background: rgba(12, 10, 13, 0.9);
     display: flex;
     justify-content: center;
     align-items: center;
     cursor: pointer;
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.6);
-    transition: all 0.3s ease;
-    z-index: 10;
+    box-shadow: 0 8px 22px rgba(0, 0, 0, 0.58);
+    transition: border-color 0.25s ease, background 0.25s ease, transform 0.25s ease;
+    backdrop-filter: blur(8px);
 }
 
 .favorite-btn svg {
-    width: 24px;
-    height: 24px;
-    fill: #555566;
-    transition: all 0.3s ease;
+    width: 25px;
+    height: 25px;
+    fill: #847980;
+    transition: fill 0.25s ease, filter 0.25s ease, transform 0.25s ease;
 }
 
 .favorite-btn.active {
-    border-color: #ff2a2a;
-    box-shadow: 0 0 15px rgba(255, 42, 42, 0.5), inset 0 0 10px rgba(255, 42, 42, 0.3);
+    border-color: rgba(240, 68, 80, 0.7);
+    background: rgba(92, 15, 26, 0.78);
+    box-shadow: 0 0 18px rgba(201, 39, 54, 0.24);
 }
 
 .favorite-btn.active svg {
-    fill: #ff2a2a;
-    filter: drop-shadow(0 0 12px rgba(255, 42, 42, 0.9));
-    transform: scale(1.15);
+    fill: #ff5964;
+    filter: drop-shadow(0 0 7px rgba(240, 68, 80, 0.55));
+    transform: scale(1.08);
 }
 
 .favorite-btn:active {
-    transform: scale(0.9);
+    transform: scale(0.94);
+}
+
+:focus-visible {
+    outline: 2px solid #ff6872;
+    outline-offset: 3px;
+}
+
+@media (max-height: 720px) {
+    .album-art-container {
+        width: min(60vw, 248px);
+    }
+
+    .top-bar {
+        padding-top: max(10px, env(safe-area-inset-top));
+        padding-bottom: 6px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        scroll-behavior: auto !important;
+        transition-duration: 0.01ms !important;
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+    }
 }
