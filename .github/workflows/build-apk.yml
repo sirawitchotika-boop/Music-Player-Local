@@ -30,13 +30,13 @@ jobs:
           npm init -y
           npm install @capacitor/core@latest @capacitor/cli@latest @capacitor/android@latest @capacitor/assets@latest sharp@latest
 
-          cat << 'EOF' > generate-icon.js
+          cat << 'EOF' > generate-icon.cjs
           const sharp = require('sharp');
           sharp('icon.svg').resize(512, 512).png().toFile('icon.png')
             .then(() => console.log('Generated icon.png successfully.'))
             .catch(err => { console.error(err); process.exit(1); });
           EOF
-          node generate-icon.js
+          node generate-icon.cjs
 
           mkdir -p www
           cp -r index.html css js manifest.json icon.svg icon.png www/
