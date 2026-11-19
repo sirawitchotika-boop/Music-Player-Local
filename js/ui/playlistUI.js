@@ -1,4 +1,5 @@
 import { storage } from '../core/storage.js';
+import { sessionMemory } from '../core/sessionMemory.js';
 import { modalUI } from './modalUI.js';
 import { mediaSessionManager } from '../core/mediaSessionManager.js';
 
@@ -17,7 +18,7 @@ export class PlaylistUI {
     this.dropdownToggle = document.getElementById('playlist-dropdown-toggle');
     this.dropdownMenu = document.getElementById('playlist-dropdown-menu');
     this.activePlaylistName = document.getElementById('current-playlist-name');
-    this.init();
+    this.ready = this.init();
   }
 
   async init() {
@@ -124,6 +125,7 @@ export class PlaylistUI {
 
   selectPlaylist(id) {
     this.currentPlaylistId = id;
+    this.state.playlistId = id;
     if (id === 'all') {
       this.activePlaylistName.textContent = 'All Tracks';
     } else if (id === 'favorites') {
@@ -132,7 +134,7 @@ export class PlaylistUI {
       const pl = this.playlists.find(p => p.id === id);
       if (pl) this.activePlaylistName.textContent = pl.name;
     }
-    this.loadPlaylist();
+    return this.loadPlaylist();
   }
 
   async editPlaylist(id) {
@@ -364,6 +366,8 @@ export class PlaylistUI {
   }
 
   async playTrack(track) {
+    const previousIndex = this.state.currentTrackIndex;
+    const previousSelected = this.state.selectedTrackId;
     try {
       const trackIndex = this.state.queue.findIndex(t => t.id === track.id);
       this.state.currentTrackIndex = trackIndex !== -1 ? trackIndex : 0;
@@ -374,11 +378,18 @@ export class PlaylistUI {
       if (!blob) throw new Error("Audio blob not found");
       await this.audio.load(blob);
       await this.audio.play();
+      this.state.selectedTrackId = track.id;
+      this.state.loadedTrackId = track.id;
+      this.state.restoringSession = false;
+      sessionMemory.saveSelection(track.id, this.currentPlaylistId, this.state.queue,
+        this.audio.audioElement?.currentTime ?? 0);
       modalUI.showToast(`[PLAYBACK] เล่น: ${track.name}`);
       window.dispatchEvent(new Event('gt-liked-updated'));
       mediaSessionManager.updateMetadata(track);
       return true;
     } catch (error) {
+      this.state.currentTrackIndex = previousIndex;
+      this.state.selectedTrackId = previousSelected;
       modalUI.showToast('[ERROR] เล่นเพลงไม่สำเร็จ', 'error');
       return false;
     }
@@ -397,6 +408,7 @@ export class PlaylistUI {
         const isConfirmed = await modalUI.showConfirm('[CONFIRM] ยืนยันการลบ', 'ต้องการลบเพลงนี้ออกจากระบบถาวรหรือไม่?');
         if (!isConfirmed) return;
         await storage.deleteTrack(id);
+        sessionMemory.clearForDeletedTrack(id);
         this.playlists.forEach(pl => {
           pl.tracks = pl.tracks.filter(tid => tid !== id);
         });
