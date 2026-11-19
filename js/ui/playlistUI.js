@@ -91,12 +91,17 @@ export class PlaylistUI {
       if (!isSystem) {
         actionHTML = `
           <div class="pl-actions">
-            <button class="pl-action-btn edit-btn" data-id="${id}"><svg viewBox="0 0 24 24" width="16" height="16" fill="#6bc5ff"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></button>
-            <button class="pl-action-btn del-btn" data-id="${id}"><svg viewBox="0 0 24 24" width="16" height="16" fill="#ff2a2a"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg></button>
+            <button class="pl-action-btn edit-btn"><svg viewBox="0 0 24 24" width="16" height="16" fill="#6bc5ff"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></button>
+            <button class="pl-action-btn del-btn"><svg viewBox="0 0 24 24" width="16" height="16" fill="#ff2a2a"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg></button>
           </div>
         `;
       }
-      div.innerHTML = `<span style="pointer-events:none;">${name}</span>${actionHTML}`;
+      div.innerHTML = `<span style="pointer-events:none;"></span>${actionHTML}`;
+      div.querySelector("span").textContent = name;
+      if (!isSystem) {
+        div.querySelector(".edit-btn").dataset.id = String(id);
+        div.querySelector(".del-btn").dataset.id = String(id);
+      }
       div.addEventListener('click', (e) => {
         const editBtn = e.target.closest('.edit-btn');
         const delBtn = e.target.closest('.del-btn');
@@ -320,15 +325,17 @@ export class PlaylistUI {
             <svg viewBox="0 0 24 24" width="20" height="20" fill="#7a7a8c" style="transition: 0.3s;"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>
           </div>
           <div style="overflow: hidden;">
-            <div class="track-title-text" style="color: #fff; font-weight: bold; font-size: 14px; white-space: nowrap; text-overflow: ellipsis; overflow: hidden; margin-bottom: 4px; transition: 0.3s;">${trackName}</div>
+            <div class="track-title-text" style="color: #fff; font-weight: bold; font-size: 14px; white-space: nowrap; text-overflow: ellipsis; overflow: hidden; margin-bottom: 4px; transition: 0.3s;"></div>
             <div style="color: #ff2a2a; font-size: 11px; font-weight: 800; letter-spacing: 1px;">LOCAL FILE</div>
           </div>
         </div>
-        <button class="delete-btn" data-id="${track.id}" style="margin-left: 10px; background: rgba(255, 42, 42, 0.1); color: #ff2a2a; border: 1px solid rgba(255, 42, 42, 0.3); padding: 8px 14px; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 12px; transition: 0.2s;">DEL</button>
+        <button class="delete-btn" style="margin-left: 10px; background: rgba(255, 42, 42, 0.1); color: #ff2a2a; border: 1px solid rgba(255, 42, 42, 0.3); padding: 8px 14px; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 12px; transition: 0.2s;">DEL</button>
       `;
+      item.querySelector('.track-title-text').textContent = trackName;
       const trackInfoArea = item.querySelector('.track-info-area');
       trackInfoArea.addEventListener('click', () => this.playTrack(track));
       const deleteBtn = item.querySelector('.delete-btn');
+      deleteBtn.dataset.id = String(track.id);
       deleteBtn.addEventListener('click', async (e) => {
         e.stopPropagation();
         await this.deleteTrack(track.id);

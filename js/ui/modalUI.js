@@ -24,7 +24,7 @@ export class ModalUI {
       if (textHTML) {
         const textEl = document.createElement('div');
         textEl.className = 'gt-modal-text';
-        textEl.innerHTML = textHTML;
+        textEl.textContent = textHTML;
         dialog.appendChild(textEl);
       }
       
@@ -78,13 +78,16 @@ export class ModalUI {
   
   // รองรับ inputType โดยค่าเริ่มต้นเป็น 'text' แก้ปัญหาพิมพ์ได้แต่ตัวเลข
   showPrompt(title, placeholder, defaultValue = '', inputType = 'text') {
-    const inputHTML = `<input type="${inputType}" class="gt-modal-input" placeholder="${placeholder}" value="${defaultValue}">`;
+    const safeInputType = inputType === "number" ? "number" : "text";
+    const inputHTML = `<input type="${safeInputType}" class="gt-modal-input">`;
     const btnHTML = `
         <button class="gt-btn-cancel">CANCEL</button>
         <button class="gt-btn-confirm">OK</button>
     `;
     return this._buildDialog(title, null, inputHTML, btnHTML, (dialog, close) => {
       const input = dialog.querySelector('.gt-modal-input');
+      input.placeholder = placeholder;
+      input.value = defaultValue;
       dialog.querySelector('.gt-btn-cancel').onclick = () => close(null);
       dialog.querySelector('.gt-btn-confirm').onclick = () => close(input.value);
       setTimeout(() => {
@@ -98,8 +101,8 @@ export class ModalUI {
   
   showDoublePrompt(title, placeholder1, value1, placeholder2, value2) {
     const inputHTML = `
-        <input type="text" id="gt-input-1" class="gt-modal-input" placeholder="${placeholder1}" value="${value1}" style="margin-bottom: 12px;">
-        <input type="number" id="gt-input-2" class="gt-modal-input" placeholder="${placeholder2}" value="${value2}">
+        <input type="text" id="gt-input-1" class="gt-modal-input" style="margin-bottom: 12px;">
+        <input type="number" id="gt-input-2" class="gt-modal-input">
     `;
     const btnHTML = `
         <button class="gt-btn-cancel">CANCEL</button>
@@ -108,6 +111,10 @@ export class ModalUI {
     return this._buildDialog(title, null, inputHTML, btnHTML, (dialog, close) => {
       const input1 = dialog.querySelector('#gt-input-1');
       const input2 = dialog.querySelector('#gt-input-2');
+      input1.placeholder = placeholder1;
+      input1.value = value1;
+      input2.placeholder = placeholder2;
+      input2.value = value2;
       dialog.querySelector('.gt-btn-cancel').onclick = () => close(null);
       dialog.querySelector('.gt-btn-confirm').onclick = () => {
         close({ val1: input1.value, val2: input2.value });
