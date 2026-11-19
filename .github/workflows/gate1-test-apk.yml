@@ -1,0 +1,13 @@
+name: Gate 1 isolated test APK
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test-apk:
+    uses: ./.github/workflows/build-apk.yml
+    with:
+      gate1_isolated: true

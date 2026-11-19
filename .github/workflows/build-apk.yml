@@ -2,13 +2,27 @@ name: Build Android APK
 
 on:
   workflow_dispatch:
+  workflow_call:
+    inputs:
+      gate1_isolated:
+        description: 'Build the separate disposable Gate 1 app'
+        required: true
+        type: boolean
   pull_request:
     paths:
       - '.github/workflows/build-apk.yml'
+      - '.github/workflows/gate1-test-apk.yml'
+      - 'scripts/prepare-gate1-build.py'
+      - 'scripts/mark-gate1-icon.cjs'
+      - 'tests/gate1-build.test.mjs'
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      GT_GATE1_ISOLATED: ${{ github.event_name == 'pull_request' || inputs.gate1_isolated == true }}
 
     steps:
       - name: Checkout Source Code
@@ -37,6 +51,9 @@ jobs:
             .catch(err => { console.error(err); process.exit(1); });
           EOF
           node generate-icon.cjs
+          if [ "$GT_GATE1_ISOLATED" = "true" ]; then
+            node scripts/mark-gate1-icon.cjs
+          fi
 
           mkdir -p www
           cp -r index.html css js manifest.json icon.svg icon.png www/
@@ -768,6 +785,10 @@ jobs:
           }
           EOF
 
+      - name: Prepare isolated Gate 1 Android identity
+        if: env.GT_GATE1_ISOLATED == 'true'
+        run: python3 scripts/prepare-gate1-build.py
+
       - name: Sync and Compile Debug APK
         run: |
           npx cap sync android
@@ -775,9 +796,29 @@ jobs:
           chmod +x gradlew
           ./gradlew assembleDebug
 
+      - name: Verify isolated package identity inside compiled APK
+        if: env.GT_GATE1_ISOLATED == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          AAPT="$(find "${ANDROID_HOME}/build-tools" -maxdepth 2 -type f -name aapt | sort -V | tail -n 1)"
+          test -x "$AAPT"
+          BADGING="$("$AAPT" dump badging android/app/build/outputs/apk/debug/app-debug.apk)"
+          grep -F "package: name='com.gt.soundmaster.gate1'" <<< "$BADGING" > /dev/null
+          grep -F "application-label:'GT SoundMaster TEST'" <<< "$BADGING" > /dev/null
+          echo "Verified separate GT SoundMaster TEST identity in compiled APK."
+
       - name: Upload APK Artifact
-        if: github.event_name == 'workflow_dispatch'
+        if: github.event_name == 'workflow_dispatch' && env.GT_GATE1_ISOLATED != 'true'
         uses: actions/upload-artifact@v4
         with:
           name: GT-SoundMaster-APK
           path: android/app/build/outputs/apk/debug/app-debug.apk
+
+      - name: Upload isolated Gate 1 test APK
+        if: github.event_name == 'workflow_dispatch' && env.GT_GATE1_ISOLATED == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: GT-SoundMaster-Gate1-TEST-debug-only
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 7
