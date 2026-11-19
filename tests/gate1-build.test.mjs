@@ -90,7 +90,7 @@ test('CI isolates pull requests, verifies the compiled APK, and never uploads a 
   const gate = readFileSync(join(root, '.github/workflows/gate1-test-apk.yml'), 'utf8');
   const icon = readFileSync(join(root, 'scripts/mark-gate1-icon.cjs'), 'utf8');
   assert.match(build, /workflow_call:/);
-  assert.match(build, /GT_GATE1_ISOLATED: \$\{\{ github\.event_name == 'pull_request' \|\| inputs\.gate1_isolated == true \}\}/);
+  assert.match(build, /GT_GATE1_ISOLATED: \$\{\{ github\.event_name == 'pull_request' && inputs\.signing_test_preview != true \|\| inputs\.gate1_isolated == true \}\}/);
   assert.match(build, /node scripts\/mark-gate1-icon\.cjs/);
   assert.match(build, /python3 scripts\/prepare-gate1-build\.py/);
   assert.match(build, /dump badging/);

@@ -1,0 +1,33 @@
+name: Milestone 4A signing TEST APK
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - '.github/workflows/build-apk.yml'
+      - '.github/workflows/m4-signing-test.yml'
+      - 'scripts/prepare-gate1-build.py'
+      - 'scripts/prepare-signing-test.sh'
+      - 'tests/m4-signing.test.mjs'
+
+permissions:
+  contents: read
+
+jobs:
+  verify-signing-test-identity:
+    if: github.event_name == 'pull_request'
+    uses: ./.github/workflows/build-apk.yml
+    with:
+      signing_test_preview: true
+
+  build-signed-test:
+    if: github.event_name == 'workflow_dispatch'
+    uses: ./.github/workflows/build-apk.yml
+    with:
+      signing_test: true
+      signing_test_expected_sha256: ${{ vars.GT_SIGNING_TEST_CERT_SHA256 }}
+    secrets:
+      GT_SIGNING_TEST_KEYSTORE_B64: ${{ secrets.GT_SIGNING_TEST_KEYSTORE_B64 }}
+      GT_SIGNING_TEST_STORE_PASSWORD: ${{ secrets.GT_SIGNING_TEST_STORE_PASSWORD }}
+      GT_SIGNING_TEST_KEY_ALIAS: ${{ secrets.GT_SIGNING_TEST_KEY_ALIAS }}
+      GT_SIGNING_TEST_KEY_PASSWORD: ${{ secrets.GT_SIGNING_TEST_KEY_PASSWORD }}

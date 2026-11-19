@@ -6,8 +6,32 @@ on:
     inputs:
       gate1_isolated:
         description: 'Build the separate disposable Gate 1 app'
-        required: true
+        required: false
+        default: false
         type: boolean
+      signing_test:
+        description: 'Future manual release build of the separate signing-test app'
+        required: false
+        default: false
+        type: boolean
+      signing_test_preview:
+        description: 'PR-only debug compile of signing-test identity without signing secrets'
+        required: false
+        default: false
+        type: boolean
+      signing_test_expected_sha256:
+        description: 'Expected public certificate fingerprint; required in signed mode'
+        required: false
+        type: string
+    secrets:
+      GT_SIGNING_TEST_KEYSTORE_B64:
+        required: false
+      GT_SIGNING_TEST_STORE_PASSWORD:
+        required: false
+      GT_SIGNING_TEST_KEY_ALIAS:
+        required: false
+      GT_SIGNING_TEST_KEY_PASSWORD:
+        required: false
   pull_request:
     paths:
       - '.github/workflows/build-apk.yml'
@@ -15,6 +39,9 @@ on:
       - 'scripts/prepare-gate1-build.py'
       - 'scripts/mark-gate1-icon.cjs'
       - 'tests/gate1-build.test.mjs'
+      - '.github/workflows/m4-signing-test.yml'
+      - 'scripts/prepare-signing-test.sh'
+      - 'tests/m4-signing.test.mjs'
 
 jobs:
   build:
@@ -22,7 +49,11 @@ jobs:
     permissions:
       contents: read
     env:
-      GT_GATE1_ISOLATED: ${{ github.event_name == 'pull_request' || inputs.gate1_isolated == true }}
+      GT_GATE1_ISOLATED: ${{ github.event_name == 'pull_request' && inputs.signing_test_preview != true || inputs.gate1_isolated == true }}
+      GT_SIGNING_TEST_APP: ${{ inputs.signing_test == true || inputs.signing_test_preview == true }}
+      GT_SIGNING_TEST_SIGNED: ${{ inputs.signing_test == true }}
+      GT_SIGNING_TEST_BUILD_NUMBER: ${{ github.run_number }}
+      GT_SIGNING_TEST_EXPECTED_CERT: ${{ inputs.signing_test_expected_sha256 }}
 
     steps:
       - name: Checkout Source Code
@@ -51,7 +82,7 @@ jobs:
             .catch(err => { console.error(err); process.exit(1); });
           EOF
           node generate-icon.cjs
-          if [ "$GT_GATE1_ISOLATED" = "true" ]; then
+          if [ "$GT_GATE1_ISOLATED" = "true" ] || [ "$GT_SIGNING_TEST_APP" = "true" ]; then
             node scripts/mark-gate1-icon.cjs
           fi
 
@@ -789,12 +820,39 @@ jobs:
         if: env.GT_GATE1_ISOLATED == 'true'
         run: python3 scripts/prepare-gate1-build.py
 
+      - name: Prepare separate signing-test Android identity
+        if: env.GT_SIGNING_TEST_APP == 'true'
+        run: python3 scripts/prepare-gate1-build.py --signing-test
+
+      - name: Prepare approved signing-test release credentials
+        if: env.GT_SIGNING_TEST_SIGNED == 'true'
+        env:
+          GT_SIGNING_TEST_KEYSTORE_B64: ${{ secrets.GT_SIGNING_TEST_KEYSTORE_B64 }}
+          GT_SIGNING_TEST_STORE_PASSWORD: ${{ secrets.GT_SIGNING_TEST_STORE_PASSWORD }}
+          GT_SIGNING_TEST_KEY_ALIAS: ${{ secrets.GT_SIGNING_TEST_KEY_ALIAS }}
+          GT_SIGNING_TEST_KEY_PASSWORD: ${{ secrets.GT_SIGNING_TEST_KEY_PASSWORD }}
+        run: |
+          npx cap sync android
+          bash scripts/prepare-signing-test.sh
+
       - name: Sync and Compile Debug APK
+        if: env.GT_SIGNING_TEST_SIGNED != 'true'
         run: |
           npx cap sync android
           cd android
           chmod +x gradlew
           ./gradlew assembleDebug
+
+      - name: Compile signed signing-test release APK
+        if: env.GT_SIGNING_TEST_SIGNED == 'true'
+        env:
+          GT_SIGNING_TEST_STORE_PASSWORD: ${{ secrets.GT_SIGNING_TEST_STORE_PASSWORD }}
+          GT_SIGNING_TEST_KEY_ALIAS: ${{ secrets.GT_SIGNING_TEST_KEY_ALIAS }}
+          GT_SIGNING_TEST_KEY_PASSWORD: ${{ secrets.GT_SIGNING_TEST_KEY_PASSWORD }}
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleRelease
 
       - name: Verify isolated package identity inside compiled APK
         if: env.GT_GATE1_ISOLATED == 'true'
@@ -808,8 +866,46 @@ jobs:
           grep -F "application-label:'GT SoundMaster TEST'" <<< "$BADGING" > /dev/null
           echo "Verified separate GT SoundMaster TEST identity in compiled APK."
 
+      - name: Verify signing-test APK identity and certificate
+        if: env.GT_SIGNING_TEST_APP == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ "$GT_SIGNING_TEST_SIGNED" = "true" ]; then
+            APK="android/app/build/outputs/apk/release/app-release.apk"
+          else
+            APK="android/app/build/outputs/apk/debug/app-debug.apk"
+          fi
+          AAPT="$(find "${ANDROID_HOME}/build-tools" -maxdepth 2 -type f -name aapt | sort -V | tail -n 1)"
+          test -x "$AAPT"
+          test -s "$APK"
+          BADGING="$("$AAPT" dump badging "$APK")"
+          grep -F "package: name='com.gt.soundmaster.signingtest'" <<< "$BADGING" > /dev/null
+          grep -F "application-label:'GT SoundMaster SIGN TEST'" <<< "$BADGING" > /dev/null
+          if [ "$GT_SIGNING_TEST_SIGNED" = "true" ]; then
+            APKSIGNER="$(find "${ANDROID_HOME}/build-tools" -maxdepth 2 -type f -name apksigner | sort -V | tail -n 1)"
+            test -x "$APKSIGNER"
+            EXPECTED="$(printf '%s' "$GT_SIGNING_TEST_EXPECTED_CERT" | tr -d ':[:space:]' | tr '[:upper:]' '[:lower:]')"
+            if ! [[ "$EXPECTED" =~ ^[0-9a-f]{64}$ ]]; then
+              echo "Signing test not configured: expected SHA-256 fingerprint is invalid." >&2
+              exit 1
+            fi
+            SIGNERS="$("$APKSIGNER" verify --print-certs "$APK")"
+            ACTUAL="$(printf '%s\n' "$SIGNERS" | sed -n 's/^Signer #1 certificate SHA-256 digest: //p' | tr -d ':[:space:]' | tr '[:upper:]' '[:lower:]')"
+            if [[ "$ACTUAL" != "$EXPECTED" ]] || [[ "$SIGNERS" == *"Signer #2 certificate"* ]]; then
+              echo "Signed APK certificate did not match expected signing-test certificate. No artifact uploaded." >&2
+              exit 1
+            fi
+            echo "Verified release APK signed with the expected signing-test certificate."
+          fi
+          echo "Verified isolated signing-test APK identity."
+
+      - name: Remove temporary signing-test keystore
+        if: always() && env.GT_SIGNING_TEST_SIGNED == 'true'
+        run: rm -f "${RUNNER_TEMP}/gt-soundmaster-signingtest.jks"
+
       - name: Upload APK Artifact
-        if: github.event_name == 'workflow_dispatch' && env.GT_GATE1_ISOLATED != 'true'
+        if: github.event_name == 'workflow_dispatch' && env.GT_GATE1_ISOLATED != 'true' && env.GT_SIGNING_TEST_APP != 'true'
         uses: actions/upload-artifact@v4
         with:
           name: GT-SoundMaster-APK
@@ -821,4 +917,12 @@ jobs:
         with:
           name: GT-SoundMaster-Gate1-TEST-debug-only
           path: android/app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 7
+
+      - name: Upload signed signing-test APK (manual only)
+        if: github.event_name == 'workflow_dispatch' && env.GT_SIGNING_TEST_SIGNED == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: GT-SoundMaster-SIGN-TEST-release-only
+          path: android/app/build/outputs/apk/release/app-release.apk
           retention-days: 7
