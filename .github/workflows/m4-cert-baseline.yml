@@ -1,0 +1,26 @@
+name: Milestone 4C certificate baseline (manual; no APK)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check-test-key-baseline:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout diagnostic script
+        uses: actions/checkout@v4
+      - name: Set up Java for keytool
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '21'
+      - name: Compare existing TEST key certificate with public expected fingerprint
+        env:
+          GT_SIGNING_TEST_KEYSTORE_B64: ${{ secrets.GT_SIGNING_TEST_KEYSTORE_B64 }}
+          GT_SIGNING_TEST_STORE_PASSWORD: ${{ secrets.GT_SIGNING_TEST_STORE_PASSWORD }}
+          GT_SIGNING_TEST_KEY_ALIAS: ${{ secrets.GT_SIGNING_TEST_KEY_ALIAS }}
+          GT_SIGNING_TEST_EXPECTED_CERT: ${{ vars.GT_SIGNING_TEST_CERT_SHA256 }}
+        run: bash scripts/check-signing-test-cert-baseline.sh
