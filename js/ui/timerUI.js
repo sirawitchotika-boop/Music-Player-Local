@@ -302,7 +302,7 @@ class TimerUI {
     
     async createPreset() {
         if (this.minutes <= 0) {
-            modalUI.showToast("[WARN] ค่าเวลาต้องมากกว่า 0 นาที", "warning");
+            modalUI.showToast("Choose a time greater than zero.", "warning");
             return;
         }
         
@@ -344,13 +344,13 @@ class TimerUI {
         
         const cleanName = result.val1.trim();
         if (cleanName === '') {
-            modalUI.showToast("[ERROR] ชื่อ Preset ห้ามว่าง", "error");
+            modalUI.showToast("Enter a preset name.", "error");
             return;
         }
         
         const isDuplicate = allPresets.some(p => p.id !== id && p.name.toLowerCase() === cleanName.toLowerCase());
         if (isDuplicate) {
-            modalUI.showToast("[ERROR] ตรวจพบชื่อ Preset ซ้ำในระบบ", "error");
+            modalUI.showToast("A preset with this name already exists.", "error");
             return;
         }
         
@@ -359,7 +359,7 @@ class TimerUI {
             modalUI.showToast("Enter a valid number of minutes greater than zero.", "error");
             return;
         } else if (parsed > this.maxMinutes) {
-            modalUI.showToast(`[ERROR] เกินขีดจำกัดสูงสุด (${this.maxMinutes} นาที)`, "error");
+            modalUI.showToast(`The maximum timer length is ${this.maxMinutes} minutes.`, "error");
             return;
         }
         

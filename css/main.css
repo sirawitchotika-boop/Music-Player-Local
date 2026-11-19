@@ -1,13 +1,8 @@
 :root {
     color-scheme: dark;
     --app-bg: #0b090c;
-    --surface: #171217;
-    --surface-raised: #21171c;
     --text-primary: #f7f3f4;
-    --text-muted: #a49ba0;
-    --accent: #c92736;
     --accent-bright: #f04450;
-    --accent-soft: rgba(201, 39, 54, 0.18);
 }
 
 * {

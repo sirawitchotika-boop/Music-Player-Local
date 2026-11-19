@@ -119,7 +119,7 @@ export class PlaylistUI {
       this.dropdownMenu.appendChild(div);
     };
     createItem('all', 'All Tracks', true);
-    createItem('favorites', 'Favorites [PROTECTED]', true);
+    createItem('favorites', 'Favorites', true);
     this.playlists.forEach(pl => createItem(pl.id, pl.name));
   }
 
@@ -129,7 +129,7 @@ export class PlaylistUI {
     if (id === 'all') {
       this.activePlaylistName.textContent = 'All Tracks';
     } else if (id === 'favorites') {
-      this.activePlaylistName.textContent = 'Favorites [PROTECTED]';
+      this.activePlaylistName.textContent = 'Favorites';
     } else {
       const pl = this.playlists.find(p => p.id === id);
       if (pl) this.activePlaylistName.textContent = pl.name;
