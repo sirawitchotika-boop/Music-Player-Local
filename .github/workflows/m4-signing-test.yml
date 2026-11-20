@@ -1,4 +1,4 @@
-name: Milestone 4A signing TEST APK
+name: GT SoundMaster signed app update
 
 on:
   workflow_dispatch:
