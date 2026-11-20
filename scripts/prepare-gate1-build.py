@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Convert a generated Android build into an isolated Gate 1 test app.
+"""Convert generated Android builds to the Gate 1 or signed-app identity.
 
 Only modifies generated files from this CI job. The original app, its local
 music, permanent signing settings and repository source remain unchanged.
@@ -13,7 +13,7 @@ ORIGINAL_ID = "com.gt.soundmaster"
 TEST_ID = "com.gt.soundmaster.gate1"
 TEST_NAME = "GT SoundMaster TEST"
 SIGNING_TEST_ID = "com.gt.soundmaster.signingtest"
-SIGNING_TEST_NAME = "GT SoundMaster SIGN TEST"
+SIGNING_TEST_NAME = "GT SoundMaster"
 
 
 def change_once(text, pattern, replacement, label):
@@ -76,12 +76,6 @@ def prepare(root, signing_test=False):
             rf"(?m)^(\s*versionCode\s+){version_code}(\s*)$",
             lambda match: match.group(1) + str(10000 + number) + match.group(2),
             "signing-test versionCode",
-        )
-        updated_gradle = change_once(
-            updated_gradle,
-            rf'(?m)^(\s*versionName\s+["\x27]){re.escape(version_name)}(["\x27])',
-            lambda match: match.group(1) + f"{version_name}-st.{number}" + match.group(2),
-            "signing-test versionName",
         )
     updated[gradle] = updated_gradle
 
@@ -149,7 +143,7 @@ def prepare(root, signing_test=False):
 
     for path, content in updated.items():
         path.write_text(content, encoding="utf-8")
-    print(f"Prepared isolated test identity: {target_id} ({target_name})")
+    print(f"Prepared Android identity: {target_id} ({target_name})")
 
 
 if __name__ == "__main__":
