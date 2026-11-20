@@ -242,3 +242,18 @@ test('failed track start does not report success or overwrite media metadata', a
     mediaSessionManager.updateMetadata = originalMetadata;
   }
 });
+
+test('clearing the active playlist removes a stale Favorites heart indicator', () => {
+  const ui = Object.create(PlayerUI.prototype);
+  const classes = new Set(['active']);
+  ui.favoriteBtn = {
+    classList: {
+      add: name => classes.add(name),
+      remove: name => classes.delete(name)
+    }
+  };
+  ui.state = { currentTrackIndex: -1, queue: [] };
+  ui.refreshLikeButtonState();
+  assert.equal(classes.has('active'), false);
+});
+
