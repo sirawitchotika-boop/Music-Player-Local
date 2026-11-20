@@ -216,3 +216,40 @@ test('falls back to the original flat audio path if EQ filters are unavailable',
     assert.deepEqual(audioEngine.gainNode.connections, [audioEngine.audioCtx.destination]);
     window.AudioContext = originalContext;
 });
+
+class FakeBrokenEqRoutingContext extends FakeAudioContext {
+    createBiquadFilter() {
+        const filter = super.createBiquadFilter();
+        if (this.filters.length === 2) {
+            filter.connect = () => { throw new Error('Simulated EQ routing failure'); };
+        }
+        return filter;
+    }
+}
+
+test('falls back if an EQ filter connection fails, preserving playback and the 35ms fade', async () => {
+    const originalContext = window.AudioContext;
+    window.AudioContext = FakeBrokenEqRoutingContext;
+    audioEngine.isAudioCtxInit = false;
+    audioEngine.eqFilters = null;
+
+    try {
+        audioEngine._initAudioContext();
+
+        assert.equal(audioEngine.isAudioCtxInit, true);
+        assert.equal(audioEngine.eqFilters, null);
+        assert.deepEqual(audioEngine.audioCtx.sourceNode.connections, [audioEngine.gainNode]);
+        assert.deepEqual(audioEngine.gainNode.connections, [audioEngine.audioCtx.destination]);
+
+        const previousPlays = audioEngine.audioElement.playCalls;
+        await audioEngine.play();
+        assert.equal(audioEngine.audioElement.playCalls, previousPlays + 1);
+        assert.equal(audioEngine.audioElement.paused, false);
+        assert.ok(audioEngine.gainNode.gain.events.some(([type, gain, time]) =>
+            type === 'ramp' && gain === 1 && Math.abs(time - 10.035) < 1e-9
+        ));
+    } finally {
+        audioEngine.audioElement.pause();
+        window.AudioContext = originalContext;
+    }
+});

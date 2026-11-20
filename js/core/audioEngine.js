@@ -49,13 +49,25 @@ class AudioEngine {
                 }
             }
 
+            // Wire the EQ downstream first. Do not route the source into it
+            // until the whole filter chain is ready, or playback could be silent.
+            let eqConnected = false;
             if (filters) {
-                source.connect(filters.bass);
-                filters.bass.connect(filters.mid);
-                filters.mid.connect(filters.treble);
-                filters.treble.connect(this.gainNode);
-                this.eqFilters = filters;
-            } else {
+                try {
+                    filters.bass.connect(filters.mid);
+                    filters.mid.connect(filters.treble);
+                    filters.treble.connect(this.gainNode);
+                    source.connect(filters.bass);
+                    this.eqFilters = filters;
+                    eqConnected = true;
+                } catch (filterError) {
+                    console.warn("[AudioEngine] EQ routing failed; using flat audio:", filterError);
+                    for (const filter of Object.values(filters)) {
+                        try { filter.disconnect(); } catch { /* Best-effort cleanup. */ }
+                    }
+                }
+            }
+            if (!eqConnected) {
                 source.connect(this.gainNode);
             }
 
