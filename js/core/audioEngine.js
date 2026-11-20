@@ -24,28 +24,37 @@ class AudioEngine {
             const source = this.audioCtx.createMediaElementSource(this.audioElement);
             this.gainNode = this.audioCtx.createGain();
 
+            let filters = null;
             if (typeof this.audioCtx.createBiquadFilter === 'function') {
-                const bass = this.audioCtx.createBiquadFilter();
-                bass.type = 'lowshelf';
-                bass.frequency.value = 120;
-                bass.gain.value = this.eqSettings.bass;
+                try {
+                    const bass = this.audioCtx.createBiquadFilter();
+                    bass.type = 'lowshelf';
+                    bass.frequency.value = 120;
+                    bass.gain.value = this.eqSettings.bass;
 
-                const mid = this.audioCtx.createBiquadFilter();
-                mid.type = 'peaking';
-                mid.frequency.value = 1000;
-                mid.Q.value = 0.7;
-                mid.gain.value = this.eqSettings.mid;
+                    const mid = this.audioCtx.createBiquadFilter();
+                    mid.type = 'peaking';
+                    mid.frequency.value = 1000;
+                    mid.Q.value = 0.7;
+                    mid.gain.value = this.eqSettings.mid;
 
-                const treble = this.audioCtx.createBiquadFilter();
-                treble.type = 'highshelf';
-                treble.frequency.value = 8000;
-                treble.gain.value = this.eqSettings.treble;
+                    const treble = this.audioCtx.createBiquadFilter();
+                    treble.type = 'highshelf';
+                    treble.frequency.value = 8000;
+                    treble.gain.value = this.eqSettings.treble;
 
-                source.connect(bass);
-                bass.connect(mid);
-                mid.connect(treble);
-                treble.connect(this.gainNode);
-                this.eqFilters = { bass, mid, treble };
+                    filters = { bass, mid, treble };
+                } catch (filterError) {
+                    console.warn("[AudioEngine] EQ unavailable; using flat audio:", filterError);
+                }
+            }
+
+            if (filters) {
+                source.connect(filters.bass);
+                filters.bass.connect(filters.mid);
+                filters.mid.connect(filters.treble);
+                filters.treble.connect(this.gainNode);
+                this.eqFilters = filters;
             } else {
                 source.connect(this.gainNode);
             }

@@ -64,6 +64,14 @@ button {
     flex-shrink: 0;
 }
 
+.top-left-actions {
+    grid-column: 1;
+    justify-self: start;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
 .top-center {
     grid-column: 2;
     display: flex;
