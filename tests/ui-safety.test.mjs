@@ -173,3 +173,91 @@ test('custom playlist removal and clear never delete underlying audio', async ()
     modalUI.showToast = originalToast;
   }
 });
+
+test('clearing Favorites removes only favorite entries and preserves all music and other playlists', async () => {
+  const originalLocalStorage = globalThis.localStorage;
+  const hadLocalStorage = Object.prototype.hasOwnProperty.call(globalThis, 'localStorage');
+  const originalDispatch = window.dispatchEvent;
+  const originalConfirm = modalUI.showConfirm;
+  const originalToast = modalUI.showToast;
+  const originalDelete = storage.deleteTrack;
+  const values = new Map([['gt_liked_tracks', JSON.stringify([42, 84])]]);
+  const messages = [];
+  let writes = 0;
+  let dispatches = 0;
+  let deletions = 0;
+  let confirmation;
+  globalThis.localStorage = {
+    getItem: key => values.get(key) ?? null,
+    setItem: (key, value) => { writes++; values.set(key, String(value)); }
+  };
+  window.dispatchEvent = () => { dispatches++; };
+  storage.deleteTrack = async () => { deletions++; };
+  modalUI.showConfirm = async (title, message) => {
+    confirmation = { title, message };
+    return true;
+  };
+  modalUI.showToast = message => messages.push(message);
+  try {
+    const ui = Object.create(PlaylistUI.prototype);
+    ui.currentPlaylistId = 'favorites';
+    ui.likedTracks = [42, 84];
+    ui.state = { queue: [{ id: 42 }, { id: 84 }] };
+    ui.playlists = [{ id: 'mix', name: 'My Mix', tracks: [42, 84] }];
+    await ui.handleClearPlaylist();
+
+    assert.equal(confirmation.title, 'Clear Favorites?');
+    assert.match(confirmation.message, /does not delete music files/i);
+    assert.match(confirmation.message, /other playlists/i);
+    assert.deepEqual(ui.likedTracks, []);
+    assert.deepEqual(JSON.parse(values.get('gt_liked_tracks')), []);
+    assert.equal(writes, 1);
+    assert.equal(dispatches, 1);
+    assert.equal(deletions, 0);
+    assert.deepEqual(ui.playlists[0].tracks, [42, 84]);
+    assert.ok(messages.some(message => message.includes('music files are safe')));
+  } finally {
+    storage.deleteTrack = originalDelete;
+    modalUI.showConfirm = originalConfirm;
+    modalUI.showToast = originalToast;
+    window.dispatchEvent = originalDispatch;
+    if (hadLocalStorage) globalThis.localStorage = originalLocalStorage;
+    else delete globalThis.localStorage;
+  }
+});
+
+test('cancelling Favorites bulk removal makes no changes', async () => {
+  const originalLocalStorage = globalThis.localStorage;
+  const hadLocalStorage = Object.prototype.hasOwnProperty.call(globalThis, 'localStorage');
+  const originalDispatch = window.dispatchEvent;
+  const originalConfirm = modalUI.showConfirm;
+  const originalToast = modalUI.showToast;
+  const values = new Map([['gt_liked_tracks', JSON.stringify([42])]]);
+  let writes = 0;
+  let dispatches = 0;
+  globalThis.localStorage = {
+    getItem: key => values.get(key) ?? null,
+    setItem: (key, value) => { writes++; values.set(key, String(value)); }
+  };
+  window.dispatchEvent = () => { dispatches++; };
+  modalUI.showConfirm = async () => false;
+  modalUI.showToast = () => {};
+  try {
+    const ui = Object.create(PlaylistUI.prototype);
+    ui.currentPlaylistId = 'favorites';
+    ui.likedTracks = [42];
+    ui.state = { queue: [{ id: 42 }] };
+    await ui.handleClearPlaylist();
+    assert.deepEqual(ui.likedTracks, [42]);
+    assert.deepEqual(JSON.parse(values.get('gt_liked_tracks')), [42]);
+    assert.equal(writes, 0);
+    assert.equal(dispatches, 0);
+  } finally {
+    modalUI.showConfirm = originalConfirm;
+    modalUI.showToast = originalToast;
+    window.dispatchEvent = originalDispatch;
+    if (hadLocalStorage) globalThis.localStorage = originalLocalStorage;
+    else delete globalThis.localStorage;
+  }
+});
+
