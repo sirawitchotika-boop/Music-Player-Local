@@ -6,6 +6,9 @@
 - Added a confirmation-protected action to clear all Favorites at once without deleting local music files or changing other playlists.
 - Added a simple three-band Equalizer with locally saved Bass, Mid, and Treble settings and a one-tap flat reset.
 
+### Fixed
+- Increased the phone player title, moved the Like button safely inside the vinyl disc, and matched the Android status bar to the top player theme.
+
 ## [1.2.2] - 2026-11-20
 
 ### Added

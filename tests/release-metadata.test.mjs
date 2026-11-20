@@ -28,11 +28,11 @@ test('Android version metadata has one validated source of truth', () => {
 test('web manifest describes the current player and matches the UI theme', () => {
   assert.equal(manifest.name, 'GT SoundMaster');
   assert.equal(manifest.short_name, 'SoundMaster');
-  assert.equal(manifest.theme_color, '#12090d');
+  assert.equal(manifest.theme_color, '#180d12');
   assert.equal(manifest.background_color, '#0b090c');
   assert.match(manifest.description, /playlists, Favorites, playback controls, and a sleep timer/i);
   assert.doesNotMatch(manifest.description, /EQ|pre-amp/i);
-  assert.match(html, /<meta name="theme-color" content="#12090d">/);
+  assert.match(html, /<meta name="theme-color" content="#180d12">/);
 });
 
 test("What's New notes are available in Help but collapsed by default", () => {
@@ -51,4 +51,15 @@ test("What's New notes are available in Help but collapsed by default", () => {
 test('README does not advertise removed EQ features or claim an absent license', () => {
   assert.doesNotMatch(readme, /10-Band|Pre-Amp|100% Open-Source/i);
   assert.match(readme, /No LICENSE file is currently included/);
+});
+
+test('Android camera-edge status bar and web theme match the player top color', () => {
+  const playerCss = read('css/main.css');
+  const match = playerCss.match(/linear-gradient\(155deg,\s*(#[0-9a-f]{6})\s+0%/i);
+  assert.ok(match, 'Player top gradient should expose its starting color.');
+  const topColor = match[1].toLowerCase();
+  assert.equal(manifest.theme_color.toLowerCase(), topColor);
+  assert.ok(html.includes('<meta name="theme-color" content="' + topColor + '">'));
+  assert.ok(workflow.includes('<item name="android:statusBarColor">' + topColor + '</item>'));
+  assert.match(workflow, /android:windowLightStatusBar">false/);
 });
