@@ -6,6 +6,7 @@ import { PlaylistUI } from './ui/playlistUI.js';
 import { PlayerUI } from './ui/playerUI.js';
 import { storage } from './core/storage.js';
 import { helpUI } from './ui/helpUI.js';
+import { eqUI } from './ui/eqUI.js';
 import { mediaSessionManager } from './core/mediaSessionManager.js';
 import { sessionMemory, restoreLastSession } from './core/sessionMemory.js';
 import { modalUI } from './ui/modalUI.js';
@@ -20,6 +21,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const playerUi = new PlayerUI(state, audioEngine);
     const playlistUi = new PlaylistUI(state, audioEngine);
     helpUI.init();
+    eqUI.init();
     
     mediaSessionManager.init({
       onNext: () => playerUi.playNext(),

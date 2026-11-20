@@ -7,6 +7,7 @@ A local music player for Android. Imported audio and music-library data are stor
 - **Local music library:** Import audio files into the app. Track details and audio blobs are stored in IndexedDB.
 - **Playlists and Favorites:** Create playlists and manage Favorites with the heart button. Songs cannot be added to Favorites through the bulk-import action. Clear all Favorites in one confirmed action without deleting music files or changing other playlists.
 - **Playback controls:** Play, pause, skip, seek, rewind, fast-forward, and choose Normal, Repeat One, or Shuffle mode.
+- **Three-band equalizer:** Adjust Bass, Mid, and Treble from −6 to +6 dB. Settings stay on this device; Reset returns the sound to flat.
 - **Paused session restore:** The app remembers the last selected song and playback position. Reopening the app restores that selection without starting playback; press Play when ready.
 - **Android media controls:** Use supported lock-screen and notification controls through the Android media session.
 - **Bluetooth route safety:** Losing the connected audio route pauses playback. Reconnecting does not automatically resume music.

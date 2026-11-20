@@ -12,6 +12,7 @@
 |   `-- workflows/
 |       `-- build-apk.yml
 |-- css/
+|   |-- eq.css
 |   |-- help.css
 |   |-- main.css
 |   |-- player.css
@@ -25,6 +26,7 @@
 |   |   |-- stateManager.js
 |   |   `-- storage.js
 |   `-- ui/
+|       |-- eqUI.js
 |       |-- helpUI.js
 |       |-- modalUI.js
 |       |-- playerUI.js
@@ -41,7 +43,8 @@
 
 ## 3. Data Flow & State Management
 - **Audio Playback Pipeline (Zero-Click Micro-Gain Architecture):**
-  `audioEngine.audioElement` -> `MediaElementAudioSourceNode` -> `GainNode (Sample-level Ramp: 35ms)` -> `audioCtx.destination`
+  `audioEngine.audioElement` -> `MediaElementAudioSourceNode` -> `BiquadFilter (Bass / Mid / Treble)` -> `GainNode (Sample-level Ramp: 35ms)` -> `audioCtx.destination`
+  - EQ uses three lightweight filters with a ±6 dB range. All controls default to 0 dB (flat).
   - *Play:* Ramp Gain 0.0001 -> 1.0 (ป้องกันเสียงกึกที่จุดเริ่มต้นของไฟล์เสียง)
   - *Pause:* Ramp Gain 1.0 -> 0.0001 แล้วสั่ง Pause (ป้องกันการตัดคลื่นเสียงกะทันหัน)
   - *Next/Prev:* Pause (Fade-out) -> Swap ObjectURL -> Play (Fade-in)
@@ -57,7 +60,8 @@
 - **.github/workflows/build-apk.yml:** เวิร์กโฟลว์ CI/CD สำหรับบิลด์ไฟล์ Android Debug APK (v1.2.0, versionCode 3)
 - **index.html:** หน้าโครงสร้างหลักแบบ Single Page Application (SPA)
 - **js/app.js:** จุดเริ่มต้นการทำงาน (Bootstrap) เชื่อมต่อ Controller ต่างๆ
-- **js/core/audioEngine.js:** เอนจินควบคุมเสียงหลัก ผสานระบบ Micro-Gain Ramp
+- **js/core/audioEngine.js:** Audio engine with the three-band EQ filter chain and the existing 35ms playback fade.
+- **js/ui/eqUI.js:** Simple Bass, Mid, and Treble controls with local settings.
 - **js/core/mediaSessionManager.js:** จัดการ MediaSession API และสื่อสารกับ Native Android Bridge
 - **js/core/stateManager.js:** จัดการคิวเพลงและโหมดการเล่น (Order, Repeat One, Shuffle)
 - **js/core/storage.js:** จัดการฐานข้อมูล IndexedDB จัดเก็บ Metadata และไฟล์เสียงแบบ Blob ในเครื่อง

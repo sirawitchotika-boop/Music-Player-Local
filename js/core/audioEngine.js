@@ -5,6 +5,8 @@ class AudioEngine {
         this.currentObjectUrl = null;
         this.audioCtx = null;
         this.gainNode = null;
+        this.eqFilters = null;
+        this.eqSettings = { bass: 0, mid: 0, treble: 0 };
         this.isAudioCtxInit = false;
         this._playRequestVersion = 0;
         
@@ -21,7 +23,34 @@ class AudioEngine {
             this.audioCtx = new AudioCtx({ latencyHint: 'playback' });
             const source = this.audioCtx.createMediaElementSource(this.audioElement);
             this.gainNode = this.audioCtx.createGain();
-            source.connect(this.gainNode);
+
+            if (typeof this.audioCtx.createBiquadFilter === 'function') {
+                const bass = this.audioCtx.createBiquadFilter();
+                bass.type = 'lowshelf';
+                bass.frequency.value = 120;
+                bass.gain.value = this.eqSettings.bass;
+
+                const mid = this.audioCtx.createBiquadFilter();
+                mid.type = 'peaking';
+                mid.frequency.value = 1000;
+                mid.Q.value = 0.7;
+                mid.gain.value = this.eqSettings.mid;
+
+                const treble = this.audioCtx.createBiquadFilter();
+                treble.type = 'highshelf';
+                treble.frequency.value = 8000;
+                treble.gain.value = this.eqSettings.treble;
+
+                source.connect(bass);
+                bass.connect(mid);
+                mid.connect(treble);
+                treble.connect(this.gainNode);
+                this.eqFilters = { bass, mid, treble };
+            } else {
+                source.connect(this.gainNode);
+            }
+
+            // Keep the existing gain node last so its 35ms play/pause ramp is unchanged.
             this.gainNode.connect(this.audioCtx.destination);
             this.isAudioCtxInit = true;
         } catch (e) {
@@ -29,6 +58,38 @@ class AudioEngine {
         }
     }
     
+    getEqualizerSettings() {
+        return { ...this.eqSettings };
+    }
+
+    setEqualizer(settings = {}) {
+        if (!settings || typeof settings !== 'object') return this.getEqualizerSettings();
+
+        for (const band of ['bass', 'mid', 'treble']) {
+            if (!Object.prototype.hasOwnProperty.call(settings, band)) continue;
+
+            const numeric = Number(settings[band]);
+            if (!Number.isFinite(numeric)) continue;
+
+            const value = Math.max(-6, Math.min(6, Math.round(numeric)));
+            this.eqSettings[band] = value;
+
+            const filter = this.eqFilters?.[band];
+            if (!filter || !this.audioCtx) continue;
+
+            const now = this.audioCtx.currentTime;
+            filter.gain.cancelScheduledValues(now);
+            filter.gain.setValueAtTime(filter.gain.value, now);
+            filter.gain.linearRampToValueAtTime(value, now + 0.025);
+        }
+
+        return this.getEqualizerSettings();
+    }
+
+    resetEqualizer() {
+        return this.setEqualizer({ bass: 0, mid: 0, treble: 0 });
+    }
+
     async play() {
         const version = ++this._playRequestVersion;
         const cancelled = () => Object.assign(new Error('Playback interrupted'), { name: 'AbortError' });
