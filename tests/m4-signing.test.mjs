@@ -48,18 +48,18 @@ test('signing-test identity is separate from original and Gate 1 TEST installati
     const gradle = f.read('android/app/build.gradle');
     assert.match(gradle, /applicationId "com\.gt\.soundmaster\.signingtest"/);
     assert.match(gradle, /versionCode 10019/);
-    assert.ok(gradle.includes(`versionName "${appVersion.versionName}-st.19"`));
+    assert.ok(gradle.includes(`versionName "${appVersion.versionName}"`));
     assert.match(f.read('android/app/src/main/AndroidManifest.xml'),
       /android:name="com\.gt\.soundmaster\.MainActivity"/);
     assert.match(f.read('android/app/src/main/AndroidManifest.xml'),
       /android:name="com\.gt\.soundmaster\.MediaPlaybackService"/);
     assert.match(f.read('android/app/src/main/res/values/strings.xml'),
-      /<string name="app_name">GT SoundMaster SIGN TEST<\/string>/);
+      /<string name="app_name">GT SoundMaster<\/string>/);
     assert.match(f.read('android/app/src/main/res/values/strings.xml'),
       /<string name="custom_url_scheme">com\.gt\.soundmaster\.signingtest<\/string>/);
     const config = JSON.parse(f.read('capacitor.config.json'));
     assert.equal(config.appId, signId);
-    assert.equal(config.appName, 'GT SoundMaster SIGN TEST');
+    assert.equal(config.appName, 'GT SoundMaster');
     assert.equal(config.webDir, 'www');
     assert.equal(f.read('android/app/src/main/java/com/gt/soundmaster/MainActivity.java'),
       'package com.gt.soundmaster; class MainActivity {}');
@@ -119,6 +119,11 @@ test('CI compiles signing-test identity without secrets on PR, manual signing is
   assert.match(trigger, /signing_test_preview: true/);
   assert.match(trigger, /build-signed-test:\s*\n\s*if: github\.event_name == 'workflow_dispatch'/);
   assert.match(trigger, /signing_test: true/);
+  assert.match(trigger, /name: GT SoundMaster signed app update/);
+  assert.match(build, /name: GT-SoundMaster-SIGNED-APP-release-only/);
+  // The existing signing-test package updates in place, but no longer looks like a TEST build.
+  assert.match(build, /if \[ "\$GT_GATE1_ISOLATED" = "true" \]; then\s*node scripts\/mark-gate1-icon\.cjs\s*fi/);
+  assert.doesNotMatch(build, /if \[ "\$GT_GATE1_ISOLATED" = "true" \] \|\| \[ "\$GT_SIGNING_TEST_APP" = "true" \]/);
   assert.match(trigger, /secrets\.GT_SIGNING_TEST_KEYSTORE_B64/);
   assert.match(trigger, /vars\.GT_SIGNING_TEST_CERT_SHA256/);
   assert.match(build, /GT_SIGNING_TEST_APP: \$\{\{ inputs\.signing_test == true \|\| inputs\.signing_test_preview == true \}\}/);
@@ -127,7 +132,7 @@ test('CI compiles signing-test identity without secrets on PR, manual signing is
   assert.match(build, /assembleRelease/);
   assert.match(build, /apksigner/);
   assert.match(build, /package: name='com\.gt\.soundmaster\.signingtest'/);
-  assert.match(build, /application-label:'GT SoundMaster SIGN TEST'/);
+  assert.match(build, /application-label:'GT SoundMaster'/);
   assert.match(build, /"\$APKSIGNER" verify --print-certs "\$APK" \|\s*\n\s*python3 scripts\/verify-signing-test-cert-output\.py/);
   assert.match(build, /set -euo pipefail/);
   assert.doesNotMatch(build, /ACTUAL.*EXPECTED/);
@@ -138,4 +143,18 @@ test('CI compiles signing-test identity without secrets on PR, manual signing is
   assert.match(signing, /base64 --decode/);
   assert.match(signing, /keytool -list/);
   assert.doesNotMatch(signing, /keytool -genkey|keytool -genkeypair/);
+});
+
+test('signed app keeps the same install package while increasing versionCode for updates', () => {
+  const f = fixture();
+  try {
+    execFileSync('python3', [prepare, '--signing-test', f.folder],
+      { env: { ...process.env, GT_SIGNING_TEST_BUILD_NUMBER: '20' } });
+    const gradle = f.read('android/app/build.gradle');
+    assert.match(gradle, /applicationId "com\.gt\.soundmaster\.signingtest"/);
+    assert.match(gradle, /versionCode 10020/);
+    assert.match(gradle, new RegExp('versionName "' + appVersion.versionName.replaceAll('.', '\\.') + '"'));
+    assert.doesNotMatch(gradle, /-st\./);
+    assert.equal(JSON.parse(f.read('capacitor.config.json')).appId, signId);
+  } finally { f.dispose(); }
 });
