@@ -23,6 +23,7 @@ export class PlaylistUI {
 
   async init() {
     this.bindEvents();
+    this.updateClearPlaylistLabel();
     this.renderDropdown();
     await this.loadPlaylist();
   }
@@ -123,8 +124,20 @@ export class PlaylistUI {
     this.playlists.forEach(pl => createItem(pl.id, pl.name));
   }
 
+  updateClearPlaylistLabel() {
+    if (!this.clearPlaylistBtn) return;
+    const label = this.currentPlaylistId === 'favorites'
+      ? 'Remove all songs from Favorites'
+      : this.currentPlaylistId === 'all'
+        ? 'Delete non-favorite songs from library'
+        : 'Clear this playlist';
+    this.clearPlaylistBtn.title = label;
+    this.clearPlaylistBtn.setAttribute?.('aria-label', label);
+  }
+
   selectPlaylist(id) {
     this.currentPlaylistId = id;
+    this.updateClearPlaylistLabel();
     this.state.playlistId = id;
     if (id === 'all') {
       this.activePlaylistName.textContent = 'All Tracks';
@@ -261,12 +274,31 @@ export class PlaylistUI {
   }
 
   async handleClearPlaylist() {
-    if (!this.state.queue || this.state.queue.length === 0) {
-      modalUI.showToast('There are no songs to clear.', 'info');
+    if (this.currentPlaylistId === 'favorites') {
+      if (!this.likedTracks.length) {
+        modalUI.showToast('There are no songs in Favorites.', 'info');
+        return;
+      }
+      const isConfirmed = await modalUI.showConfirm(
+        'Clear Favorites?',
+        'This removes every song from Favorites only. It does not delete music files from your library or remove songs from other playlists.'
+      );
+      if (!isConfirmed) return;
+
+      const removedCount = this.likedTracks.length;
+      try {
+        localStorage.setItem('gt_liked_tracks', JSON.stringify([]));
+      } catch (error) {
+        modalUI.showToast('Could not clear Favorites. No changes were made.', 'error');
+        return;
+      }
+      this.likedTracks = [];
+      window.dispatchEvent(new Event('gt-liked-updated'));
+      modalUI.showToast(`Removed ${removedCount} song(s) from Favorites. Your music files are safe.`);
       return;
     }
-    if (this.currentPlaylistId === 'favorites') {
-      modalUI.showToast('Favorites is managed with the heart button. Remove songs one at a time.', 'error');
+    if (!this.state.queue || this.state.queue.length === 0) {
+      modalUI.showToast('There are no songs to clear.', 'info');
       return;
     }
     let title = 'Clear All Tracks?';
