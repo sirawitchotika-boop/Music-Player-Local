@@ -6,6 +6,9 @@
 - Added a confirmation-protected action to clear all Favorites at once without deleting local music files or changing other playlists.
 - Added a simple three-band Equalizer with locally saved Bass, Mid, and Treble settings and a one-tap flat reset.
 
+### Changed
+- Promoted the existing signed SIGN TEST installation to GT SoundMaster branding (normal name/icon) while preserving its package ID, signing certificate, and update-safe version codes.
+
 ### Fixed
 - Increased the phone player title, positioned the Like button at the record's lower-right with a full-size touch target, and matched the Android status bar to the top player theme.
 
