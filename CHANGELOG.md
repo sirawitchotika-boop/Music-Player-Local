@@ -7,7 +7,7 @@
 - Added a simple three-band Equalizer with locally saved Bass, Mid, and Treble settings and a one-tap flat reset.
 
 ### Fixed
-- Increased the phone player title, moved the Like button safely inside the vinyl disc, and matched the Android status bar to the top player theme.
+- Increased the phone player title, positioned the Like button at the record's lower-right with a full-size touch target, and matched the Android status bar to the top player theme.
 
 ## [1.2.2] - 2026-11-20
 

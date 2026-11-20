@@ -140,9 +140,16 @@ button {
     padding: 8px 0;
 }
 
-.album-art-container {
+.album-art-stage {
+    position: relative;
     width: min(74vw, 320px);
-    height: auto;
+    aspect-ratio: 1;
+    flex: 0 0 auto;
+}
+
+.album-art-container {
+    width: 100%;
+    height: 100%;
     aspect-ratio: 1;
     border-radius: 50%;
     background:
@@ -226,10 +233,11 @@ button {
 .favorite-btn {
     position: absolute;
     z-index: 3;
-    right: 15%;
-    bottom: 15%;
-    width: clamp(44px, 12vw, 50px);
-    height: clamp(44px, 12vw, 50px);
+    /* Position the heart at the record's lower-right, like the reference UI. */
+    right: -10%;
+    bottom: -33%;
+    width: clamp(48px, 14vw, 58px);
+    height: clamp(48px, 14vw, 58px);
     border: 1px solid rgba(255, 255, 255, 0.16);
     border-radius: 50%;
     background: rgba(12, 10, 13, 0.9);
@@ -243,8 +251,8 @@ button {
 }
 
 .favorite-btn svg {
-    width: 22px;
-    height: 22px;
+    width: 25px;
+    height: 25px;
     fill: #847980;
     transition: fill 0.25s ease, filter 0.25s ease, transform 0.25s ease;
 }
@@ -283,8 +291,13 @@ button {
 }
 
 @media (max-height: 720px) {
-    .album-art-container {
+    .album-art-stage {
         width: min(60vw, 248px);
+    }
+
+    /* Avoid pushing the heart into the controls on short screens. */
+    .favorite-btn {
+        bottom: -18%;
     }
 
     .top-bar {
