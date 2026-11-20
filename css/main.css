@@ -58,7 +58,7 @@ button {
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
     align-items: center;
-    padding: 12px 18px;
+    padding: 12px 14px;
     padding-top: max(18px, env(safe-area-inset-top));
     z-index: 10;
     flex-shrink: 0;
@@ -89,9 +89,9 @@ button {
 }
 
 .app-title {
-    font-size: clamp(10px, 3vw, 16px);
+    font-size: clamp(12px, 3.8vw, 16px);
     font-weight: 750;
-    letter-spacing: clamp(0.2px, 0.15vw, 1.5px);
+    letter-spacing: clamp(0.2px, 0.12vw, 1.2px);
     color: #f7f3f4;
     white-space: nowrap;
 }
@@ -226,10 +226,10 @@ button {
 .favorite-btn {
     position: absolute;
     z-index: 3;
-    right: 6%;
-    bottom: 6%;
-    width: clamp(48px, 14vw, 58px);
-    height: clamp(48px, 14vw, 58px);
+    right: 15%;
+    bottom: 15%;
+    width: clamp(44px, 12vw, 50px);
+    height: clamp(44px, 12vw, 50px);
     border: 1px solid rgba(255, 255, 255, 0.16);
     border-radius: 50%;
     background: rgba(12, 10, 13, 0.9);
@@ -243,8 +243,8 @@ button {
 }
 
 .favorite-btn svg {
-    width: 25px;
-    height: 25px;
+    width: 22px;
+    height: 22px;
     fill: #847980;
     transition: fill 0.25s ease, filter 0.25s ease, transform 0.25s ease;
 }
@@ -268,6 +268,18 @@ button {
 :focus-visible {
     outline: 2px solid #ff6872;
     outline-offset: 3px;
+}
+
+/* Preserve 42px utility targets while giving the title room on narrow phones. */
+@media (max-width: 360px) {
+    .top-bar {
+        padding-left: 10px;
+        padding-right: 10px;
+    }
+
+    .top-right-actions {
+        gap: 4px;
+    }
 }
 
 @media (max-height: 720px) {
