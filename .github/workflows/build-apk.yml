@@ -161,7 +161,7 @@ jobs:
               # บังคับ windowLightStatusBar เป็น false และยัด Background ดำป้องกันสีขาวทะลุ
               dark_items = '\n'.join([
                   '        <item name="android:windowLightStatusBar">false</item>',
-                  '        <item name="android:statusBarColor">#0D0D12</item>',
+                  '        <item name="android:statusBarColor">#180d12</item>',
                   '        <item name="android:navigationBarColor">#0D0D12</item>',
                   '        <item name="android:windowBackground">#0D0D12</item>'
               ])
