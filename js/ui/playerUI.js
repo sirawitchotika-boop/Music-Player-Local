@@ -128,7 +128,11 @@ export class PlayerUI {
   }
 
   refreshLikeButtonState() {
-    if (!this.favoriteBtn || this.state.currentTrackIndex === -1) return;
+    if (!this.favoriteBtn) return;
+    if (this.state.currentTrackIndex === -1) {
+      this.favoriteBtn.classList.remove('active');
+      return;
+    }
     const currentTrack = this.state.queue[this.state.currentTrackIndex];
     
     if (!currentTrack) {
