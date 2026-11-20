@@ -56,17 +56,15 @@ Use Node.js 22 or newer and run: npm test
 
 The test suite runs without installing application dependencies.
 
-## Build an Android APK
+## Build an update for your existing GT SoundMaster app
 
-1. Push the reviewed source to GitHub.
-2. Open the repository's Actions tab.
-3. Select Build Android APK.
-4. Choose Run workflow.
-5. Download the GT-SoundMaster-APK artifact when the workflow succeeds.
+Use **Actions → GT SoundMaster signed app update → Run workflow** on `main`, after an approved PR has merged. Download the `GT-SoundMaster-SIGNED-APP-release-only` artifact from the successful run.
 
-**Signing and installation safety:** The default workflow creates a debug-signed APK using the app package ID com.gt.soundmaster. It is not a production-signed release. Do not assume it can update an existing installation: Android requires the signing certificate to match. If Android reports a signature conflict, stop. Do not uninstall the existing app or clear its data as a workaround.
+This workflow builds a normal-looking **GT SoundMaster** app with the original icon (no TEST badge). It intentionally keeps the existing signed installation's Android package ID `com.gt.soundmaster.signingtest`, signing key, and an increasing versionCode so future builds can update that installation **without uninstalling it or losing its app data**. The production-looking app has a legacy internal `signingtest` package suffix; a public store release would need separate planning.
 
-The separate Gate 1 TEST and SIGN TEST workflows use different package IDs. They are disposable test identities and must not be used to update the original app.
+The old original installation `com.gt.soundmaster` is **a different app**. This workflow does not update it or transfer its private music and playlists. Do not uninstall the old original unless any songs you need still exist as accessible files in normal device storage (e.g. Music or Downloads). Removing it permanently erases its app-private IndexedDB music copies, Favorites, playlists, and settings.
+
+**Do not use** the generic **Build Android APK** workflow as an update for this signed app: it creates a debug-signed `com.gt.soundmaster` APK with an unrelated certificate. The Gate 1 TEST workflow also remains a separate disposable test app. If Android displays a signing mismatch or asks for an uninstall/data clear to proceed, **stop**.
 
 ## License
 

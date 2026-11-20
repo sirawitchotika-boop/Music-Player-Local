@@ -10,7 +10,7 @@ on:
         default: false
         type: boolean
       signing_test:
-        description: 'Future manual release build of the separate signing-test app'
+        description: 'Signed update for the existing com.gt.soundmaster.signingtest installation'
         required: false
         default: false
         type: boolean
@@ -82,7 +82,7 @@ jobs:
             .catch(err => { console.error(err); process.exit(1); });
           EOF
           node generate-icon.cjs
-          if [ "$GT_GATE1_ISOLATED" = "true" ] || [ "$GT_SIGNING_TEST_APP" = "true" ]; then
+          if [ "$GT_GATE1_ISOLATED" = "true" ]; then
             node scripts/mark-gate1-icon.cjs
           fi
 
@@ -903,7 +903,7 @@ jobs:
           test -s "$APK"
           BADGING="$("$AAPT" dump badging "$APK")"
           grep -F "package: name='com.gt.soundmaster.signingtest'" <<< "$BADGING" > /dev/null
-          grep -F "application-label:'GT SoundMaster SIGN TEST'" <<< "$BADGING" > /dev/null
+          grep -F "application-label:'GT SoundMaster'" <<< "$BADGING" > /dev/null
           if [ "$GT_SIGNING_TEST_SIGNED" = "true" ]; then
             APKSIGNER="$(find "${ANDROID_HOME}/build-tools" -maxdepth 2 -type f -name apksigner | sort -V | tail -n 1)"
             test -x "$APKSIGNER"
@@ -934,10 +934,10 @@ jobs:
           path: android/app/build/outputs/apk/debug/app-debug.apk
           retention-days: 7
 
-      - name: Upload signed signing-test APK (manual only)
+      - name: Upload signed GT SoundMaster update APK (manual only)
         if: github.event_name == 'workflow_dispatch' && env.GT_SIGNING_TEST_SIGNED == 'true'
         uses: actions/upload-artifact@v4
         with:
-          name: GT-SoundMaster-SIGN-TEST-release-only
+          name: GT-SoundMaster-SIGNED-APP-release-only
           path: android/app/build/outputs/apk/release/app-release.apk
           retention-days: 7

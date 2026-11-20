@@ -1,37 +1,26 @@
-# Milestone 4A — repeatable signing TEST workflow
+# Signed GT SoundMaster update (formerly SIGN TEST)
 
-**Status:** Workflow preparation only. No keys or GitHub secrets have been created or changed, and no signed APK has been produced.
+**Status:** The existing signed SIGN TEST installation is now the chosen everyday-app identity. The rebranding applies only after an approved PR is merged and a new signed APK is built and installed. This document describes the build path, not permission to install or uninstall.
 
-## What this prepares
+## Identity that stays the same
 
-**GT SoundMaster SIGN TEST** is a separate, disposable app: `com.gt.soundmaster.signingtest`.
-It is not the original `com.gt.soundmaster` or the previous `com.gt.soundmaster.gate1` TEST app.
-Android keeps each package's app-private music and preferences separate.
+- Android package: `com.gt.soundmaster.signingtest` (historical suffix retained for in-place updates)
+- Signing key: the existing approved signing-test keystore, unchanged
+- Certificate check: uses the existing `GT_SIGNING_TEST_CERT_SHA256` GitHub Variable
+- Update order: versionCode `10000 + workflow run number`, increasing with subsequent builds
+- On-screen name/icon: **GT SoundMaster** and the normal app icon, without TEST badge
+- Version name: from `app-version.json`
 
-The **Milestone 4A signing TEST APK** workflow has two modes:
-- **PR:** Compile an unsigned-for-release, debug-signed signing-test preview and verify its exact package ID and app label. No secrets or APK artifacts.
-- **Separate manual run (future approval required):** Use an *existing* approved signing-test keystore from GitHub Actions Secrets, build the release APK, verify the final APK's certificate SHA-256 digest against a GitHub Variable, and retain only a short-lived private artifact. No automatic install or release.
+A name or icon change does not move or delete data within the same installed Android package. Android also requires an identical signing identity for updating. No new signing key or GitHub Secret is needed for this change.
 
-The signing-test package gets a versionCode starting at 10000 and increasing by workflow run number for later update-compatibility testing.
+## Build
 
-## Future credential setup — NOT authorized or needed now
+Run **Actions → GT SoundMaster signed app update** manually on `main` after approved changes merge. It uses the existing `GT_SIGNING_TEST_*` secrets, assembles a release APK, verifies the package and expected public signing-certificate fingerprint, then uploads `GT-SoundMaster-SIGNED-APP-release-only` for seven days.
 
-Only after a separate decision, configure these **GitHub Actions Secrets** (private):
-- `GT_SIGNING_TEST_KEYSTORE_B64`: Base64 content of a separately approved signing-test keystore, **never the original app's keystore**
-- `GT_SIGNING_TEST_STORE_PASSWORD`
-- `GT_SIGNING_TEST_KEY_ALIAS`
-- `GT_SIGNING_TEST_KEY_PASSWORD`
+Pull requests only do a debug-signed preview compilation of this package and run the identity checks. They do not receive secrets, create signed builds, or upload APKs.
 
-Configure one **GitHub Actions Variable** (public information):
-- `GT_SIGNING_TEST_CERT_SHA256`: the expected signing certificate SHA-256 fingerprint.
+## Distinct app identities and safety
 
-Never share keystore contents, Base64 material or passwords in chat, files, PRs, screenshots, or logs. The manual workflow fails safely when credentials or expected certificate are unavailable. It never generates signing keys or silently falls back to debug signing.
+The old original `com.gt.soundmaster` and the Gate 1 `com.gt.soundmaster.gate1` remain separate installations with separate app-private data. **This signed workflow cannot update the original package or migrate its imported songs and playlists.** The user may retire the original only after checking that needed source audio files still exist outside its private storage. Uninstalling the original deletes its app-private IndexedDB, Favorites and settings; it does not delete independent source files in Music/Downloads.
 
-## Safety boundaries
-
-- Never use this test signing identity to update the original GT SoundMaster.
-- Do not uninstall, overwrite, update or clear data from the original app, Gate 1 TEST app or Noctune.
-- No APK installation or phone testing is authorized by this preparation PR.
-- Original installed app certificate remains unverified; **no original-app update is approved**.
-
-After PR review and separately approved signing configuration, run two signing-test builds, compare their public SHA-256 fingerprints, and perform an update test with disposable songs only.
+If an update requests uninstall, data clearing, or reports a certificate mismatch, stop. Never publish signing secrets, upload key material, generate replacement keys in CI, or change the signing fingerprint casually. App-store distribution with a different package ID requires separate consideration.
