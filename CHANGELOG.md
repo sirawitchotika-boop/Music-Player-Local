@@ -1,5 +1,10 @@
 # Changelog
 
+## [Unreleased]
+
+### Added
+- Added a confirmation-protected action to clear all Favorites at once without deleting local music files or changing other playlists.
+
 ## [1.2.2] - 2026-11-20
 
 ### Added
