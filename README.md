@@ -30,7 +30,7 @@ package.json is used for the Node.js safety-test runner; it is not the Android a
 ## Technology
 
 - **User interface:** HTML, CSS, and vanilla JavaScript ES modules
-- **Audio:** HTML Audio and Web Audio API with a short GainNode ramp for smoother play/pause transitions
+- **Audio:** HTML Audio and Web Audio API with a three-band EQ and a short GainNode ramp for smoother play/pause transitions
 - **Local storage:** IndexedDB
 - **Android integration:** Capacitor, Android media session, notification controls, and a media-playback foreground service
 - **Automation:** GitHub Actions, Java 21, and Node.js 22
@@ -38,10 +38,10 @@ package.json is used for the Node.js safety-test runner; it is not the Android a
 ## Repository layout
 
     .github/workflows/       Android build and safety-test workflows
-    css/                     Player, playlist, timer, and Help styles
+    css/                     Player, playlist, timer, Help, and EQ styles
     docs/                    Isolated test-build and signing-test guidance
     js/core/                 Audio, storage, state, session, and media-session logic
-    js/ui/                   Player, playlist, timer, modal, and Help interfaces
+    js/ui/                   Player, playlist, timer, modal, Help, and EQ interfaces
     scripts/                 Isolated-build and signing verification helpers
     tests/                   Node.js regression and safety tests
     app-version.json         Android version name and version code

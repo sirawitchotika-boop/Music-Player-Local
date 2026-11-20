@@ -2,7 +2,7 @@
 
 ## 1. Project Overview & Architecture
 - **Description:** GT SoundMaster - Audiophile Local Music Player (100% Client-Side Local Storage) ออกแบบด้วยสถาปัตยกรรมแบบ Minimalist High-Fidelity เล่นเพลงผ่านฮาร์ดแวร์ถอดรหัสของ Android โดยตรง พร้อมระบบ Micro-Gain Ramp ป้องกันเสียงกึก/สะดุด ควบคุมด้วย Sleep Timer และผสานการทำงานร่วมกับ Android Native Media Notification Service (ควบคุมผ่านแถบแจ้งเตือนและหน้าจอล็อกสกรีน)
-- **Tech Stack:** HTML5, CSS3 (Minimalist Cyberpunk Theme), Vanilla JavaScript (ES6 Modules), Web Audio API (Micro-Gain Controller), Media Session API, IndexedDB API, Capacitor Android SDK, Native Android Framework (MediaSession, Notification.MediaStyle, Foreground Service), Node.js 22, Java JDK 21 (Zulu), Gradle Wrapper
+- **Tech Stack:** HTML5, CSS3 (Minimalist Cyberpunk Theme), Vanilla JavaScript (ES6 Modules), Web Audio API (three-band EQ and Micro-Gain Controller), Media Session API, IndexedDB API, Capacitor Android SDK, Native Android Framework (MediaSession, Notification.MediaStyle, Foreground Service), Node.js 22, Java JDK 21 (Zulu), Gradle Wrapper
 - **Architecture Pattern:** Modular Component Architecture (Clean separation between Storage, Audio Engine, UI Controllers, and Android Native Bridge)
 
 ## 2. Directory Tree

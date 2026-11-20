@@ -195,3 +195,24 @@ test('invalid saved EQ values are safely clamped', () => {
 
     assert.deepEqual(ui.values, { bass: 6, mid: 0, treble: -4 });
 });
+
+class FakeFlatAudioContext extends FakeAudioContext {
+    constructor() {
+        super();
+        this.createBiquadFilter = undefined;
+    }
+}
+
+test('falls back to the original flat audio path if EQ filters are unavailable', () => {
+    const originalContext = window.AudioContext;
+    window.AudioContext = FakeFlatAudioContext;
+    audioEngine.isAudioCtxInit = false;
+    audioEngine.eqFilters = null;
+
+    audioEngine._initAudioContext();
+
+    assert.equal(audioEngine.eqFilters, null);
+    assert.deepEqual(audioEngine.audioCtx.sourceNode.connections, [audioEngine.gainNode]);
+    assert.deepEqual(audioEngine.gainNode.connections, [audioEngine.audioCtx.destination]);
+    window.AudioContext = originalContext;
+});
