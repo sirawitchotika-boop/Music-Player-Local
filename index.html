@@ -13,10 +13,48 @@
     <link rel="stylesheet" href="css/playlist.css">
     <link rel="stylesheet" href="css/timer.css">
     <link rel="stylesheet" href="css/help.css">
+    <link rel="stylesheet" href="css/eq.css">
 </head>
 <body>
     <div id="toast-container" class="toast-container"></div>
     <div id="gt-modal-root"></div>
+
+    <!-- Equalizer Modal -->
+    <div id="eq-modal" class="eq-modal hidden" role="dialog" aria-modal="true" aria-labelledby="eq-title">
+        <div class="eq-container">
+            <div class="eq-header">
+                <div>
+                    <p class="eq-eyebrow">GT SOUNDMASTER</p>
+                    <h2 id="eq-title">EQUALIZER</h2>
+                </div>
+                <button id="close-eq-btn" class="close-btn" type="button" aria-label="Close equalizer">
+                    <svg viewBox="0 0 24 24" width="24" height="24" fill="#fff"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+                </button>
+            </div>
+            <p class="eq-description">Three simple tone controls. 0 dB keeps the original sound.</p>
+            <div class="eq-bands">
+                <div class="eq-band">
+                    <div class="eq-band-heading"><label for="eq-bass">BASS</label><output id="eq-bass-value" for="eq-bass">0 dB</output></div>
+                    <input id="eq-bass" type="range" min="-6" max="6" step="1" value="0" aria-label="Bass">
+                    <div class="eq-range-ends"><span>−6 dB</span><span>+6 dB</span></div>
+                </div>
+                <div class="eq-band">
+                    <div class="eq-band-heading"><label for="eq-mid">MID</label><output id="eq-mid-value" for="eq-mid">0 dB</output></div>
+                    <input id="eq-mid" type="range" min="-6" max="6" step="1" value="0" aria-label="Mid">
+                    <div class="eq-range-ends"><span>−6 dB</span><span>+6 dB</span></div>
+                </div>
+                <div class="eq-band">
+                    <div class="eq-band-heading"><label for="eq-treble">TREBLE</label><output id="eq-treble-value" for="eq-treble">0 dB</output></div>
+                    <input id="eq-treble" type="range" min="-6" max="6" step="1" value="0" aria-label="Treble">
+                    <div class="eq-range-ends"><span>−6 dB</span><span>+6 dB</span></div>
+                </div>
+            </div>
+            <div class="eq-footer">
+                <button id="eq-reset-btn" class="eq-reset-btn" type="button">RESET</button>
+                <span>0 dB · FLAT</span>
+            </div>
+        </div>
+    </div>
 
     <!-- Help Modal -->
     <div id="help-modal" class="help-modal hidden" role="dialog" aria-modal="true" aria-labelledby="help-title">
@@ -58,6 +96,7 @@
                         <li class="help-item"><strong>Rewind and fast-forward:</strong> Press and hold Previous or Next.</li>
                         <li class="help-item"><strong>Song position:</strong> Drag the progress bar to move to another part of the song.</li>
                         <li class="help-item"><strong>Play mode:</strong> Tap the play-mode button to switch between Normal, Repeat One, and Shuffle.</li>
+                        <li class="help-item"><strong>Equalizer:</strong> Tap EQ in the top-left corner to adjust Bass, Mid, and Treble. Reset returns all three controls to flat sound.</li>
                         <li class="help-item"><strong>Lock screen:</strong> You can also use the Android lock-screen and notification controls.</li>
                     </ul>
                 </section>
@@ -125,6 +164,11 @@
     <!-- Main App Container -->
     <main id="app-container" class="app-container">
         <header class="top-bar">
+            <div class="top-left-actions">
+                <button id="eq-btn" class="icon-btn" type="button" title="Equalizer" aria-label="Open equalizer">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h2v6H5V3zm0 10h2v8H5v-8zm6-10h2v3h-2V3zm0 7h2v11h-2V10zm6-7h2v9h-2V3zm0 13h2v5h-2v-5z"/></svg>
+                </button>
+            </div>
             <div class="top-center">
                 <span class="app-title"><span class="brand-mark">GT</span> SOUNDMASTER</span>
             </div>
