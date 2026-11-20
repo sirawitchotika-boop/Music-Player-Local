@@ -1,6 +1,6 @@
 # Changelog
 
-## [1.2.2] - 2026-11-20
+## [Unreleased]\n\n### Added\n- Added a confirmation-protected action to clear all Favorites at once without deleting local music files or changing other playlists.\n\n## [1.2.2] - 2026-11-20
 
 ### Added
 - Added a collapsed-by-default **What's New** section inside Help. It does not open automatically or interrupt playback.
