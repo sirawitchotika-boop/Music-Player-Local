@@ -137,7 +137,8 @@ test('three simple EQ filters sit before the existing playback fade gain', () =>
     assert.deepEqual(audioEngine.audioCtx.sourceNode.connections, [bass]);
     assert.deepEqual(bass.connections, [mid]);
     assert.deepEqual(mid.connections, [treble]);
-    assert.deepEqual(treble.connections, [audioEngine.gainNode]);
+    assert.deepEqual(treble.connections, [audioEngine.levelingGainNode]);
+    assert.deepEqual(audioEngine.levelingGainNode.connections, [audioEngine.gainNode]);
     assert.deepEqual(audioEngine.gainNode.connections, [audioEngine.audioCtx.destination]);
 });
 
@@ -212,7 +213,8 @@ test('falls back to the original flat audio path if EQ filters are unavailable',
     audioEngine._initAudioContext();
 
     assert.equal(audioEngine.eqFilters, null);
-    assert.deepEqual(audioEngine.audioCtx.sourceNode.connections, [audioEngine.gainNode]);
+    assert.deepEqual(audioEngine.audioCtx.sourceNode.connections, [audioEngine.levelingGainNode]);
+    assert.deepEqual(audioEngine.levelingGainNode.connections, [audioEngine.gainNode]);
     assert.deepEqual(audioEngine.gainNode.connections, [audioEngine.audioCtx.destination]);
     window.AudioContext = originalContext;
 });
@@ -238,7 +240,8 @@ test('falls back if an EQ filter connection fails, preserving playback and the 3
 
         assert.equal(audioEngine.isAudioCtxInit, true);
         assert.equal(audioEngine.eqFilters, null);
-        assert.deepEqual(audioEngine.audioCtx.sourceNode.connections, [audioEngine.gainNode]);
+        assert.deepEqual(audioEngine.audioCtx.sourceNode.connections, [audioEngine.levelingGainNode]);
+        assert.deepEqual(audioEngine.levelingGainNode.connections, [audioEngine.gainNode]);
         assert.deepEqual(audioEngine.gainNode.connections, [audioEngine.audioCtx.destination]);
 
         const previousPlays = audioEngine.audioElement.playCalls;

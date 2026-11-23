@@ -21,7 +21,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const playerUi = new PlayerUI(state, audioEngine);
     const playlistUi = new PlaylistUI(state, audioEngine);
     helpUI.init();
-    eqUI.init();
+    eqUI.init({ state });
     
     mediaSessionManager.init({
       onNext: () => playerUi.playNext(),
@@ -62,6 +62,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (!trackData || !trackData.url) return false;
       try {
         audioEngine.audioElement.autoplay = false;
+        audioEngine.setTrackLoudness(null, { immediate: true });
         await audioEngine.load(trackData.url);
         if (!audioEngine.audioElement.paused) await audioEngine.pause(true);
         state.loadedTrackId = null; // Temporary external URLs aren't recoverable track IDs.

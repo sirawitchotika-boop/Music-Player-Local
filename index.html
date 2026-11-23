@@ -49,6 +49,22 @@
                     <div class="eq-range-ends"><span>−6 dB</span><span>+6 dB</span></div>
                 </div>
             </div>
+            <div class="sound-feature-card">
+                <div class="sound-toggle-row">
+                    <div>
+                        <label class="sound-feature-title" for="eq-leveling-toggle">AUTO VOLUME LEVELING</label>
+                        <p class="sound-feature-hint">Balances loud and quiet songs without altering original audio files.</p>
+                    </div>
+                    <label class="sound-switch">
+                        <input id="eq-leveling-toggle" type="checkbox" aria-label="Toggle auto volume leveling">
+                        <span class="sound-switch-slider" aria-hidden="true"></span>
+                    </label>
+                </div>
+                <div class="sound-analyze-row">
+                    <button id="analyze-library-btn" class="sound-secondary-btn" type="button">ANALYZE LIBRARY</button>
+                    <span id="analyze-library-status" class="sound-status-text"></span>
+                </div>
+            </div>
             <div class="eq-footer">
                 <button id="eq-reset-btn" class="eq-reset-btn" type="button">RESET</button>
                 <span>0 dB · FLAT</span>

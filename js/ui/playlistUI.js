@@ -2,6 +2,7 @@ import { storage } from '../core/storage.js';
 import { sessionMemory } from '../core/sessionMemory.js';
 import { modalUI } from './modalUI.js';
 import { mediaSessionManager } from '../core/mediaSessionManager.js';
+import { loudnessCoordinator, isValidLoudness } from '../core/loudnessAnalyzer.js';
 
 export class PlaylistUI {
   constructor(stateManager, audioEngine) {
@@ -220,6 +221,17 @@ export class PlaylistUI {
         }
       }
       await this.loadPlaylist();
+      const newlyAdded = processed.filter(entry => entry?.isNew && entry?.track).map(entry => entry.track);
+      if (newlyAdded.length > 0) {
+        void loudnessCoordinator.analyzeTracksSequentially(newlyAdded, {
+          storage,
+          onTrackMeasured: (measuredTrack, loudness) => {
+            if (this.state.loadedTrackId === measuredTrack.id) {
+              this.audio.setTrackLoudness?.(loudness, { immediate: false });
+            }
+          }
+        });
+      }
     } catch (error) {
       modalUI.showToast(error.message, 'error');
     } finally {
@@ -408,6 +420,7 @@ export class PlaylistUI {
         blob = await storage.getTrackBlob(track.id);
       }
       if (!blob) throw new Error("Audio blob not found");
+      this.audio.setTrackLoudness?.(track.loudness || null, { immediate: true });
       await this.audio.load(blob);
       await this.audio.play();
       this.state.selectedTrackId = track.id;
@@ -418,6 +431,14 @@ export class PlaylistUI {
       modalUI.showToast(`Playing: ${track.name}`);
       window.dispatchEvent(new Event('gt-liked-updated'));
       mediaSessionManager.updateMetadata(track);
+
+      if (track.id && !isValidLoudness(track.loudness)) {
+        void loudnessCoordinator.ensureTrackLoudness(track, { storage, blob }).then(measured => {
+          if (measured && this.state.loadedTrackId === track.id) {
+            this.audio.setTrackLoudness?.(measured, { immediate: false });
+          }
+        });
+      }
       return true;
     } catch (error) {
       this.state.currentTrackIndex = previousIndex;
