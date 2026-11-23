@@ -4,6 +4,14 @@ import { modalUI } from './modalUI.js';
 import { loudnessCoordinator, isValidLoudness } from '../core/loudnessAnalyzer.js';
 import { CROSSFEED_MODES, normalizeCrossfeedMode } from '../core/crossfeedNode.js';
 import {
+    readBool,
+    readJson,
+    readString,
+    writeBool,
+    writeJson,
+    writeString
+} from '../core/preferences.js';
+import {
     ACTIVE_PROFILE_STORAGE_KEY,
     BUILTIN_PROFILES,
     clampEqBand,
@@ -147,80 +155,44 @@ export class EqualizerUI {
     }
 
     loadSettings() {
-        try {
-            const saved = localStorage.getItem(STORAGE_KEY);
-            if (!saved) return { ...DEFAULTS };
-
-            const parsed = JSON.parse(saved);
-            if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
-                return { ...DEFAULTS };
-            }
-
-            return Object.fromEntries(BANDS.map(band => [band, clampEqBand(parsed[band])]));
-        } catch {
+        const parsed = readJson(STORAGE_KEY, null);
+        if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
             return { ...DEFAULTS };
         }
+        return Object.fromEntries(BANDS.map(band => [band, clampEqBand(parsed[band])]));
     }
 
     loadLevelingSetting() {
-        try {
-            return localStorage.getItem(LEVELING_STORAGE_KEY) === 'true';
-        } catch {
-            return false;
-        }
+        return readBool(LEVELING_STORAGE_KEY, false);
     }
 
     loadCrossfeedSetting() {
-        try {
-            return normalizeCrossfeedMode(localStorage.getItem(CROSSFEED_STORAGE_KEY));
-        } catch {
-            return 'off';
-        }
+        return normalizeCrossfeedMode(readString(CROSSFEED_STORAGE_KEY, 'off'));
     }
 
     loadActiveProfileId() {
-        try {
-            const savedId = localStorage.getItem(ACTIVE_PROFILE_STORAGE_KEY);
-            const all = this.getAllProfiles();
-            if (savedId && all.some(p => p.id === savedId)) {
-                return savedId;
-            }
-            return BUILTIN_PROFILES[0].id;
-        } catch {
-            return BUILTIN_PROFILES[0].id;
+        const savedId = readString(ACTIVE_PROFILE_STORAGE_KEY, null);
+        const all = this.getAllProfiles();
+        if (savedId && all.some(p => p.id === savedId)) {
+            return savedId;
         }
+        return BUILTIN_PROFILES[0].id;
     }
 
     saveSettings() {
-        try {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(this.values));
-        } catch (error) {
-            console.warn('[Equalizer] Could not save settings:', error);
-        }
+        writeJson(STORAGE_KEY, this.values);
     }
 
     saveLevelingSetting() {
-        try {
-            localStorage.setItem(LEVELING_STORAGE_KEY, this.volumeLevelingEnabled ? 'true' : 'false');
-        } catch (error) {
-            console.warn('[Equalizer] Could not save leveling setting:', error);
-        }
+        writeBool(LEVELING_STORAGE_KEY, this.volumeLevelingEnabled);
     }
 
     saveCrossfeedSetting() {
-        try {
-            localStorage.setItem(CROSSFEED_STORAGE_KEY, this.crossfeedMode);
-        } catch (error) {
-            console.warn('[Equalizer] Could not save crossfeed setting:', error);
-        }
+        writeString(CROSSFEED_STORAGE_KEY, this.crossfeedMode);
     }
 
     saveActiveProfileId() {
-        try {
-            localStorage.setItem(ACTIVE_PROFILE_STORAGE_KEY, this.activeProfileId);
-        } catch (error) {
-            console.warn('[SoundProfiles] Could not save active profile:', error);
-        }
+        writeString(ACTIVE_PROFILE_STORAGE_KEY, this.activeProfileId);
     }
 
     selectProfile(profileId) {

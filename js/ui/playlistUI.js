@@ -3,6 +3,12 @@ import { sessionMemory } from '../core/sessionMemory.js';
 import { modalUI } from './modalUI.js';
 import { mediaSessionManager } from '../core/mediaSessionManager.js';
 import { loudnessCoordinator, isValidLoudness } from '../core/loudnessAnalyzer.js';
+import {
+  loadPlaylists,
+  savePlaylists as persistPlaylists,
+  loadLikedTracks,
+  saveLikedTracks
+} from '../core/preferences.js';
 
 export class PlaylistUI {
   constructor(stateManager, audioEngine) {
@@ -12,9 +18,11 @@ export class PlaylistUI {
     this.fileInput = document.getElementById('file-upload');
     this.searchInput = document.getElementById('search-input');
     this.clearPlaylistBtn = document.getElementById('clear-playlist-btn');
-    this.playlists = JSON.parse(localStorage.getItem('gt_playlists')) || [];
-    this.likedTracks = JSON.parse(localStorage.getItem('gt_liked_tracks')) || [];
+    this.playlists = loadPlaylists();
+    this.likedTracks = loadLikedTracks();
     this.currentPlaylistId = 'all';
+    this.currentTracks = [];
+    this.searchQuery = '';
     this.addPlaylistBtn = document.getElementById('add-playlist-btn');
     this.dropdownToggle = document.getElementById('playlist-dropdown-toggle');
     this.dropdownMenu = document.getElementById('playlist-dropdown-menu');
@@ -73,7 +81,7 @@ export class PlaylistUI {
       });
     }
     window.addEventListener('gt-liked-updated', () => {
-      this.likedTracks = JSON.parse(localStorage.getItem('gt_liked_tracks')) || [];
+      this.likedTracks = loadLikedTracks();
       if (this.currentPlaylistId === 'favorites') {
         this.loadPlaylist();
       }
@@ -81,7 +89,7 @@ export class PlaylistUI {
   }
 
   savePlaylists() {
-    localStorage.setItem('gt_playlists', JSON.stringify(this.playlists));
+    persistPlaylists(this.playlists);
   }
 
   renderDropdown() {
@@ -99,7 +107,7 @@ export class PlaylistUI {
           </div>
         `;
       }
-      div.innerHTML = `<span style="pointer-events:none;"></span>${actionHTML}`;
+      div.innerHTML = `<span class="dropdown-item-label"></span>${actionHTML}`;
       div.querySelector("span").textContent = name;
       if (!isSystem) {
         div.querySelector(".edit-btn").dataset.id = String(id);
@@ -138,6 +146,8 @@ export class PlaylistUI {
 
   selectPlaylist(id) {
     this.currentPlaylistId = id;
+    this.searchQuery = '';
+    if (this.searchInput) this.searchInput.value = '';
     this.updateClearPlaylistLabel();
     this.state.playlistId = id;
     if (id === 'all') {
@@ -191,11 +201,11 @@ export class PlaylistUI {
         } else {
           modalUI.showToast('No new songs were added. These files are already in your library.', 'info');
         }
-} else if (this.currentPlaylistId === 'favorites') {
-        // [ตู้เซฟระดับ Controller] บล็อกการ Add เพลงเข้า Favorites แบบ Manual
+      } else if (this.currentPlaylistId === 'favorites') {
+        // Controller-level guard: block bulk imports directly into Favorites.
         modalUI.showToast('Favorites can only be changed with the heart button.', 'error');
-        event.target.value = ''; // รีเซ็ต Input ป้องกันไฟล์ค้าง
-        return; // ตัดจบวงจรการแอดเพลงทันที
+        event.target.value = '';
+        return;
       } else {
         const targetPl = this.playlists.find(p => p.id === this.currentPlaylistId);
         if (targetPl) {
@@ -239,10 +249,10 @@ export class PlaylistUI {
     }
   }
 
-  async loadPlaylist(searchQuery = '') {
+  async loadPlaylist(searchQuery = this.searchQuery ?? '') {
     if (!this.playlistContainer) return;
     try {
-      this.playlistContainer.innerHTML = '<div style="text-align: center; padding: 30px; color: #7a7a8c; font-weight: bold;">Loading songs...</div>';
+      this.playlistContainer.innerHTML = '<div class="playlist-status-msg">Loading songs...</div>';
       const allTracks = await storage.getAllTracks();
       const trackMap = new Map(allTracks.map(t => [t.id, t]));
       let tracks = [];
@@ -264,25 +274,40 @@ export class PlaylistUI {
       } else {
         tracks = allTracks;
       }
+      this.currentTracks = tracks;
       this.state.setQueue(tracks);
-      const filteredTracks = tracks.filter(track =>
-        track.name.toLowerCase().includes(searchQuery.toLowerCase())
-      );
-      if (filteredTracks.length === 0) {
-        const emptyMsg = searchQuery 
-          ? 'No songs match your search.' 
-          : 'Your library is empty. Tap Add Music to import songs.';
-        this.playlistContainer.innerHTML = `<div style="text-align: center; padding: 40px; color: #7a7a8c; font-weight: bold;">${emptyMsg}</div>`;
-        return;
-      }
-      this.renderTracks(filteredTracks);
+      this.searchQuery = typeof searchQuery === 'string' ? searchQuery : '';
+      this.renderFilteredTracks(this.searchQuery);
     } catch (error) {
-      this.playlistContainer.innerHTML = '<div style="text-align: center; color: #ff2a2a; padding: 20px;">Could not load the playlist.</div>';
+      this.playlistContainer.innerHTML = '<div class="playlist-status-msg error">Could not load the playlist.</div>';
     }
   }
 
+  renderFilteredTracks(searchQuery = this.searchQuery ?? '') {
+    if (!this.playlistContainer) return;
+    const query = typeof searchQuery === 'string' ? searchQuery.trim().toLowerCase() : '';
+    const sourceTracks = Array.isArray(this.currentTracks) ? this.currentTracks : [];
+    const filteredTracks = query
+      ? sourceTracks.filter(track => track.name.toLowerCase().includes(query))
+      : sourceTracks;
+
+    if (filteredTracks.length === 0) {
+      const emptyMsg = query
+        ? 'No songs match your search.'
+        : 'Your library is empty. Tap Add Music to import songs.';
+      this.playlistContainer.innerHTML = '';
+      const emptyEl = document.createElement('div');
+      emptyEl.className = 'playlist-status-msg';
+      emptyEl.textContent = emptyMsg;
+      this.playlistContainer.appendChild(emptyEl);
+      return;
+    }
+    this.renderTracks(filteredTracks);
+  }
+
   handleSearch(event) {
-    this.loadPlaylist(event.target.value);
+    this.searchQuery = event?.target?.value ?? '';
+    this.renderFilteredTracks(this.searchQuery);
   }
 
   async handleClearPlaylist() {
@@ -298,9 +323,7 @@ export class PlaylistUI {
       if (!isConfirmed) return;
 
       const removedCount = this.likedTracks.length;
-      try {
-        localStorage.setItem('gt_liked_tracks', JSON.stringify([]));
-      } catch (error) {
+      if (!saveLikedTracks([])) {
         modalUI.showToast('Could not clear Favorites. No changes were made.', 'error');
         return;
       }
@@ -366,16 +389,16 @@ export class PlaylistUI {
       item.dataset.id = track.id;
       const trackName = track.name.replace(/\.[^/.]+$/, "");
       item.innerHTML = `
-        <div class="track-info-area" style="cursor: pointer; flex-grow: 1; overflow: hidden; display: flex; align-items: center; gap: 12px;">
-          <div class="track-icon" style="width: 38px; height: 38px; background: #252535; border-radius: 8px; display: flex; justify-content: center; align-items: center; flex-shrink: 0; transition: 0.3s;">
-            <svg viewBox="0 0 24 24" width="20" height="20" fill="#7a7a8c" style="transition: 0.3s;"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>
+        <div class="track-info-area">
+          <div class="track-icon">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="#7a7a8c"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>
           </div>
-          <div style="overflow: hidden;">
-            <div class="track-title-text" style="color: #fff; font-weight: bold; font-size: 14px; white-space: nowrap; text-overflow: ellipsis; overflow: hidden; margin-bottom: 4px; transition: 0.3s;"></div>
-            <div style="color: #ff2a2a; font-size: 11px; font-weight: 800; letter-spacing: 1px;">LOCAL FILE</div>
+          <div class="track-meta">
+            <div class="track-title-text"></div>
+            <div class="track-badge">LOCAL FILE</div>
           </div>
         </div>
-        <button class="delete-btn" style="margin-left: 10px; background: rgba(255, 42, 42, 0.1); color: #ff2a2a; border: 1px solid rgba(255, 42, 42, 0.3); padding: 8px 14px; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 12px; transition: 0.2s;">DEL</button>
+        <button class="delete-btn" type="button">DEL</button>
       `;
       item.querySelector('.track-title-text').textContent = trackName;
       const trackInfoArea = item.querySelector('.track-info-area');
@@ -454,7 +477,7 @@ export class PlaylistUI {
         const isConfirmed = await modalUI.showConfirm('Remove from Favorites?', 'This removes the song from Favorites only. The audio file stays in your library.');
         if (!isConfirmed) return;
         this.likedTracks = this.likedTracks.filter(tid => tid !== id);
-        localStorage.setItem('gt_liked_tracks', JSON.stringify(this.likedTracks));
+        saveLikedTracks(this.likedTracks);
         modalUI.showToast('Removed from Favorites.');
         window.dispatchEvent(new Event('gt-liked-updated'));
       } else if (this.currentPlaylistId === 'all') {
@@ -466,7 +489,7 @@ export class PlaylistUI {
           pl.tracks = pl.tracks.filter(tid => tid !== id);
         });
         this.likedTracks = this.likedTracks.filter(tid => tid !== id);
-        localStorage.setItem('gt_liked_tracks', JSON.stringify(this.likedTracks));
+        saveLikedTracks(this.likedTracks);
         this.savePlaylists();
         modalUI.showToast('Song deleted from your library.');
         window.dispatchEvent(new Event('gt-liked-updated'));

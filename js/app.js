@@ -21,6 +21,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const playerUi = new PlayerUI(state, audioEngine);
     const playlistUi = new PlaylistUI(state, audioEngine);
     helpUI.init();
+    void timerUI.init();
     eqUI.init({ state });
     
     mediaSessionManager.init({
@@ -99,10 +100,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       });
     }
     
-    const loadingOverlay = document.getElementById('loading-overlay');
     const appContainer = document.getElementById('app-container');
-    
-    if (loadingOverlay) loadingOverlay.style.display = 'none';
     if (appContainer) appContainer.classList.remove('hidden');
     
     console.log('[App] Initialized Successfully.');

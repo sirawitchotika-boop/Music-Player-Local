@@ -29,12 +29,12 @@ class TimerUI {
         this.targetTimestamp = null;
         this.isActive = false;
         this.isEditMode = false;
-        
-        this.init();
+        this.initialized = false;
     }
     
     async init() {
-        if (!this.modal) return;
+        if (!this.modal || this.initialized) return;
+        this.initialized = true;
         this.bindEvents();
         await this.loadPresets();
         this.updateUIState();
@@ -58,6 +58,12 @@ class TimerUI {
         
         this.addPresetBtn?.addEventListener('click', () => this.createPreset());
         this.toggleEditBtn?.addEventListener('click', () => this.toggleEditMode());
+
+        if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
+            window.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') this.closeModal();
+            });
+        }
     }
     
     openModal() {

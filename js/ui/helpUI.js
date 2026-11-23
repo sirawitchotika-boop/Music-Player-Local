@@ -3,11 +3,12 @@ export class HelpUI {
     this.modal = document.getElementById('help-modal');
     this.openBtn = document.getElementById('help-btn');
     this.closeBtn = document.getElementById('close-help-btn');
-    this.init();
+    this.initialized = false;
   }
 
   init() {
-    if (!this.modal) return;
+    if (!this.modal || this.initialized) return;
+    this.initialized = true;
     this.bindEvents();
   }
 
@@ -19,6 +20,11 @@ export class HelpUI {
         this.closeModal();
       }
     });
+    if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
+      window.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') this.closeModal();
+      });
+    }
   }
 
   openModal() {
