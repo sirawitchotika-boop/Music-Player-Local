@@ -1,71 +1,70 @@
-# Project Architecture & Dependency Matrix
+# Project Architecture & Dependency Matrix (v1.3.0)
 
 ## 1. Project Overview & Architecture
-- **Description:** GT SoundMaster - Audiophile Local Music Player (100% Client-Side Local Storage) ออกแบบด้วยสถาปัตยกรรมแบบ Minimalist High-Fidelity เล่นเพลงผ่านฮาร์ดแวร์ถอดรหัสของ Android โดยตรง พร้อมระบบ Micro-Gain Ramp ป้องกันเสียงกึก/สะดุด ควบคุมด้วย Sleep Timer และผสานการทำงานร่วมกับ Android Native Media Notification Service (ควบคุมผ่านแถบแจ้งเตือนและหน้าจอล็อกสกรีน)
-- **Tech Stack:** HTML5, CSS3 (Minimalist Cyberpunk Theme), Vanilla JavaScript (ES6 Modules), Web Audio API (three-band EQ and Micro-Gain Controller), Media Session API, IndexedDB API, Capacitor Android SDK, Native Android Framework (MediaSession, Notification.MediaStyle, Foreground Service), Node.js 22, Java JDK 21 (Zulu), Gradle Wrapper
-- **Architecture Pattern:** Modular Component Architecture (Clean separation between Storage, Audio Engine, UI Controllers, and Android Native Bridge)
+- **Description:** GT SoundMaster — 100% offline local music player for Android. Audio blobs and track metadata live on-device in IndexedDB, paired with a Web Audio sound pipeline (3-band EQ, Bauer-style Headphone Crossfeed, ReplayGain-style Auto Volume Leveling, and a 35ms click-free play/pause fade) and a native Android `MediaPlaybackService` for lock-screen controls and Bluetooth route-loss safety.
+- **Tech Stack:** HTML5, CSS3, Vanilla JavaScript (ES6 Modules), Web Audio API, Media Session API, IndexedDB, `localStorage`, Capacitor Android SDK, Native Android (`MediaSession`, `Notification.MediaStyle`, Foreground Service), Node.js 22 (`node:test`), Java 21, Gradle Wrapper.
+- **Owner-Level Guide:** See [docs/OWNER-SYSTEM-OVERVIEW.md](docs/OWNER-SYSTEM-OVERVIEW.md) for a plain-English, high-level system guide.
 
 ## 2. Directory Tree
 ```text
 / (Root)
-|-- .github/
-|   `-- workflows/
-|       `-- build-apk.yml
+|-- .github/workflows/
+|   |-- build-apk.yml               Reusable Android build workflow (reads app-version.json)
+|   |-- gate1-test-apk.yml          Disposable Gate 1 TEST APK build
+|   |-- m4-cert-baseline.yml        Signing certificate baseline diagnostic
+|   |-- m4-signing-test.yml         GT SoundMaster signed app update workflow
+|   `-- safety-tests.yml            Automated Node.js safety tests on PRs and main
 |-- css/
-|   |-- eq.css
-|   |-- help.css
-|   |-- main.css
-|   |-- player.css
-|   |-- playlist.css
-|   `-- timer.css
+|   |-- eq.css                      Unified Sound Panel (Gear Profiles, Leveling, Crossfeed, EQ)
+|   |-- help.css                    Help & What's New modal styles
+|   |-- main.css                    App layout, top bar, disc stage, Favorite button, theme
+|   |-- player.css                  Playback controls and progress bar
+|   |-- playlist.css                Library, search, dropdown, and track list
+|   `-- timer.css                   Sleep Timer modal styles
+|-- docs/
+|   |-- OWNER-SYSTEM-OVERVIEW.md    High-level owner guide to the whole system
+|   |-- GATE1-ISOLATED-TEST.md      Disposable phone test APK guidance
+|   `-- M4A-SIGNING-TEST.md         Update-safe signed APK guidance
 |-- js/
-|   |-- app.js
+|   |-- app.js                      Application bootstrap, external audio hook, session restore
 |   |-- core/
-|   |   |-- audioEngine.js
-|   |   |-- mediaSessionManager.js
-|   |   |-- stateManager.js
-|   |   `-- storage.js
+|   |   |-- audioEngine.js          Web Audio chain (EQ -> Crossfeed -> Leveling -> 35ms Fade)
+|   |   |-- crossfeedNode.js        Bauer-style Headphone Crossfeed (Off / Subtle / Room)
+|   |   |-- loudnessAnalyzer.js     Offline RMS loudness + peak safety cap + scan coordinator
+|   |   |-- mediaSessionManager.js  MediaSession API & two-way AndroidBridge sync
+|   |   |-- sessionMemory.js        Cold-start paused session restore (never auto-plays)
+|   |   |-- soundProfiles.js        Gear Profiles model (4 protected built-ins + custom CRUD)
+|   |   |-- stateManager.js         Queue & playback modes (Normal, Repeat One, Shuffle)
+|   |   `-- storage.js              IndexedDB manager (metadata, blobs, loudness cache, timers)
 |   `-- ui/
-|       |-- eqUI.js
-|       |-- helpUI.js
-|       |-- modalUI.js
-|       |-- playerUI.js
-|       |-- playlistUI.js
-|       `-- timerUI.js
-|-- icon.svg
-|-- icon.png
-|-- index.html
-|-- manifest.json
-|-- CHANGELOG.md
-|-- README.md
-`-- Structure file.md
+|       |-- eqUI.js                 Unified Sound Panel controller (Profiles, Leveling, Crossfeed, EQ)
+|       |-- helpUI.js               Help & What's New dialog controller
+|       |-- modalUI.js              Safe text-only alerts, confirms, prompts, and toasts
+|       |-- playerUI.js             Playback controls, hold-to-seek, Favorite button
+|       |-- playlistUI.js           Library import, playlists, Favorites protection, clear flows
+|       `-- timerUI.js              Sleep Timer countdown and custom presets
+|-- scripts/                        Isolated build, icon marking, and APK certificate checks
+|-- tests/                          Automated Node.js regression, audio, UI, and CI safety tests
+|-- app-version.json                Single source of truth for Android versionName / versionCode (1.3.0 / 6)
+|-- CHANGELOG.md                    Release history
+|-- index.html                      Main SPA shell
+|-- manifest.json                   Web app metadata & theme colors
+`-- README.md                       Technical overview & build/test instructions
 ```
 
-## 3. Data Flow & State Management
-- **Audio Playback Pipeline (Zero-Click Micro-Gain Architecture):**
-  `audioEngine.audioElement` -> `MediaElementAudioSourceNode` -> `BiquadFilter (Bass / Mid / Treble)` -> `GainNode (Sample-level Ramp: 35ms)` -> `audioCtx.destination`
-  - EQ uses three lightweight filters with a ±6 dB range. All controls default to 0 dB (flat).
-  - *Play:* Ramp Gain 0.0001 -> 1.0 (ป้องกันเสียงกึกที่จุดเริ่มต้นของไฟล์เสียง)
-  - *Pause:* Ramp Gain 1.0 -> 0.0001 แล้วสั่ง Pause (ป้องกันการตัดคลื่นเสียงกะทันหัน)
-  - *Next/Prev:* Pause (Fade-out) -> Swap ObjectURL -> Play (Fade-in)
-- **Two-Way Notification & MediaSession Sync:**
-  - *App -> Native OS:* ส่ง Metadata (ชื่อเพลง, ศิลปิน, ตำแหน่งเวลา) ผ่าน `AndroidBridge.updatePlayback()` เข้าสู่ Native `MediaPlaybackService`
-  - *Native OS -> App:* รับคำสั่งกดปุ่มควบคุมจากหน้า Lock Screen / Notification Panel ผ่าน `MediaSession.Callback` ส่งกลับเข้ามาสั่งงานที่ `window.mediaControlAction`
-- **Touch Gesture Control & Concurrency:**
-  - ปุ่ม Next/Prev รองรับการแตะเพื่อเปลี่ยนเพลง และกดค้าง (Hold > 450ms) เพื่อกรอเพลง (Seek)
-  - มีระบบตรวจจับ Touch Cancellation เมื่อผู้ใช้เลื่อนนิ้วออกจากปุ่ม จะยกเลิกคำสั่งทันที ป้องกันการสั่งเปลี่ยนเพลงโดยไม่ตั้งใจ
-  - มีตัวแปร `isChangingTrack` คอยล็อกป้องกันการสั่งเปลี่ยนเพลงซ้อนกันในเสี้ยววินาที
+## 3. Audio Pipeline & Fallback Safety
+`audioElement` → `MediaElementAudioSourceNode` → `3-Band EQ (Bass/Mid/Treble)` → `Crossfeed (Off/Subtle/Room)` → `Leveling Gain (peak-capped)` → `GainNode (35ms Play/Pause Fade)` → `destination`
 
-## 4. Module Connections & Dependencies
-- **.github/workflows/build-apk.yml:** เวิร์กโฟลว์ CI/CD สำหรับบิลด์ไฟล์ Android Debug APK (v1.2.0, versionCode 3)
-- **index.html:** หน้าโครงสร้างหลักแบบ Single Page Application (SPA)
-- **js/app.js:** จุดเริ่มต้นการทำงาน (Bootstrap) เชื่อมต่อ Controller ต่างๆ
-- **js/core/audioEngine.js:** Audio engine with the three-band EQ filter chain and the existing 35ms playback fade.
-- **js/ui/eqUI.js:** Simple Bass, Mid, and Treble controls with local settings.
-- **js/core/mediaSessionManager.js:** จัดการ MediaSession API และสื่อสารกับ Native Android Bridge
-- **js/core/stateManager.js:** จัดการคิวเพลงและโหมดการเล่น (Order, Repeat One, Shuffle)
-- **js/core/storage.js:** จัดการฐานข้อมูล IndexedDB จัดเก็บ Metadata และไฟล์เสียงแบบ Blob ในเครื่อง
-- **js/ui/playerUI.js:** จัดการปุ่มกด Seekbar และการแสดงผลหน้า Now Playing
-- **js/ui/playlistUI.js:** จัดการนำเข้าไฟล์เสียงและสร้างเพลย์ลิสต์
-- **js/ui/timerUI.js:** จัดการระบบตั้งเวลาปิดเพลงอัตโนมัติ (Sleep Timer)
-- **js/ui/helpUI.js:** จัดการหน้าต่างคู่มือ System Manual
+- Each optional stage (`EQ`, `Crossfeed`, `Leveling`) is wired downstream-first with error isolation; if any stage is unsupported or fails, audio bypasses that stage cleanly and still reaches the 35ms play/pause fade and output.
+- Default behavior on update preserves saved EQ values and keeps Auto Volume Leveling (`false`) and Crossfeed (`off`) untouched until enabled or switched via a Gear Profile.
+
+## 4. Storage Separation
+- **IndexedDB (`LocalMusicDB` v4):**
+  - `audioTracks`: Track metadata (`id`, `name`, `type`, `size`, `addedAt`, cached `loudness`).
+  - `audioBlobs`: Original audio file blobs keyed by `id` (never modified by loudness analysis).
+  - `timerPresets`: Saved Sleep Timer presets.
+  - `eqPresets`: Reserved store.
+- **`localStorage`:**
+  - `gt_playlists`, `gt_liked_tracks`, `gt_play_mode`, `gt_last_session_v1`
+  - `gt_soundmaster_equalizer`, `gt_soundmaster_leveling`, `gt_soundmaster_crossfeed`
+  - `gt_soundmaster_sound_profiles`, `gt_soundmaster_active_profile`

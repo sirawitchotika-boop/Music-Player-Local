@@ -18,7 +18,7 @@ test('Android version metadata has one validated source of truth', () => {
   assert.match(version.versionName, /^\d+\.\d+\.\d+$/);
   assert.ok(Number.isInteger(version.versionCode) && version.versionCode > 0);
   assert.ok(readme.includes('GT SoundMaster (v' + version.versionName + ')'));
-  assert.ok(changelog.includes('## [' + version.versionName + '] - 2026-11-20'));
+  assert.ok(changelog.includes('## [' + version.versionName + '] - 2026-11-23'));
   assert.match(workflow, /app-version\.json/);
   assert.match(workflow, /version_config/);
   assert.match(isolatedBuild, /app-version\.json/);
@@ -31,7 +31,7 @@ test('web manifest describes the current player and matches the UI theme', () =>
   assert.equal(manifest.theme_color, '#180d12');
   assert.equal(manifest.background_color, '#0b090c');
   assert.match(manifest.description, /playlists, Favorites, playback controls, and a sleep timer/i);
-  assert.doesNotMatch(manifest.description, /EQ|pre-amp/i);
+  assert.doesNotMatch(manifest.description, /10-Band|pre-amp/i);
   assert.match(html, /<meta name="theme-color" content="#180d12">/);
 });
 
@@ -42,15 +42,23 @@ test("What's New notes are available in Help but collapsed by default", () => {
   const end = html.indexOf('</details>', start);
   assert.ok(end > start, "What's New details element should be closed.");
   const section = html.slice(start, end);
-  assert.match(section, /WHAT'S NEW IN 1\.2\.2/);
-  assert.match(section, /improved small-screen spacing/);
+  assert.match(section, /WHAT'S NEW IN 1\.3\.0/);
+  assert.match(section, /Auto Volume Leveling/);
+  assert.match(section, /Headphone Crossfeed/);
+  assert.match(section, /Gear Profiles/);
   assert.doesNotMatch(match[0], /\sopen(?:\s|=|$)/);
   assert.match(read('css/help.css'), /whats-new-card\[open\]/);
 });
 
-test('README does not advertise removed EQ features or claim an absent license', () => {
+test('README does not advertise removed EQ features or claim an absent license and links Owner Overview', () => {
   assert.doesNotMatch(readme, /10-Band|Pre-Amp|100% Open-Source/i);
   assert.match(readme, /No LICENSE file is currently included/);
+  assert.match(readme, /docs\/OWNER-SYSTEM-OVERVIEW\.md/);
+  const ownerDoc = read('docs/OWNER-SYSTEM-OVERVIEW.md');
+  assert.match(ownerDoc, /GT SoundMaster — Owner System Overview/);
+  assert.match(ownerDoc, /Auto Volume Leveling/);
+  assert.match(ownerDoc, /Headphone Crossfeed/);
+  assert.match(ownerDoc, /Gear Profiles/);
 });
 
 test('Android camera-edge status bar and web theme match the player top color', () => {

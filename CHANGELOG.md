@@ -1,13 +1,18 @@
 # Changelog
 
-## [Unreleased]
+## [1.3.0] - 2026-11-23
 
 ### Added
+- **Auto Volume Leveling (M11):** Offline ReplayGain-style loudness normalization with peak safety ceiling, automatic measurement on import, lazy measurement during playback, and a one-tap **Analyze Library** action.
+- **Headphone Crossfeed (M12):** Bauer-style stereo crossfeed with **Off**, **Subtle**, and **Room** modes and automatic bypass fallback.
+- **Unified Sound Panel & Gear Profiles (M13):** Four protected built-in presets (**Pure Flat**, **Earbuds**, **Car / Speaker**, **Late Night**) plus custom profile creation, saving, renaming, deletion, and an **Unsaved** change indicator.
+- **Owner System Overview:** Added `docs/OWNER-SYSTEM-OVERVIEW.md` for a high-level, owner-friendly map of the app's structure and safety rules.
 - Added a confirmation-protected action to clear all Favorites at once without deleting local music files or changing other playlists.
 - Added a simple three-band Equalizer with locally saved Bass, Mid, and Treble settings and a one-tap flat reset.
 
 ### Changed
 - Promoted the existing signed SIGN TEST installation to GT SoundMaster branding (normal name/icon) while preserving its package ID, signing certificate, and update-safe version codes.
+- Bumped Android app version metadata to `1.3.0` (`versionCode` `6`) and refreshed Help, What's New, README, and architecture docs.
 
 ### Fixed
 - Increased the phone player title, positioned the Like button at the record's lower-right with a full-size touch target, and matched the Android status bar to the top player theme.
