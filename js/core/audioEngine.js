@@ -1,5 +1,6 @@
 // js/core/audioEngine.js
 import { computeSafeGainLinear, isValidLoudness } from './loudnessAnalyzer.js';
+import { createCrossfeedStage, normalizeCrossfeedMode } from './crossfeedNode.js';
 
 class AudioEngine {
     constructor() {
@@ -8,8 +9,10 @@ class AudioEngine {
         this.audioCtx = null;
         this.gainNode = null;
         this.levelingGainNode = null;
+        this.crossfeedStage = null;
         this.eqFilters = null;
         this.eqSettings = { bass: 0, mid: 0, treble: 0 };
+        this.crossfeedMode = 'off';
         this.volumeLevelingEnabled = false;
         this.trackLoudness = null;
         this.isAudioCtxInit = false;
@@ -47,6 +50,20 @@ class AudioEngine {
                 } catch (levelingError) {
                     console.warn("[AudioEngine] Leveling routing failed; bypassing:", levelingError);
                     try { levelingNode.disconnect(); } catch { /* Best-effort cleanup. */ }
+                }
+            }
+
+            // Wire optional headphone crossfeed ahead of leveling/fade.
+            this.crossfeedStage = null;
+            const crossfeed = createCrossfeedStage(this.audioCtx, this.crossfeedMode);
+            if (crossfeed) {
+                try {
+                    crossfeed.output.connect(downstreamTarget);
+                    this.crossfeedStage = crossfeed;
+                    downstreamTarget = crossfeed.input;
+                } catch (crossfeedError) {
+                    console.warn("[AudioEngine] Crossfeed routing failed; bypassing:", crossfeedError);
+                    crossfeed.disconnect();
                 }
             }
 
@@ -103,6 +120,19 @@ class AudioEngine {
         } catch (e) {
             console.warn("[AudioEngine] Web Audio init fallback:", e);
         }
+    }
+
+    getCrossfeedMode() {
+        return this.crossfeedMode;
+    }
+
+    setCrossfeedMode(mode, { immediate = false } = {}) {
+        const safeMode = normalizeCrossfeedMode(mode);
+        this.crossfeedMode = safeMode;
+        if (this.crossfeedStage) {
+            this.crossfeedStage.applyMode(safeMode, { immediate });
+        }
+        return this.crossfeedMode;
     }
 
     getEffectiveLevelingGain() {

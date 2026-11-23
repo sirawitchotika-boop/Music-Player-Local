@@ -214,6 +214,32 @@
     line-height: 1.35;
 }
 
+.sound-segmented {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+    margin-top: 12px;
+}
+
+.sound-segment-btn {
+    padding: 8px 6px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.04);
+    color: #bfb5ba;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.7px;
+    cursor: pointer;
+    transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease;
+}
+
+.sound-segment-btn.active {
+    background: rgba(201, 39, 54, 0.25);
+    border-color: rgba(240, 68, 80, 0.65);
+    color: #ffffff;
+}
+
 .eq-footer {
     display: flex;
     justify-content: space-between;

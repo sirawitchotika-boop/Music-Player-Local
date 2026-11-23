@@ -1,9 +1,11 @@
 import { audioEngine } from '../core/audioEngine.js';
 import { storage } from '../core/storage.js';
 import { loudnessCoordinator, isValidLoudness } from '../core/loudnessAnalyzer.js';
+import { CROSSFEED_MODES, normalizeCrossfeedMode } from '../core/crossfeedNode.js';
 
 const STORAGE_KEY = 'gt_soundmaster_equalizer';
 const LEVELING_STORAGE_KEY = 'gt_soundmaster_leveling';
+const CROSSFEED_STORAGE_KEY = 'gt_soundmaster_crossfeed';
 const BANDS = ['bass', 'mid', 'treble'];
 const DEFAULTS = Object.freeze({ bass: 0, mid: 0, treble: 0 });
 
@@ -25,6 +27,10 @@ export class EqualizerUI {
         this.levelingToggle = document.getElementById('eq-leveling-toggle');
         this.analyzeLibraryBtn = document.getElementById('analyze-library-btn');
         this.analyzeLibraryStatus = document.getElementById('analyze-library-status');
+        this.crossfeedButtons = Object.fromEntries(CROSSFEED_MODES.map(mode => [
+            mode,
+            document.getElementById(`crossfeed-${mode}-btn`)
+        ]));
         this.sliders = Object.fromEntries(BANDS.map(band => [
             band,
             document.getElementById(`eq-${band}`)
@@ -35,6 +41,7 @@ export class EqualizerUI {
         ]));
         this.values = { ...DEFAULTS };
         this.volumeLevelingEnabled = false;
+        this.crossfeedMode = 'off';
         this.isAnalyzingLibrary = false;
         this.initialized = false;
     }
@@ -45,9 +52,11 @@ export class EqualizerUI {
         this.state = state;
         this.values = this.loadSettings();
         this.volumeLevelingEnabled = this.loadLevelingSetting();
+        this.crossfeedMode = this.loadCrossfeedSetting();
         this.updateControls();
         audioEngine.setEqualizer(this.values);
         audioEngine.setVolumeLeveling(this.volumeLevelingEnabled, { immediate: true });
+        audioEngine.setCrossfeedMode(this.crossfeedMode, { immediate: true });
         this.bindEvents();
     }
 
@@ -63,6 +72,12 @@ export class EqualizerUI {
         this.analyzeLibraryBtn?.addEventListener('click', () => {
             void this.analyzeLibrary();
         });
+
+        for (const mode of CROSSFEED_MODES) {
+            this.crossfeedButtons[mode]?.addEventListener('click', () => {
+                this.setCrossfeedMode(mode);
+            });
+        }
 
         this.modal.addEventListener('click', (event) => {
             if (event.target === this.modal) this.closeModal();
@@ -103,6 +118,14 @@ export class EqualizerUI {
         }
     }
 
+    loadCrossfeedSetting() {
+        try {
+            return normalizeCrossfeedMode(localStorage.getItem(CROSSFEED_STORAGE_KEY));
+        } catch {
+            return 'off';
+        }
+    }
+
     saveSettings() {
         try {
             localStorage.setItem(STORAGE_KEY, JSON.stringify(this.values));
@@ -119,10 +142,24 @@ export class EqualizerUI {
         }
     }
 
+    saveCrossfeedSetting() {
+        try {
+            localStorage.setItem(CROSSFEED_STORAGE_KEY, this.crossfeedMode);
+        } catch (error) {
+            console.warn('[Equalizer] Could not save crossfeed setting:', error);
+        }
+    }
+
     setVolumeLeveling(enabled) {
         this.volumeLevelingEnabled = audioEngine.setVolumeLeveling(Boolean(enabled));
         this.updateControls();
         this.saveLevelingSetting();
+    }
+
+    setCrossfeedMode(mode) {
+        this.crossfeedMode = audioEngine.setCrossfeedMode(mode);
+        this.updateControls();
+        this.saveCrossfeedSetting();
     }
 
     updateBand(band, rawValue) {
@@ -143,6 +180,14 @@ export class EqualizerUI {
         }
         if (this.levelingToggle) {
             this.levelingToggle.checked = this.volumeLevelingEnabled;
+        }
+        for (const mode of CROSSFEED_MODES) {
+            const btn = this.crossfeedButtons[mode];
+            if (!btn) continue;
+            const isActive = this.crossfeedMode === mode;
+            if (isActive) btn.classList?.add('active');
+            else btn.classList?.remove('active');
+            btn.setAttribute?.('aria-pressed', isActive ? 'true' : 'false');
         }
     }
 
