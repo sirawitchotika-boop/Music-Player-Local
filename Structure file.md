@@ -1,7 +1,7 @@
-# Project Architecture & Dependency Matrix (v1.3.0)
+# Project Architecture & Dependency Matrix (v1.3.1)
 
 ## 1. Project Overview & Architecture
-- **Description:** GT SoundMaster — 100% offline local music player for Android. Audio blobs and track metadata live on-device in IndexedDB, paired with a Web Audio sound pipeline (3-band EQ, Bauer-style Headphone Crossfeed, ReplayGain-style Auto Volume Leveling, and a 35ms click-free play/pause fade) and a native Android `MediaPlaybackService` for lock-screen controls and Bluetooth route-loss safety.
+- **Description:** GT SoundMaster — 100% offline local music player for Android. Audio blobs and track metadata live on-device in IndexedDB, paired with a validated `preferences.js` persistence layer, a Web Audio sound pipeline (3-band EQ, Bauer-style Headphone Crossfeed, ReplayGain-style Auto Volume Leveling, and a 35ms click-free play/pause fade), and a native Android `MediaPlaybackService` for lock-screen controls and Bluetooth route-loss safety.
 - **Tech Stack:** HTML5, CSS3, Vanilla JavaScript (ES6 Modules), Web Audio API, Media Session API, IndexedDB, `localStorage`, Capacitor Android SDK, Native Android (`MediaSession`, `Notification.MediaStyle`, Foreground Service), Node.js 22 (`node:test`), Java 21, Gradle Wrapper.
 - **Owner-Level Guide:** See [docs/OWNER-SYSTEM-OVERVIEW.md](docs/OWNER-SYSTEM-OVERVIEW.md) for a plain-English, high-level system guide.
 
@@ -9,11 +9,15 @@
 ```text
 / (Root)
 |-- .github/workflows/
-|   |-- build-apk.yml               Reusable Android build workflow (reads app-version.json)
+|   |-- build-apk.yml               Reusable Android build workflow (copies android-native/ and runs scripts/)
 |   |-- gate1-test-apk.yml          Disposable Gate 1 TEST APK build
 |   |-- m4-cert-baseline.yml        Signing certificate baseline diagnostic
 |   |-- m4-signing-test.yml         GT SoundMaster signed app update workflow
 |   `-- safety-tests.yml            Automated Node.js safety tests on PRs and main
+|-- android-native/
+|   `-- java/com/gt/soundmaster/
+|       |-- MainActivity.java       Capacitor bridge, status bar theme, external audio handler
+|       `-- MediaPlaybackService.java Foreground media service, lock-screen controls, Bluetooth route pause
 |-- css/
 |   |-- eq.css                      Unified Sound Panel (Gear Profiles, Leveling, Crossfeed, EQ)
 |   |-- help.css                    Help & What's New modal styles
@@ -32,6 +36,7 @@
 |   |   |-- crossfeedNode.js        Bauer-style Headphone Crossfeed (Off / Subtle / Room)
 |   |   |-- loudnessAnalyzer.js     Offline RMS loudness + peak safety cap + scan coordinator
 |   |   |-- mediaSessionManager.js  MediaSession API & two-way AndroidBridge sync
+|   |   |-- preferences.js          Centralized, validated localStorage persistence layer
 |   |   |-- sessionMemory.js        Cold-start paused session restore (never auto-plays)
 |   |   |-- soundProfiles.js        Gear Profiles model (4 protected built-ins + custom CRUD)
 |   |   |-- stateManager.js         Queue & playback modes (Normal, Repeat One, Shuffle)
@@ -41,11 +46,11 @@
 |       |-- helpUI.js               Help & What's New dialog controller
 |       |-- modalUI.js              Safe text-only alerts, confirms, prompts, and toasts
 |       |-- playerUI.js             Playback controls, hold-to-seek, Favorite button
-|       |-- playlistUI.js           Library import, playlists, Favorites protection, clear flows
+|       |-- playlistUI.js           Library import, in-memory search filter, playlists, Favorites protection
 |       `-- timerUI.js              Sleep Timer countdown and custom presets
-|-- scripts/                        Isolated build, icon marking, and APK certificate checks
+|-- scripts/                        Icon generator, Android project patcher, isolated build, and cert verification
 |-- tests/                          Automated Node.js regression, audio, UI, and CI safety tests
-|-- app-version.json                Single source of truth for Android versionName / versionCode (1.3.0 / 6)
+|-- app-version.json                Single source of truth for Android versionName / versionCode (1.3.1 / 7)
 |-- CHANGELOG.md                    Release history
 |-- index.html                      Main SPA shell
 |-- manifest.json                   Web app metadata & theme colors

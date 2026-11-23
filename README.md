@@ -1,4 +1,4 @@
-# GT SoundMaster (v1.3.0)
+# GT SoundMaster (v1.3.1)
 
 A local music player for Android. Imported audio and music-library data are stored on the device.
 
@@ -25,8 +25,8 @@ The Android app version has one source of truth: app-version.json.
 
 | Field | Current value |
 | --- | --- |
-| Version name | 1.3.0 |
-| Version code | 6 |
+| Version name | 1.3.1 |
+| Version code | 7 |
 
 The Android build workflow reads this file when generating the app's Gradle configuration. The isolated Gate 1 and signing-test build preparation script validates the same values before changing the generated app identity.
 
@@ -36,18 +36,19 @@ package.json is used for the Node.js safety-test runner; it is not the Android a
 
 - **User interface:** HTML, CSS, and vanilla JavaScript ES modules
 - **Audio:** HTML Audio and Web Audio API with a 3-band EQ, Bauer-style stereo Crossfeed, per-track Auto Volume Leveling, and a 35ms GainNode play/pause ramp (each optional stage falls back cleanly to flat playback if unavailable)
-- **Local storage:** IndexedDB (tracks, audio blobs, cached loudness metadata, timer presets) and `localStorage` (playlists, Favorites, Sound settings & Gear Profiles, last session)
-- **Android integration:** Capacitor, Android media session, notification controls, and a media-playback foreground service
+- **Local storage:** IndexedDB (tracks, audio blobs, cached loudness metadata, timer presets) and a centralized validated `localStorage` preferences layer (`js/core/preferences.js`)
+- **Android integration:** Capacitor, native Android `MainActivity` and `MediaPlaybackService` (`android-native/`), notification controls, and Bluetooth route-loss protection
 - **Automation:** GitHub Actions, Java 21, and Node.js 22
 
 ## Repository layout
 
     .github/workflows/       Android build, signed-update, and safety-test workflows
+    android-native/          Native Android Java sources (MainActivity, MediaPlaybackService)
     css/                     Player, playlist, timer, Help, and Sound panel styles
     docs/                    Owner system overview, isolated test-build, and signing-test docs
-    js/core/                 Audio engine, loudness analyzer, crossfeed, Gear Profiles, storage, state, session, media-session
+    js/core/                 Audio engine, loudness analyzer, crossfeed, Gear Profiles, preferences, storage, state, session, media-session
     js/ui/                   Player, playlist, timer, modal, Help, and Sound panel interfaces
-    scripts/                 Isolated-build and signing verification helpers
+    scripts/                 Icon generation, Android project patching, isolated-build, and signing helpers
     tests/                   Node.js regression and safety tests
     app-version.json         Android version name and version code
     CHANGELOG.md             Version history

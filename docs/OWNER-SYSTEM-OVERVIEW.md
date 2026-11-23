@@ -1,4 +1,4 @@
-# GT SoundMaster — Owner System Overview (`v1.3.0`)
+# GT SoundMaster — Owner System Overview (`v1.3.1`)
 
 > **Who this document is for:** You (the app owner).  
 > **Goal:** Understand how GT SoundMaster is put together, where your music and settings live, how the sound engine works, and how updates stay safe — without needing to read source code.  
@@ -112,7 +112,7 @@ Everything stays strictly on your phone inside app-private storage (nothing is u
 
 ## 6. How Updates & Builds Stay Safe
 
-The app version is controlled by a single file: `app-version.json` (`1.3.0`, `versionCode 6`).
+The app version is controlled by a single file: `app-version.json` (`1.3.1`, `versionCode 7`).
 
 GitHub Actions handles all checks and Android APK builds automatically:
 
@@ -128,7 +128,8 @@ GitHub Actions handles all checks and Android APK builds automatically:
 
 - `index.html` + `css/` — What you see on screen.
 - `js/ui/` — Button taps, modals, playlists, timer, Help, and the Sound panel.
-- `js/core/` — The brains: sound engine, loudness scanner, crossfeed, Gear Profiles, storage, queue, session memory, and Android lock-screen bridge.
+- `js/core/` — The brains: sound engine, loudness scanner, crossfeed, Gear Profiles, safe preferences (`preferences.js`), storage, queue, session memory, and Android lock-screen bridge.
+- `android-native/` — Native Android Java code (`MainActivity`, `MediaPlaybackService`) for lock-screen controls, foreground playback, and Bluetooth disconnect safety.
 - `tests/` — Automated safety nets that verify nothing breaks before updates ship.
 - `.github/workflows/` + `scripts/` — Automated testing and safe signed APK builder.
 - `app-version.json` & `CHANGELOG.md` — Current app version and history of changes.

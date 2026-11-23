@@ -6,6 +6,9 @@ on:
     paths:
       - '.github/workflows/build-apk.yml'
       - '.github/workflows/m4-signing-test.yml'
+      - 'android-native/**'
+      - 'scripts/generate-icon.cjs'
+      - 'scripts/patch-android-project.py'
       - 'scripts/prepare-gate1-build.py'
       - 'scripts/prepare-signing-test.sh'
       - 'tests/m4-signing.test.mjs'

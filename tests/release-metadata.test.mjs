@@ -12,6 +12,7 @@ const changelog = read('CHANGELOG.md');
 const manifest = JSON.parse(read('manifest.json'));
 const html = read('index.html');
 const workflow = read('.github/workflows/build-apk.yml');
+const androidPatch = read('scripts/patch-android-project.py');
 const isolatedBuild = read('scripts/prepare-gate1-build.py');
 
 test('Android version metadata has one validated source of truth', () => {
@@ -19,8 +20,9 @@ test('Android version metadata has one validated source of truth', () => {
   assert.ok(Number.isInteger(version.versionCode) && version.versionCode > 0);
   assert.ok(readme.includes('GT SoundMaster (v' + version.versionName + ')'));
   assert.ok(changelog.includes('## [' + version.versionName + '] - 2026-11-23'));
-  assert.match(workflow, /app-version\.json/);
-  assert.match(workflow, /version_config/);
+  assert.match(workflow, /python3 scripts\/patch-android-project\.py/);
+  assert.match(androidPatch, /app-version\.json/);
+  assert.match(androidPatch, /version_config/);
   assert.match(isolatedBuild, /app-version\.json/);
   assert.match(isolatedBuild, /Generated Android app version does not match app-version\.json/);
 });
@@ -42,7 +44,7 @@ test("What's New notes are available in Help but collapsed by default", () => {
   const end = html.indexOf('</details>', start);
   assert.ok(end > start, "What's New details element should be closed.");
   const section = html.slice(start, end);
-  assert.match(section, /WHAT'S NEW IN 1\.3\.0/);
+  assert.match(section, /WHAT'S NEW IN 1\.3\.1/);
   assert.match(section, /Auto Volume Leveling/);
   assert.match(section, /Headphone Crossfeed/);
   assert.match(section, /Gear Profiles/);
@@ -68,6 +70,6 @@ test('Android camera-edge status bar and web theme match the player top color', 
   const topColor = match[1].toLowerCase();
   assert.equal(manifest.theme_color.toLowerCase(), topColor);
   assert.ok(html.includes('<meta name="theme-color" content="' + topColor + '">'));
-  assert.ok(workflow.includes('<item name="android:statusBarColor">' + topColor + '</item>'));
-  assert.match(workflow, /android:windowLightStatusBar">false/);
+  assert.ok(androidPatch.includes('<item name="android:statusBarColor">' + topColor + '</item>'));
+  assert.match(androidPatch, /android:windowLightStatusBar">false/);
 });
