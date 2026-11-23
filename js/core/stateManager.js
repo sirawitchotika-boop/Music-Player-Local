@@ -1,10 +1,10 @@
 // js/core/stateManager.js
+import { loadPlayMode, savePlayMode } from './preferences.js';
+
 export class StateManager {
   constructor() {
     this.isPlaying = false;
-    // โหลดค่าโหมดการเล่นเพลงจาก localStorage โดยตั้งค่าเริ่มต้นเป็น 2 (Shuffle)
-    const savedMode = typeof localStorage !== 'undefined' ? localStorage.getItem('gt_play_mode') : null;
-    this.playMode = savedMode !== null ? parseInt(savedMode, 10) : 2; // 0: Order, 1: Repeat One, 2: Shuffle
+    this.playMode = loadPlayMode(); // 0: Order, 1: Repeat One, 2: Shuffle
     this.currentTrackIndex = -1;
     this.selectedTrackId = null;
     this.loadedTrackId = null;
@@ -86,9 +86,7 @@ export class StateManager {
   
   cyclePlayMode() {
     this.playMode = (this.playMode + 1) % 3;
-    if (typeof localStorage !== 'undefined') {
-      localStorage.setItem('gt_play_mode', this.playMode.toString());
-    }
+    savePlayMode(this.playMode);
     const currentId = this.queue[this.currentTrackIndex]?.id ?? this.selectedTrackId;
     this.selectedTrackId = currentId ?? null;
 

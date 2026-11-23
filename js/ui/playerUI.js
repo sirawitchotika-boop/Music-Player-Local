@@ -4,6 +4,7 @@ import { mediaSessionManager } from '../core/mediaSessionManager.js';
 import { storage } from '../core/storage.js';
 import { sessionMemory } from '../core/sessionMemory.js';
 import { loudnessCoordinator, isValidLoudness } from '../core/loudnessAnalyzer.js';
+import { loadLikedTracks, saveLikedTracks } from '../core/preferences.js';
 
 export class PlayerUI {
   constructor(stateManager, audioEngine) {
@@ -27,7 +28,7 @@ export class PlayerUI {
     this.prevBtn = document.getElementById('prev-btn');
     
     this.favoriteBtn = document.getElementById('favorite-btn');
-    this.likedTracks = JSON.parse(localStorage.getItem('gt_liked_tracks')) || [];
+    this.likedTracks = loadLikedTracks();
     this.likeDebounceTimer = null;
     
     this.isChangingTrack = false;
@@ -62,7 +63,7 @@ export class PlayerUI {
     }
     
     window.addEventListener('gt-liked-updated', () => {
-      this.likedTracks = JSON.parse(localStorage.getItem('gt_liked_tracks')) || [];
+      this.likedTracks = loadLikedTracks();
       this.refreshLikeButtonState();
     });
     
@@ -123,7 +124,7 @@ export class PlayerUI {
       } else {
         this.likedTracks = this.likedTracks.filter(id => id !== currentTrack.id);
       }
-      localStorage.setItem('gt_liked_tracks', JSON.stringify(this.likedTracks));
+      saveLikedTracks(this.likedTracks);
       window.dispatchEvent(new CustomEvent('gt-liked-updated'));
     }, 400);
   }
