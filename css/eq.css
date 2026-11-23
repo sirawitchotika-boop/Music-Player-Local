@@ -54,16 +54,16 @@
 }
 
 .eq-description {
-    margin: 15px 0 22px;
-    color: #bdb2b7;
-    font-size: 0.82rem;
-    line-height: 1.5;
+    margin: 6px 0 16px;
+    color: #9b8f95;
+    font-size: 0.74rem;
+    line-height: 1.45;
 }
 
 .eq-bands {
     display: flex;
     flex-direction: column;
-    gap: 22px;
+    gap: 18px;
 }
 
 .eq-band-heading {
@@ -88,7 +88,7 @@
     display: block;
     width: 100%;
     height: 6px;
-    margin: 14px 0 8px;
+    margin: 12px 0 6px;
     accent-color: var(--accent-bright);
     cursor: pointer;
 }
@@ -102,11 +102,90 @@
 }
 
 .sound-feature-card {
-    margin-top: 20px;
+    margin-top: 14px;
     padding: 14px;
     border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 12px;
     background: rgba(255, 255, 255, 0.025);
+}
+
+.sound-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+}
+
+.sound-unsaved-badge {
+    padding: 2px 7px;
+    border-radius: 999px;
+    border: 1px solid rgba(240, 68, 80, 0.45);
+    background: rgba(201, 39, 54, 0.2);
+    color: #f4b4ba;
+    font-size: 0.62rem;
+    font-weight: 750;
+    letter-spacing: 0.8px;
+}
+
+.sound-unsaved-badge.hidden,
+.sound-chip-action.hidden {
+    display: none;
+}
+
+.sound-profiles-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+    margin-top: 10px;
+}
+
+.sound-profile-chip {
+    padding: 7px 11px;
+    border: 1px solid rgba(255, 255, 255, 0.13);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.04);
+    color: #ccc2c7;
+    font-size: 0.72rem;
+    font-weight: 650;
+    cursor: pointer;
+    transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease;
+}
+
+.sound-profile-chip.active {
+    background: rgba(201, 39, 54, 0.28);
+    border-color: rgba(240, 68, 80, 0.7);
+    color: #ffffff;
+}
+
+.sound-profile-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.sound-chip-action {
+    padding: 6px 10px;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 7px;
+    background: rgba(255, 255, 255, 0.05);
+    color: #e6dde1;
+    font-size: 0.66rem;
+    font-weight: 700;
+    letter-spacing: 0.6px;
+    cursor: pointer;
+}
+
+.sound-chip-action.danger {
+    border-color: rgba(240, 68, 80, 0.35);
+    color: #f0a4ac;
+}
+
+.sound-chip-action:disabled {
+    opacity: 0.45;
+    cursor: default;
 }
 
 .sound-toggle-row {

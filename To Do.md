@@ -1,6 +1,16 @@
-ความต้องการคือ
-ใน Playlist ที่ชื่อ Favorite[protected] เปลี่ยนเงื่อนไขเพิ่มเพลงใน Playlist นี้ได้แค่วิธีเดียวคือกดไลค์/หัวใจเท่านั้นห้ามปล่อยให้ Add music ลงในนี้ได้... นึกสภาพถ้าดันเราแวะมาดู Playlist favorite แล้วดันลืมเปลี่ยน playlist ต่อจากนั้นกดเพิ่มเพลง 40 เพลง...นรกแน่นอนไล่ลบทีละเพลงเพราะใส่ผิด playlist ต้องมีคำสั่งห้ามเพิ่ม, popup แจ้งเตือนผู้ใช้จะได้รู้ว่าเพิ่มตรงนี้ไม่ได้ต้องเปลี่ยน
-[แก้แล้ว ✓] 
+# Project To Do
 
-ตรงหน้า Player ทำ Logo ให้ตรงหน่อยให้กี่งกลางแบบสมมาตร แต่ถ้าย้ายมากลางแล้วปัญหาถัดมาคือ ปุ่ม Help และ Timer จะโดนบีบมาด้านขวา ทำไงดี เพิ่มปุ่ม EQ แบบเรียบง่ายทางด้านซ้ายแล้วใน M9 [Implemented ✓] 
-แล้วถ้าผู้ใช้เกิดเบื่อ favorite แต่ไม่ต้องการไล่ลบทีละเพลงทำยังไง ? จำเป็นไหมหรือแค่เราหงุดหงิด [อันนี้แค่สงสัย]
+## Completed Milestones
+- [x] Block manual bulk-adding tracks into Favorites (`[PROTECTED]`) — add/remove only via the heart button.
+- [x] Center the player header logo symmetrically with top-left Sound/EQ entry point and top-right Help + Sleep Timer (`M7`, `M9`).
+- [x] Safe one-action Clear Favorites without deleting library files or altering custom playlists (`M8`).
+- [x] Simple three-band Equalizer with local persistence and flat fallback (`M9`).
+- [x] Promote signed update installation to GT SoundMaster branding while preserving package ID & user data (`M10`).
+- [x] Auto Volume Leveling with cached loudness analysis and 1-tap Analyze Library (`M11`).
+- [x] Headphone Crossfeed with Off, Subtle, and Room modes (`M12`).
+- [x] Unified Sound Panel & Gear Profiles (`Pure Flat`, `Earbuds`, `Car / Speaker`, `Late Night`, plus custom profiles) and `v1.3.0` release prep (`M13`).
+
+## Future Ideas (Backlog)
+- In-app "Add to Playlist" for tracks already in `All Tracks` + library sorting (Newest / A–Z).
+- Display-title rename for downloaded tracks without modifying stored audio blobs.
+- Optional "Stop after current song" + gentle fade-out in Sleep Timer.

@@ -19,34 +19,30 @@
     <div id="toast-container" class="toast-container"></div>
     <div id="gt-modal-root"></div>
 
-    <!-- Equalizer Modal -->
+    <!-- Sound & Equalizer Modal -->
     <div id="eq-modal" class="eq-modal hidden" role="dialog" aria-modal="true" aria-labelledby="eq-title">
         <div class="eq-container">
             <div class="eq-header">
                 <div>
                     <p class="eq-eyebrow">GT SOUNDMASTER</p>
-                    <h2 id="eq-title">EQUALIZER</h2>
+                    <h2 id="eq-title">SOUND</h2>
                 </div>
-                <button id="close-eq-btn" class="close-btn" type="button" aria-label="Close equalizer">
+                <button id="close-eq-btn" class="close-btn" type="button" aria-label="Close sound settings">
                     <svg viewBox="0 0 24 24" width="24" height="24" fill="#fff"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
                 </button>
             </div>
-            <p class="eq-description">Three simple tone controls. 0 dB keeps the original sound.</p>
-            <div class="eq-bands">
-                <div class="eq-band">
-                    <div class="eq-band-heading"><label for="eq-bass">BASS</label><output id="eq-bass-value" for="eq-bass">0 dB</output></div>
-                    <input id="eq-bass" type="range" min="-6" max="6" step="1" value="0" aria-label="Bass">
-                    <div class="eq-range-ends"><span>−6 dB</span><span>+6 dB</span></div>
+            <div class="sound-feature-card sound-profiles-card">
+                <div class="sound-card-header">
+                    <span class="sound-feature-title">GEAR PROFILES</span>
+                    <span id="sound-unsaved-badge" class="sound-unsaved-badge hidden">UNSAVED</span>
                 </div>
-                <div class="eq-band">
-                    <div class="eq-band-heading"><label for="eq-mid">MID</label><output id="eq-mid-value" for="eq-mid">0 dB</output></div>
-                    <input id="eq-mid" type="range" min="-6" max="6" step="1" value="0" aria-label="Mid">
-                    <div class="eq-range-ends"><span>−6 dB</span><span>+6 dB</span></div>
-                </div>
-                <div class="eq-band">
-                    <div class="eq-band-heading"><label for="eq-treble">TREBLE</label><output id="eq-treble-value" for="eq-treble">0 dB</output></div>
-                    <input id="eq-treble" type="range" min="-6" max="6" step="1" value="0" aria-label="Treble">
-                    <div class="eq-range-ends"><span>−6 dB</span><span>+6 dB</span></div>
+                <div id="sound-profiles-list" class="sound-profiles-list" role="group" aria-label="Gear profiles"></div>
+                <div class="sound-profile-actions">
+                    <button id="sound-save-btn" class="sound-chip-action hidden" type="button">SAVE</button>
+                    <button id="sound-save-as-btn" class="sound-chip-action" type="button">SAVE AS</button>
+                    <button id="sound-revert-btn" class="sound-chip-action hidden" type="button">REVERT</button>
+                    <button id="sound-rename-btn" class="sound-chip-action hidden" type="button">RENAME</button>
+                    <button id="sound-delete-btn" class="sound-chip-action danger hidden" type="button">DELETE</button>
                 </div>
             </div>
             <div class="sound-feature-card">
@@ -74,9 +70,30 @@
                     <button id="crossfeed-room-btn" class="sound-segment-btn" type="button" aria-pressed="false">ROOM</button>
                 </div>
             </div>
+            <div class="sound-feature-card">
+                <span class="sound-feature-title">THREE-BAND EQUALIZER</span>
+                <p class="eq-description">Three simple tone controls. 0 dB keeps the original sound.</p>
+                <div class="eq-bands">
+                    <div class="eq-band">
+                        <div class="eq-band-heading"><label for="eq-bass">BASS</label><output id="eq-bass-value" for="eq-bass">0 dB</output></div>
+                        <input id="eq-bass" type="range" min="-6" max="6" step="1" value="0" aria-label="Bass">
+                        <div class="eq-range-ends"><span>−6 dB</span><span>+6 dB</span></div>
+                    </div>
+                    <div class="eq-band">
+                        <div class="eq-band-heading"><label for="eq-mid">MID</label><output id="eq-mid-value" for="eq-mid">0 dB</output></div>
+                        <input id="eq-mid" type="range" min="-6" max="6" step="1" value="0" aria-label="Mid">
+                        <div class="eq-range-ends"><span>−6 dB</span><span>+6 dB</span></div>
+                    </div>
+                    <div class="eq-band">
+                        <div class="eq-band-heading"><label for="eq-treble">TREBLE</label><output id="eq-treble-value" for="eq-treble">0 dB</output></div>
+                        <input id="eq-treble" type="range" min="-6" max="6" step="1" value="0" aria-label="Treble">
+                        <div class="eq-range-ends"><span>−6 dB</span><span>+6 dB</span></div>
+                    </div>
+                </div>
+            </div>
             <div class="eq-footer">
                 <button id="eq-reset-btn" class="eq-reset-btn" type="button">RESET</button>
-                <span>0 dB · FLAT</span>
+                <span>PURE FLAT · 0 dB</span>
             </div>
         </div>
     </div>
@@ -96,13 +113,14 @@
             <div class="help-content-scroll">
                 <details class="help-card whats-new-card" id="whats-new">
                     <summary class="whats-new-summary">
-                        <span>WHAT'S NEW IN 1.2.2</span>
+                        <span>WHAT'S NEW IN 1.3.0</span>
                         <span class="help-badge">RELEASE NOTES</span>
                     </summary>
                     <ul class="help-list whats-new-list">
-                        <li class="help-item"><strong>Refreshed player:</strong> A cleaner vinyl-inspired design with restrained red accents and improved small-screen spacing.</li>
-                        <li class="help-item"><strong>Clearer guidance:</strong> Updated Help instructions, safer delete explanations, and easier-to-understand playlist and timer messages.</li>
-                        <li class="help-item"><strong>Better accessibility:</strong> More descriptive labels for important player controls.</li>
+                        <li class="help-item"><strong>Auto Volume Leveling:</strong> Balances loud and quiet local songs automatically without modifying your audio files, with a one-tap Analyze Library option.</li>
+                        <li class="help-item"><strong>Headphone Crossfeed:</strong> Choose Off, Subtle, or Room for a more natural, less fatiguing headphone soundstage.</li>
+                        <li class="help-item"><strong>Gear Profiles:</strong> Switch between Pure Flat, Earbuds, Car / Speaker, Late Night, or your own custom sound profiles in one tap.</li>
+                        <li class="help-item"><strong>Three-band EQ &amp; Favorites clear:</strong> Fine-tune Bass, Mid, and Treble or clear all Favorites safely in one confirmed action.</li>
                     </ul>
                 </details>
                 <section class="help-card">
@@ -110,7 +128,7 @@
                     <ul class="help-list">
                         <li class="help-item"><strong>Add music:</strong> Open Playlist, tap Add Music, and choose your audio files. Imported songs are saved in this app on this device.</li>
                         <li class="help-item"><strong>Make a playlist:</strong> Tap Add Playlist, enter a name, then choose it from the playlist list.</li>
-                        <li class="help-item"><strong>Favorites:</strong> Tap the heart on the record to add or remove the selected song.</li>
+                        <li class="help-item"><strong>Favorites:</strong> Tap the heart on the record to add or remove the selected song. You can clear all Favorites safely without deleting songs.</li>
                         <li class="help-item"><strong>Remove songs carefully:</strong> Deleting a song from All Tracks permanently deletes its stored audio from this app. Removing a song from a custom playlist or Favorites only removes it from that list.</li>
                     </ul>
                 </section>
@@ -121,7 +139,7 @@
                         <li class="help-item"><strong>Rewind and fast-forward:</strong> Press and hold Previous or Next.</li>
                         <li class="help-item"><strong>Song position:</strong> Drag the progress bar to move to another part of the song.</li>
                         <li class="help-item"><strong>Play mode:</strong> Tap the play-mode button to switch between Normal, Repeat One, and Shuffle.</li>
-                        <li class="help-item"><strong>Equalizer:</strong> Tap EQ in the top-left corner to adjust Bass, Mid, and Treble. Reset returns all three controls to flat sound.</li>
+                        <li class="help-item"><strong>Sound &amp; EQ:</strong> Tap the top-left sound icon for Gear Profiles, Auto Volume Leveling, Headphone Crossfeed, and Bass, Mid, and Treble controls. Reset returns everything to Pure Flat.</li>
                         <li class="help-item"><strong>Lock screen:</strong> You can also use the Android lock-screen and notification controls.</li>
                     </ul>
                 </section>

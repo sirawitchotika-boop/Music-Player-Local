@@ -1,7 +1,23 @@
 import { audioEngine } from '../core/audioEngine.js';
 import { storage } from '../core/storage.js';
+import { modalUI } from './modalUI.js';
 import { loudnessCoordinator, isValidLoudness } from '../core/loudnessAnalyzer.js';
 import { CROSSFEED_MODES, normalizeCrossfeedMode } from '../core/crossfeedNode.js';
+import {
+    ACTIVE_PROFILE_STORAGE_KEY,
+    BUILTIN_PROFILES,
+    clampEqBand,
+    createCustomProfile,
+    deleteCustomProfile,
+    getAllProfiles,
+    isBuiltinProfileId,
+    loadCustomProfiles,
+    normalizeSoundSettings,
+    renameCustomProfile,
+    saveCustomProfiles,
+    soundSettingsEqual,
+    updateCustomProfileSettings
+} from '../core/soundProfiles.js';
 
 const STORAGE_KEY = 'gt_soundmaster_equalizer';
 const LEVELING_STORAGE_KEY = 'gt_soundmaster_leveling';
@@ -9,16 +25,11 @@ const CROSSFEED_STORAGE_KEY = 'gt_soundmaster_crossfeed';
 const BANDS = ['bass', 'mid', 'treble'];
 const DEFAULTS = Object.freeze({ bass: 0, mid: 0, treble: 0 });
 
-const clampDb = (value) => {
-    const numeric = Number(value);
-    if (!Number.isFinite(numeric)) return 0;
-    return Math.max(-6, Math.min(6, Math.round(numeric)));
-};
-
 export class EqualizerUI {
-    constructor({ coordinator = loudnessCoordinator, storageClient = storage } = {}) {
+    constructor({ coordinator = loudnessCoordinator, storageClient = storage, modal = modalUI } = {}) {
         this.coordinator = coordinator;
         this.storage = storageClient;
+        this.modalUI = modal;
         this.state = null;
         this.modal = document.getElementById('eq-modal');
         this.openBtn = document.getElementById('eq-btn');
@@ -27,6 +38,13 @@ export class EqualizerUI {
         this.levelingToggle = document.getElementById('eq-leveling-toggle');
         this.analyzeLibraryBtn = document.getElementById('analyze-library-btn');
         this.analyzeLibraryStatus = document.getElementById('analyze-library-status');
+        this.profilesList = document.getElementById('sound-profiles-list');
+        this.unsavedBadge = document.getElementById('sound-unsaved-badge');
+        this.saveProfileBtn = document.getElementById('sound-save-btn');
+        this.saveAsProfileBtn = document.getElementById('sound-save-as-btn');
+        this.revertProfileBtn = document.getElementById('sound-revert-btn');
+        this.renameProfileBtn = document.getElementById('sound-rename-btn');
+        this.deleteProfileBtn = document.getElementById('sound-delete-btn');
         this.crossfeedButtons = Object.fromEntries(CROSSFEED_MODES.map(mode => [
             mode,
             document.getElementById(`crossfeed-${mode}-btn`)
@@ -42,6 +60,8 @@ export class EqualizerUI {
         this.values = { ...DEFAULTS };
         this.volumeLevelingEnabled = false;
         this.crossfeedMode = 'off';
+        this.customProfiles = [];
+        this.activeProfileId = 'pure-flat';
         this.isAnalyzingLibrary = false;
         this.initialized = false;
     }
@@ -50,9 +70,12 @@ export class EqualizerUI {
         if (!this.modal || this.initialized) return;
         this.initialized = true;
         this.state = state;
+        this.customProfiles = loadCustomProfiles();
         this.values = this.loadSettings();
         this.volumeLevelingEnabled = this.loadLevelingSetting();
         this.crossfeedMode = this.loadCrossfeedSetting();
+        this.activeProfileId = this.loadActiveProfileId();
+        this.renderProfiles();
         this.updateControls();
         audioEngine.setEqualizer(this.values);
         audioEngine.setVolumeLeveling(this.volumeLevelingEnabled, { immediate: true });
@@ -72,6 +95,12 @@ export class EqualizerUI {
         this.analyzeLibraryBtn?.addEventListener('click', () => {
             void this.analyzeLibrary();
         });
+
+        this.saveProfileBtn?.addEventListener('click', () => this.saveActiveProfile());
+        this.saveAsProfileBtn?.addEventListener('click', () => { void this.saveAsNewProfile(); });
+        this.revertProfileBtn?.addEventListener('click', () => this.revertActiveProfile());
+        this.renameProfileBtn?.addEventListener('click', () => { void this.renameActiveProfile(); });
+        this.deleteProfileBtn?.addEventListener('click', () => { void this.deleteActiveProfile(); });
 
         for (const mode of CROSSFEED_MODES) {
             this.crossfeedButtons[mode]?.addEventListener('click', () => {
@@ -94,6 +123,29 @@ export class EqualizerUI {
         });
     }
 
+    getCurrentSoundSettings() {
+        return normalizeSoundSettings({
+            eq: this.values,
+            leveling: this.volumeLevelingEnabled,
+            crossfeed: this.crossfeedMode
+        });
+    }
+
+    getAllProfiles() {
+        return getAllProfiles(this.customProfiles);
+    }
+
+    getActiveProfile() {
+        const all = this.getAllProfiles();
+        return all.find(p => p.id === this.activeProfileId) || all[0];
+    }
+
+    isUnsaved() {
+        const active = this.getActiveProfile();
+        if (!active) return false;
+        return !soundSettingsEqual(this.getCurrentSoundSettings(), active.settings);
+    }
+
     loadSettings() {
         try {
             const saved = localStorage.getItem(STORAGE_KEY);
@@ -104,7 +156,7 @@ export class EqualizerUI {
                 return { ...DEFAULTS };
             }
 
-            return Object.fromEntries(BANDS.map(band => [band, clampDb(parsed[band])]));
+            return Object.fromEntries(BANDS.map(band => [band, clampEqBand(parsed[band])]));
         } catch {
             return { ...DEFAULTS };
         }
@@ -123,6 +175,19 @@ export class EqualizerUI {
             return normalizeCrossfeedMode(localStorage.getItem(CROSSFEED_STORAGE_KEY));
         } catch {
             return 'off';
+        }
+    }
+
+    loadActiveProfileId() {
+        try {
+            const savedId = localStorage.getItem(ACTIVE_PROFILE_STORAGE_KEY);
+            const all = this.getAllProfiles();
+            if (savedId && all.some(p => p.id === savedId)) {
+                return savedId;
+            }
+            return BUILTIN_PROFILES[0].id;
+        } catch {
+            return BUILTIN_PROFILES[0].id;
         }
     }
 
@@ -150,6 +215,117 @@ export class EqualizerUI {
         }
     }
 
+    saveActiveProfileId() {
+        try {
+            localStorage.setItem(ACTIVE_PROFILE_STORAGE_KEY, this.activeProfileId);
+        } catch (error) {
+            console.warn('[SoundProfiles] Could not save active profile:', error);
+        }
+    }
+
+    selectProfile(profileId) {
+        const target = this.getAllProfiles().find(p => p.id === profileId);
+        if (!target) return false;
+
+        this.activeProfileId = target.id;
+        const normalized = normalizeSoundSettings(target.settings);
+        this.values = { ...normalized.eq };
+        this.volumeLevelingEnabled = audioEngine.setVolumeLeveling(normalized.leveling);
+        this.crossfeedMode = audioEngine.setCrossfeedMode(normalized.crossfeed);
+        audioEngine.setEqualizer(this.values);
+
+        this.saveSettings();
+        this.saveLevelingSetting();
+        this.saveCrossfeedSetting();
+        this.saveActiveProfileId();
+        this.renderProfiles();
+        this.updateControls();
+        return true;
+    }
+
+    saveActiveProfile() {
+        const active = this.getActiveProfile();
+        if (!active || active.builtin) {
+            this.modalUI?.showToast?.('Built-in presets are protected. Use Save As to create a custom profile.', 'info');
+            return false;
+        }
+        const result = updateCustomProfileSettings(active.id, this.getCurrentSoundSettings(), this.customProfiles);
+        if (result.error) {
+            this.modalUI?.showToast?.(result.error, 'error');
+            return false;
+        }
+        this.customProfiles = result.customProfiles;
+        saveCustomProfiles(this.customProfiles);
+        this.updateControls();
+        this.modalUI?.showToast?.(`Saved "${active.name}".`, 'success');
+        return true;
+    }
+
+    async saveAsNewProfile() {
+        const name = await this.modalUI?.showPrompt?.('Save Gear Profile', 'Profile name:');
+        if (name === null || name === undefined) return false;
+
+        const result = createCustomProfile(name, this.getCurrentSoundSettings(), this.getAllProfiles());
+        if (result.error) {
+            this.modalUI?.showToast?.(result.error, 'error');
+            return false;
+        }
+        this.customProfiles = [...this.customProfiles, result.profile];
+        this.activeProfileId = result.profile.id;
+        saveCustomProfiles(this.customProfiles);
+        this.saveActiveProfileId();
+        this.renderProfiles();
+        this.updateControls();
+        this.modalUI?.showToast?.(`Saved profile "${result.profile.name}".`, 'success');
+        return true;
+    }
+
+    revertActiveProfile() {
+        return this.selectProfile(this.activeProfileId);
+    }
+
+    async renameActiveProfile() {
+        const active = this.getActiveProfile();
+        if (!active || active.builtin) return false;
+
+        const nextName = await this.modalUI?.showPrompt?.('Rename Gear Profile', 'New name:', active.name);
+        if (nextName === null || nextName === undefined) return false;
+
+        const result = renameCustomProfile(active.id, nextName, this.customProfiles, this.getAllProfiles());
+        if (result.error) {
+            this.modalUI?.showToast?.(result.error, 'error');
+            return false;
+        }
+        this.customProfiles = result.customProfiles;
+        saveCustomProfiles(this.customProfiles);
+        this.renderProfiles();
+        this.updateControls();
+        this.modalUI?.showToast?.(`Renamed profile to "${result.name}".`, 'success');
+        return true;
+    }
+
+    async deleteActiveProfile() {
+        const active = this.getActiveProfile();
+        if (!active || active.builtin) return false;
+
+        const confirmed = await this.modalUI?.showConfirm?.(
+            'Delete Gear Profile?',
+            `Delete "${active.name}"? Your songs and playlists will not be affected.`
+        );
+        if (!confirmed) return false;
+
+        const result = deleteCustomProfile(active.id, this.customProfiles);
+        if (result.error) {
+            this.modalUI?.showToast?.(result.error, 'error');
+            return false;
+        }
+        this.customProfiles = result.customProfiles;
+        saveCustomProfiles(this.customProfiles);
+        this.selectProfile('pure-flat');
+        this.modalUI?.showToast?.('Gear profile deleted.', 'info');
+        return true;
+    }
+
     setVolumeLeveling(enabled) {
         this.volumeLevelingEnabled = audioEngine.setVolumeLeveling(Boolean(enabled));
         this.updateControls();
@@ -164,10 +340,27 @@ export class EqualizerUI {
 
     updateBand(band, rawValue) {
         if (!BANDS.includes(band)) return;
-        this.values[band] = clampDb(rawValue);
+        this.values[band] = clampEqBand(rawValue);
         audioEngine.setEqualizer(this.values);
         this.updateControls();
         this.saveSettings();
+    }
+
+    renderProfiles() {
+        if (!this.profilesList || typeof document.createElement !== 'function') return;
+        this.profilesList.innerHTML = '';
+        for (const profile of this.getAllProfiles()) {
+            const chip = document.createElement('button');
+            chip.type = 'button';
+            chip.className = 'sound-profile-chip';
+            if (profile.id === this.activeProfileId) {
+                chip.classList.add('active');
+            }
+            chip.textContent = profile.name;
+            chip.setAttribute?.('aria-pressed', profile.id === this.activeProfileId ? 'true' : 'false');
+            chip.addEventListener('click', () => this.selectProfile(profile.id));
+            this.profilesList.appendChild(chip);
+        }
     }
 
     updateControls() {
@@ -188,6 +381,35 @@ export class EqualizerUI {
             if (isActive) btn.classList?.add('active');
             else btn.classList?.remove('active');
             btn.setAttribute?.('aria-pressed', isActive ? 'true' : 'false');
+        }
+
+        const active = this.getActiveProfile();
+        const dirty = this.isUnsaved();
+        const isCustom = Boolean(active && !active.builtin && !isBuiltinProfileId(active.id));
+
+        if (this.unsavedBadge) {
+            if (dirty) this.unsavedBadge.classList?.remove('hidden');
+            else this.unsavedBadge.classList?.add('hidden');
+        }
+        if (this.saveProfileBtn) {
+            this.saveProfileBtn.disabled = !(isCustom && dirty);
+            if (isCustom && dirty) this.saveProfileBtn.classList?.remove('hidden');
+            else this.saveProfileBtn.classList?.add('hidden');
+        }
+        if (this.revertProfileBtn) {
+            this.revertProfileBtn.disabled = !dirty;
+            if (dirty) this.revertProfileBtn.classList?.remove('hidden');
+            else this.revertProfileBtn.classList?.add('hidden');
+        }
+        if (this.renameProfileBtn) {
+            this.renameProfileBtn.disabled = !isCustom;
+            if (isCustom) this.renameProfileBtn.classList?.remove('hidden');
+            else this.renameProfileBtn.classList?.add('hidden');
+        }
+        if (this.deleteProfileBtn) {
+            this.deleteProfileBtn.disabled = !isCustom;
+            if (isCustom) this.deleteProfileBtn.classList?.remove('hidden');
+            else this.deleteProfileBtn.classList?.add('hidden');
         }
     }
 
@@ -261,13 +483,22 @@ export class EqualizerUI {
     }
 
     reset() {
+        this.activeProfileId = 'pure-flat';
         this.values = audioEngine.resetEqualizer();
-        this.updateControls();
+        this.volumeLevelingEnabled = audioEngine.setVolumeLeveling(false);
+        this.crossfeedMode = audioEngine.setCrossfeedMode('off');
         this.saveSettings();
+        this.saveLevelingSetting();
+        this.saveCrossfeedSetting();
+        this.saveActiveProfileId();
+        this.renderProfiles();
+        this.updateControls();
     }
 
     openModal() {
         this.modal?.classList.remove('hidden');
+        this.renderProfiles();
+        this.updateControls();
         void this.refreshAnalysisStatus();
     }
 
