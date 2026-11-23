@@ -124,6 +124,7 @@ export async function restoreLastSession({
     state.restoringSession = true;
     audio.audioElement.autoplay = false;
     if (!audio.audioElement.paused) await audio.pause(true);
+    audio.setTrackLoudness?.(track.loudness || null, { immediate: true });
     await audio.load(blob);
     if (!audio.audioElement.paused) await audio.pause(true);
     if (!state.restoreSelection(track.id, saved.queueIds)) return false;

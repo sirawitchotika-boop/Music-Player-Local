@@ -137,11 +137,30 @@ class StorageManager {
           type: t.type,
           size: t.size,
           addedAt: t.addedAt,
+          loudness: t.loudness || null,
           blob: t.blob || null
         }));
         resolve(tracks);
       };
       req.onerror = () => reject(new Error("[DB] โหลดรายชื่อเพลงล้มเหลว"));
+    });
+  }
+
+  async updateTrackLoudness(id, loudness) {
+    if (!this.db) await this.initDB();
+    return new Promise((resolve, reject) => {
+      const tx = this.db.transaction([STORE_NAME], 'readwrite');
+      const store = tx.objectStore(STORE_NAME);
+      const getReq = store.get(id);
+      let updated = false;
+      getReq.onsuccess = () => {
+        const record = getReq.result;
+        if (!record) return;
+        updated = true;
+        store.put({ ...record, loudness: loudness || null });
+      };
+      tx.oncomplete = () => resolve(updated);
+      tx.onerror = () => reject(new Error("[DB] บันทึกค่าความดังเสียงล้มเหลว"));
     });
   }
   

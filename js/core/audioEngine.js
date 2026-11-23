@@ -1,12 +1,17 @@
 // js/core/audioEngine.js
+import { computeSafeGainLinear, isValidLoudness } from './loudnessAnalyzer.js';
+
 class AudioEngine {
     constructor() {
         this.audioElement = new Audio();
         this.currentObjectUrl = null;
         this.audioCtx = null;
         this.gainNode = null;
+        this.levelingGainNode = null;
         this.eqFilters = null;
         this.eqSettings = { bass: 0, mid: 0, treble: 0 };
+        this.volumeLevelingEnabled = false;
+        this.trackLoudness = null;
         this.isAudioCtxInit = false;
         this._playRequestVersion = 0;
         
@@ -22,7 +27,28 @@ class AudioEngine {
             const AudioCtx = window.AudioContext || window.webkitAudioContext;
             this.audioCtx = new AudioCtx({ latencyHint: 'playback' });
             const source = this.audioCtx.createMediaElementSource(this.audioElement);
+            let levelingNode = null;
+            try {
+                levelingNode = this.audioCtx.createGain();
+                levelingNode.gain.value = this.getEffectiveLevelingGain();
+            } catch (levelingError) {
+                console.warn("[AudioEngine] Volume leveling unavailable; using unity gain:", levelingError);
+            }
             this.gainNode = this.audioCtx.createGain();
+
+            // Wire the leveling gain downstream into the 35ms fade gain first.
+            let downstreamTarget = this.gainNode;
+            this.levelingGainNode = null;
+            if (levelingNode) {
+                try {
+                    levelingNode.connect(this.gainNode);
+                    this.levelingGainNode = levelingNode;
+                    downstreamTarget = levelingNode;
+                } catch (levelingError) {
+                    console.warn("[AudioEngine] Leveling routing failed; bypassing:", levelingError);
+                    try { levelingNode.disconnect(); } catch { /* Best-effort cleanup. */ }
+                }
+            }
 
             let filters = null;
             if (typeof this.audioCtx.createBiquadFilter === 'function') {
@@ -56,7 +82,7 @@ class AudioEngine {
                 try {
                     filters.bass.connect(filters.mid);
                     filters.mid.connect(filters.treble);
-                    filters.treble.connect(this.gainNode);
+                    filters.treble.connect(downstreamTarget);
                     source.connect(filters.bass);
                     this.eqFilters = filters;
                     eqConnected = true;
@@ -68,7 +94,7 @@ class AudioEngine {
                 }
             }
             if (!eqConnected) {
-                source.connect(this.gainNode);
+                source.connect(downstreamTarget);
             }
 
             // Keep the existing gain node last so its 35ms play/pause ramp is unchanged.
@@ -77,6 +103,42 @@ class AudioEngine {
         } catch (e) {
             console.warn("[AudioEngine] Web Audio init fallback:", e);
         }
+    }
+
+    getEffectiveLevelingGain() {
+        if (!this.volumeLevelingEnabled || !isValidLoudness(this.trackLoudness)) {
+            return 1.0;
+        }
+        return computeSafeGainLinear(this.trackLoudness);
+    }
+
+    _applyLevelingGain(immediate = false) {
+        if (!this.levelingGainNode || !this.audioCtx) return;
+        const target = this.getEffectiveLevelingGain();
+        const now = this.audioCtx.currentTime;
+        this.levelingGainNode.gain.cancelScheduledValues(now);
+        if (immediate) {
+            this.levelingGainNode.gain.setValueAtTime(target, now);
+        } else {
+            this.levelingGainNode.gain.setValueAtTime(this.levelingGainNode.gain.value, now);
+            this.levelingGainNode.gain.linearRampToValueAtTime(target, now + 0.04);
+        }
+    }
+
+    getVolumeLevelingEnabled() {
+        return this.volumeLevelingEnabled;
+    }
+
+    setVolumeLeveling(enabled, { immediate = false } = {}) {
+        this.volumeLevelingEnabled = Boolean(enabled);
+        this._applyLevelingGain(immediate);
+        return this.volumeLevelingEnabled;
+    }
+
+    setTrackLoudness(loudness, { immediate = false } = {}) {
+        this.trackLoudness = isValidLoudness(loudness) ? { ...loudness } : null;
+        this._applyLevelingGain(immediate);
+        return this.getEffectiveLevelingGain();
     }
     
     getEqualizerSettings() {

@@ -3,6 +3,7 @@ import { modalUI } from './modalUI.js';
 import { mediaSessionManager } from '../core/mediaSessionManager.js';
 import { storage } from '../core/storage.js';
 import { sessionMemory } from '../core/sessionMemory.js';
+import { loudnessCoordinator, isValidLoudness } from '../core/loudnessAnalyzer.js';
 
 export class PlayerUI {
   constructor(stateManager, audioEngine) {
@@ -236,6 +237,7 @@ export class PlayerUI {
       }
       if (!blob) throw new Error("Audio blob not found");
       
+      this.audio.setTrackLoudness?.(track.loudness || null, { immediate: true });
       await this.audio.load(blob);
       await this.audio.play();
       this.state.selectedTrackId = track.id;
@@ -247,6 +249,14 @@ export class PlayerUI {
       this.updateTitle(track.name.replace(/\.[^/.]+$/, ""));
       this.refreshLikeButtonState();
       mediaSessionManager.updateMetadata(track);
+
+      if (track.id && !isValidLoudness(track.loudness)) {
+        void loudnessCoordinator.ensureTrackLoudness(track, { storage, blob }).then(measured => {
+          if (measured && this.state.loadedTrackId === track.id) {
+            this.audio.setTrackLoudness?.(measured, { immediate: false });
+          }
+        });
+      }
     } catch (error) {
       this.state.selectedTrackId = this.state.loadedTrackId;
       this.state.currentTrackIndex = this.state.queue.findIndex(
