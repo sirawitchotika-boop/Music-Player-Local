@@ -196,16 +196,28 @@ test('a late AudioContext resume cannot start playback after the interruption', 
 });
 
 test('native build source registers route loss and retains a pending pause until paused acknowledgement', () => {
-  const script = readFileSync(new URL('../.github/workflows/build-apk.yml', import.meta.url), 'utf8');
-  assert.match(script, /ACTION_AUDIO_BECOMING_NOISY\.equals\(action\)\) \{\s+markPendingRoutePause\(\);\s+pauseNativeState\(\);/);
-  assert.match(script, /if \(hasPendingRoutePause\(\)\) \{/);
-  assert.match(script, /if \(!isPlaying && confirmed >= pending\)/);
-  assert.match(script, /else if \(isPlaying\) \{\s+\/\/ Ignore any in-flight pre-disconnect Play snapshot\.\s+isPlaying = false;/);
-  assert.match(script, /public int getPendingRoutePauseSequence\(\)/);
-  assert.match(script, /public void acknowledgeRoutePause\(int sequence\)/);
-  assert.match(script, /public void onResume\(\)/);
-  assert.match(script, /MainActivity\.sendJsCommandToWebview\(/);
-  assert.ok(!script.includes('ACTION_ACL_CONNECTED'));
-  assert.ok(!script.includes('ACTION_HEADSET_PLUG'));
-  assert.match(script, /npx cap init "GT SoundMaster" "com\.gt\.soundmaster"/);
+  const workflow = readFileSync(new URL('../.github/workflows/build-apk.yml', import.meta.url), 'utf8');
+  const service = readFileSync(
+    new URL('../android-native/java/com/gt/soundmaster/MediaPlaybackService.java', import.meta.url),
+    'utf8'
+  );
+  const activity = readFileSync(
+    new URL('../android-native/java/com/gt/soundmaster/MainActivity.java', import.meta.url),
+    'utf8'
+  );
+  const nativeCombined = service + '\n' + activity;
+
+  assert.match(service, /ACTION_AUDIO_BECOMING_NOISY\.equals\(action\)\) \{\s+markPendingRoutePause\(\);\s+pauseNativeState\(\);/);
+  assert.match(service, /if \(hasPendingRoutePause\(\)\) \{/);
+  assert.match(service, /if \(!isPlaying && confirmed >= pending\)/);
+  assert.match(service, /else if \(isPlaying\) \{\s+\/\/ Ignore any in-flight pre-disconnect Play snapshot\.\s+isPlaying = false;/);
+  assert.match(activity, /public int getPendingRoutePauseSequence\(\)/);
+  assert.match(activity, /public void acknowledgeRoutePause\(int sequence\)/);
+  assert.match(activity, /public void onResume\(\)/);
+  assert.match(service, /MainActivity\.sendJsCommandToWebview\(/);
+  assert.ok(!nativeCombined.includes('ACTION_ACL_CONNECTED'));
+  assert.ok(!nativeCombined.includes('ACTION_HEADSET_PLUG'));
+  assert.match(workflow, /npx cap init "GT SoundMaster" "com\.gt\.soundmaster"/);
+  assert.match(workflow, /android-native\/java\/com\/gt\/soundmaster\/MediaPlaybackService\.java/);
+  assert.match(workflow, /android-native\/java\/com\/gt\/soundmaster\/MainActivity\.java/);
 });

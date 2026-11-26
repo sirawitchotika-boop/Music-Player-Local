@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.3.1] - 2026-11-23
+
+### Fixed
+- **Stable Shuffle during Search:** Decoupled in-memory track search filtering from IndexedDB loading so typing in Search no longer flashes "Loading songs..." or reshuffles the active Shuffle queue.
+- **Crash-proof local preferences:** Centralized all `localStorage` reads/writes behind `js/core/preferences.js` with full validation so corrupted playlists, Favorites, or play-mode values cannot break app startup.
+- **Single-bind modal lifecycles:** Added idempotent initialization guards to Help and Sleep Timer (fixing duplicate Help listeners) and unified `Escape` key closing.
+- **Consistent English storage errors:** Standardized IndexedDB error messages in `js/core/storage.js` to clear English.
+
+### Changed
+- **Clean native Android source layout:** Extracted `MainActivity.java`, `MediaPlaybackService.java`, `scripts/patch-android-project.py`, and `scripts/generate-icon.cjs` out of `.github/workflows/build-apk.yml` into dedicated source files (shrinking the workflow from 946 lines to ~205 lines).
+- Moved repeated inline track-row styles out of `js/ui/playlistUI.js` into `css/playlist.css` and removed unused legacy EQ wrapper methods and dead `#loading-overlay` lookup.
+
 ## [1.3.0] - 2026-11-23
 
 ### Added
